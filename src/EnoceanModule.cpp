@@ -1,5 +1,7 @@
 #include "EnoceanModule.h"
 
+#define KDEBUG_Received
+
 #define proc_crc8(u8CRC, u8Data) (u8CRC8Table[u8CRC ^ u8Data])
 
 uint8_t EnoceanModule::u8CRC8Table[256] = {
@@ -30,7 +32,8 @@ EnoceanModule::EnoceanModule() {}
 
 const std::string EnoceanModule::name() { return "Enocean"; }
 
-const std::string EnoceanModule::version() {
+const std::string EnoceanModule::version()
+{
   // hides the module in the version output on the console, because the firmware
   // version is sufficient.
   return "";
@@ -38,8 +41,8 @@ const std::string EnoceanModule::version() {
 
 void EnoceanModule::initSerial(Stream &serial) { _serial = &serial; }
 
-void EnoceanModule::setup(bool configured) {
-  delay(2000);
+void EnoceanModule::setup(bool configured)
+{
   logInfoP("Setup0");
   logIndentUp();
 
@@ -49,19 +52,21 @@ void EnoceanModule::setup(bool configured) {
   OPENKNX_ENO_SERIAL.begin(57600);
   initSerial(OPENKNX_ENO_SERIAL);
 
-  if (configured) {
+  if (configured)
+  {
     // setupCustomFlash();
     setupChannels();
   }
-  delay(2000);
-  logInfoP("Begin");
+
   begin();
 
   logIndentDown();
 }
 
-void EnoceanModule::setupChannels() {
-  for (uint8_t i = 0; i < ParamENO_VisibleChannels; i++) {
+void EnoceanModule::setupChannels()
+{
+  for (uint8_t i = 0; i < ParamENO_VisibleChannels; i++)
+  {
     _channels[i] = new EnoceanChannel(i);
     _channels[i]->setup();
   }
@@ -96,55 +101,66 @@ void EnoceanModule::setupChannels() {
 //   logIndentDown();
 // }
 
-void EnoceanModule::loop(bool configured) {
-  if (delayCheck(_timer1, 5000)) {
-     logInfoP("Loop0");
+void EnoceanModule::loop(bool configured)
+{
+  if (delayCheck(_timer1, 5000))
+  {
+    logInfoP("Loop0");
+    logInfoP("CH %u", ParamENO_VisibleChannels);
+
     _timer1 = millis();
   }
 
-  if (configured) {
+  if (configured)
+  {
     if (ParamENO_VisibleChannels == 0)
       return;
 
     uint8_t processed = 0;
-    do {
+    do
+    {
       task();
 
       _channels[_currentChannel]->loop();
-    } while (openknx.freeLoopIterate(ParamENO_VisibleChannels, _currentChannel,
-                                     processed));
+    } while (openknx.freeLoopIterate(ParamENO_VisibleChannels, _currentChannel, processed));
   }
 }
 
 #ifdef OPENKNX_DUALCORE
 
-void EnoceanModule::setup1(bool configured) {
+void EnoceanModule::setup1(bool configured)
+{
   delay(1000);
   // logInfoP("Setup1");
 }
 
-void EnoceanModule::loop1(bool configured) {
-  if (delayCheck(_timer2, 7200)) {
+void EnoceanModule::loop1(bool configured)
+{
+  if (delayCheck(_timer2, 7200))
+  {
     // logInfoP("Loop1");
     _timer2 = millis();
   }
 }
 #endif
 
-void EnoceanModule::task() {
+void EnoceanModule::task()
+{
   static uint32_t lastTime = 0;
-  if (millis() - lastTime > 5000) {
-    logInfoP("Alive, runtime: %u",lastTime);
+  if (millis() - lastTime > 5000)
+  {
+    logInfoP("Alive, runtime: %u", lastTime);
     lastTime = millis();
   }
 
   // EnOcean IN -> KNX OUT
   u8RetVal = ENOCEAN_NO_RX_TEL;
-  // u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
+  u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
   getEnOceanMSG(u8RetVal, &m_Pkt_st);
 }
 
-void EnoceanModule::begin() {
+void EnoceanModule::begin()
+{
   if (isInited)
     return;
 
@@ -180,7 +196,8 @@ void EnoceanModule::begin() {
   }
  */
 
-  for (int i = 0; i < BASEID_BYTES; i++) {
+  for (int i = 0; i < BASEID_BYTES; i++)
+  {
     logDebugP("Base-ID: %i", lui8_BaseID_p[i], HEX);
   }
 
@@ -201,7 +218,8 @@ void EnoceanModule::begin() {
   isInited = true;
 }
 
-void EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
+void EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p)
+{
   PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
 
   uint8_t lu8SndBuf = u8CO_RD_IDBASE;
@@ -220,24 +238,30 @@ void EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
 
   logDebugP("Sending telegram (read base ID).");
 
-  if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st)) {
+  if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
+  {
     u8RetVal = ENOCEAN_NO_RX_TEL;
     logDebugP("Receiving telegram (read base ID).");
-    while (u8RetVal == ENOCEAN_NO_RX_TEL) {
+    while (u8RetVal == ENOCEAN_NO_RX_TEL)
+    {
       u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
     }
 
-    switch (u8RetVal) {
+    switch (u8RetVal)
+    {
     case ENOCEAN_OK:
       for (int i = 0;
            i < m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength;
-           i++) {
+           i++)
+      {
         logDebugP("Data: %u", m_Pkt_st.u8DataBuffer[i], HEX);
       }
-      switch (m_Pkt_st.u8Type) {
+      switch (m_Pkt_st.u8Type)
+      {
       case u8RESPONSE:
         logDebugP("Received Response.");
-        for (int i = 0; i < BASEID_BYTES; i++) {
+        for (int i = 0; i < BASEID_BYTES; i++)
+        {
           memcpy((void *)&(fui8_BaseID_p[i]),
                  (void *)&(m_Pkt_st.u8DataBuffer[i + 1]), 1);
         }
@@ -256,17 +280,21 @@ void EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
   }
 }
 
-void EnoceanModule::processInputKo(GroupObject &ko) {
+void EnoceanModule::processInputKo(GroupObject &ko)
+{
   // logDebugP("processInputKo GA%04X", ko.asap());
   // logHexDebugP(ko.valueRef(), ko.valueSize());
 }
 
-void EnoceanModule::showHelp() {
+void EnoceanModule::showHelp()
+{
   openknx.console.printHelpLine("dummy", "Print a dummy text");
 }
 
-bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
-  if (cmd.substr(0, 5) == "Enocean") {
+bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo)
+{
+  if (cmd.substr(0, 5) == "Enocean")
+  {
     logInfoP("Enocean Info");
     logIndentUp();
     logInfoP("Info 1");
@@ -285,26 +313,29 @@ bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
 
 #ifdef ARDUINO_ARCH_RP2040
 #ifndef OPENKNX_USB_EXCHANGE_IGNORE
-void EnoceanModule::registerUsbExchangeCallbacks() {
+void EnoceanModule::registerUsbExchangeCallbacks()
+{
   // Sample
   openknxUsbExchangeModule.onLoad(
-      "Dummy.txt", [](UsbExchangeFile *file) -> void { file->write("Demo"); });
+      "Dummy.txt", [](UsbExchangeFile *file) -> void
+      { file->write("Demo"); });
   openknxUsbExchangeModule.onEject(
-      "Dummy.txt", [](UsbExchangeFile *file) -> bool {
+      "Dummy.txt", [](UsbExchangeFile *file) -> bool
+      {
         // File is required
         if (file == nullptr) {
           logError("EnoceanModule",
                    "File Dummy.txt was deleted but is mandatory");
           return false;
         }
-        return true;
-      });
+        return true; });
 }
 #endif
 #endif
 
 uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
-                                      uint16_t u16BufferLength) {
+                                      uint16_t u16BufferLength)
+{
 
   //! UART received byte code
   uint8_t u8RxByte;
@@ -328,10 +359,10 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
   // u8State = GET_SYNC_STATE;
   //}
   // State machine goes on when a new byte is received
-
-  if (_serial->available() > 0) {
-
-    while (_serial->readBytes(&u8RxByte, 1) == 1) {
+  if (_serial->available() > 0)
+  {
+    while (_serial->readBytes(&u8RxByte, 1) == 1)
+    {
       // Comment out for debugging
       // Serial.println(u8RxByte, HEX);
 
@@ -339,10 +370,12 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
       // TODO
       // u8TickCount = (uint8)ug32SystemTimer;
       // State machine to load incoming packet bytes
-      switch (u8State) {
+      switch (u8State)
+      {
       // Waiting for packet sync byte 0x55ENOModule::uart_getPacket
       case GET_SYNC_STATE:
-        if (u8RxByte == SER_SYNCH_CODE) {
+        if (u8RxByte == SER_SYNCH_CODE)
+        {
           u8State = GET_HEADER_STATE;
           u16Count = 0;
           u8CRC = 0;
@@ -354,7 +387,8 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
         u8Raw[u16Count++] = u8RxByte;
         u8CRC = proc_crc8(u8CRC, u8RxByte);
         // All header bytes received?
-        if (u16Count == SER_HEADER_NR_BYTES) {
+        if (u16Count == SER_HEADER_NR_BYTES)
+        {
           // Serial.print("Received all header bytes.\n");
           // Serial.print("pPacket->u16DataLength: ");
           // Serial.println(pPacket->u16DataLength, HEX);
@@ -378,21 +412,26 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
       // Check header checksum & try to resynchonise if error happened
       case CHECK_CRC8H_STATE:
         // Header CRC correct?
-        if (u8CRC != u8RxByte) {
+        if (u8CRC != u8RxByte)
+        {
           logDebugP("CRC check failed.");
           // No. Check if there is a sync byte (0x55) in the header
           int a = -1;
           for (i = 0; i < SER_HEADER_NR_BYTES; i++)
-            if (u8Raw[i] == SER_SYNCH_CODE) {
+            if (u8Raw[i] == SER_SYNCH_CODE)
+            {
               // indicates the next position to the sync byte found
               a = i + 1;
               break;
             };
-          if ((a == -1) && (u8RxByte != SER_SYNCH_CODE)) {
+          if ((a == -1) && (u8RxByte != SER_SYNCH_CODE))
+          {
             // Header and CRC8H does not contain the sync code
             u8State = GET_SYNC_STATE;
             break;
-          } else if ((a == -1) && (u8RxByte == SER_SYNCH_CODE)) {
+          }
+          else if ((a == -1) && (u8RxByte == SER_SYNCH_CODE))
+          {
             // Header does not have sync code but CRC8H does.
             // The sync code could be the beginning of a packet
             u8State = GET_HEADER_STATE;
@@ -404,7 +443,8 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
           // Shift all bytes from the 0x55 code in the buffer.
           // Recalculate CRC8 for those bytes
           u8CRC = 0;
-          for (i = 0; i < (SER_HEADER_NR_BYTES - a); i++) {
+          for (i = 0; i < (SER_HEADER_NR_BYTES - a); i++)
+          {
             u8Raw[i] = u8Raw[a + i];
             u8CRC = proc_crc8(u8CRC, u8Raw[i]);
           }
@@ -413,16 +453,19 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
           // -= a; Copy the just received byte to buffer
           u8Raw[u16Count++] = u8RxByte;
           u8CRC = proc_crc8(u8CRC, u8RxByte);
-          if (u16Count < SER_HEADER_NR_BYTES) {
+          if (u16Count < SER_HEADER_NR_BYTES)
+          {
             u8State = GET_HEADER_STATE;
             break;
           }
           break;
         }
         // CRC8H correct. Length fields values valid?
-        if ((pPacket->u16DataLength + pPacket->u8OptionLength) == 0) {
+        if ((pPacket->u16DataLength + pPacket->u8OptionLength) == 0)
+        {
           // No. Sync byte received?
-          if ((u8RxByte == SER_SYNCH_CODE)) {
+          if ((u8RxByte == SER_SYNCH_CODE))
+          {
             // yes
             u8State = GET_HEADER_STATE;
             u16Count = 0;
@@ -442,12 +485,14 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
       case GET_DATA_STATE:
         // Copy byte in the packet buffer only if the received bytes have enough
         // room
-        if (u16Count < u16BufferLength) {
+        if (u16Count < u16BufferLength)
+        {
           pPacket->u8DataBuffer[u16Count] = u8RxByte;
           u8CRC = proc_crc8(u8CRC, u8RxByte);
         }
         // When all expected bytes received, go to calculate data checksum
-        if (++u16Count == (pPacket->u16DataLength + pPacket->u8OptionLength)) {
+        if (++u16Count == (pPacket->u16DataLength + pPacket->u8OptionLength))
+        {
           u8State = CHECK_CRC8D_STATE;
         }
 
@@ -470,7 +515,8 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
         // False CRC8.
         // If the received byte equals sync code, then it could be sync byte for
         // next paquet.
-        if ((u8RxByte == SER_SYNCH_CODE)) {
+        if ((u8RxByte == SER_SYNCH_CODE))
+        {
           u8State = GET_HEADER_STATE;
           u16Count = 0;
           u8CRC = 0;
@@ -486,13 +532,15 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket,
   return (u8State == GET_SYNC_STATE) ? ENOCEAN_NO_RX_TEL : ENOCEAN_NEW_RX_BYTE;
 }
 
-uint8_t EnoceanModule::uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket) {
+uint8_t EnoceanModule::uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket)
+{
   uint16_t i;
   uint8_t u8CRC;
   uint8_t *u8Raw = (uint8_t *)pPacket;
   // When both length fields are 0, then this telegram is not allowed.
 
-  if ((pPacket->u16DataLength || pPacket->u8OptionLength) == 0) {
+  if ((pPacket->u16DataLength || pPacket->u8OptionLength) == 0)
+  {
     return ENOCEAN_OUT_OF_RANGE;
   }
 
@@ -516,7 +564,8 @@ uint8_t EnoceanModule::uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket) {
     ;
   // Data
   u8CRC = 0;
-  for (i = 0; i < lui16_PacketLength + pPacket->u8OptionLength; i++) {
+  for (i = 0; i < lui16_PacketLength + pPacket->u8OptionLength; i++)
+  {
     u8CRC = proc_crc8(u8CRC, pPacket->u8DataBuffer[i]);
     while (_serial->write(pPacket->u8DataBuffer[i]) != 1)
       ;
@@ -528,13 +577,16 @@ uint8_t EnoceanModule::uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket) {
 }
 
 void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal,
-                                  PACKET_SERIAL_TYPE_ *f_Pkt_st) {
-  if (u8RetVal == ENOCEAN_OK) {
+                                  PACKET_SERIAL_TYPE_ *f_Pkt_st)
+{
+  if (u8RetVal == ENOCEAN_OK)
+  {
 #ifdef KDEBUG_Received
     Serial.print(F("Received Data: "));
     for (int i = 0;
          i < f_Pkt_st->u16DataLength + (uint16_t)f_Pkt_st->u8OptionLength;
-         i++) {
+         i++)
+    {
       // Serial.print(F("%X"), f_Pkt_st->u8DataBuffer[i]);
       Serial.print(f_Pkt_st->u8DataBuffer[i], HEX);
       Serial.print(F(" "));
@@ -542,25 +594,29 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal,
     Serial.println(F(""));
 #endif
 
-    if (f_Pkt_st->u8Type == u8RADIO_ERP1) {
+    if (f_Pkt_st->u8Type == u8RADIO_ERP1)
+    {
 
 #ifdef KDEBUG_min
-      if (f_Pkt_st->u8DataBuffer[0] == u8RORG_RPS) {
-        logDebugP("RPS: Data:%u ID:%u",f_Pkt_st->u8DataBuffer[1], f_Pkt_st->u8DataBuffer[2],f_Pkt_st->u8DataBuffer[3],f_Pkt_st->u8DataBuffer[4], f_Pkt_st->u8DataBuffer[5], HEX, HEX,HEX,HEX,HEX)
-        //Serial.println(F("-----"));
-        //Serial.println(F("Typ:    RPS"));
-        //Serial.print(F("Eno-ID: "));
-        //Serial.print(f_Pkt_st->u8DataBuffer[2], HEX);
-        //Serial.print("-");
-        //Serial.print(f_Pkt_st->u8DataBuffer[3], HEX);
-        //Serial.print("-");
-        //Serial.print(f_Pkt_st->u8DataBuffer[4], HEX);
-        //Serial.print("-");
-        //Serial.println(f_Pkt_st->u8DataBuffer[5], HEX);
-        //Serial.print(F("Data:   "));
-        //Serial.println(f_Pkt_st->u8DataBuffer[1], HEX);
-        //Serial.println(F("-----"));
-      } else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_VLD) {
+      if (f_Pkt_st->u8DataBuffer[0] == u8RORG_RPS)
+      {
+        logDebugP("RPS: Data:%u ID:%u", f_Pkt_st->u8DataBuffer[1], f_Pkt_st->u8DataBuffer[2], f_Pkt_st->u8DataBuffer[3], f_Pkt_st->u8DataBuffer[4], f_Pkt_st->u8DataBuffer[5], HEX, HEX, HEX, HEX, HEX)
+        // Serial.println(F("-----"));
+        // Serial.println(F("Typ:    RPS"));
+        // Serial.print(F("Eno-ID: "));
+        // Serial.print(f_Pkt_st->u8DataBuffer[2], HEX);
+        // Serial.print("-");
+        // Serial.print(f_Pkt_st->u8DataBuffer[3], HEX);
+        // Serial.print("-");
+        // Serial.print(f_Pkt_st->u8DataBuffer[4], HEX);
+        // Serial.print("-");
+        // Serial.println(f_Pkt_st->u8DataBuffer[5], HEX);
+        // Serial.print(F("Data:   "));
+        // Serial.println(f_Pkt_st->u8DataBuffer[1], HEX);
+        // Serial.println(F("-----"));
+      }
+      else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_VLD)
+      {
         Serial.println(F("-----"));
         Serial.println(F("Typ:    VLD"));
         Serial.print(F("Eno-ID: "));
@@ -573,13 +629,16 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal,
         Serial.println(f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 2],
                        HEX);
         Serial.print(F("Data:  "));
-        for (int i = 0; i < f_Pkt_st->u16DataLength - 6; i++) {
+        for (int i = 0; i < f_Pkt_st->u16DataLength - 6; i++)
+        {
           Serial.print(" ");
           Serial.print(f_Pkt_st->u8DataBuffer[i + 1], HEX);
         }
         Serial.println(F(" "));
         Serial.println(F("-----"));
-      } else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_4BS) {
+      }
+      else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_4BS)
+      {
         Serial.println(F("-----"));
         Serial.println(F("Typ:    4BS"));
         Serial.print(F("Eno-ID: "));
@@ -599,7 +658,9 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal,
         Serial.print(" ");
         Serial.println(f_Pkt_st->u8DataBuffer[4], HEX);
         Serial.println(F("-----"));
-      } else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_1BS) {
+      }
+      else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_1BS)
+      {
         Serial.println(F("-----"));
         Serial.println(F("Typ:    1BS"));
         Serial.print(F("Eno-ID: "));
