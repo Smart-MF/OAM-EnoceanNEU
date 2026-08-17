@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../OGM-Common"
+		},
+		{
+			"path": "../OFM-ConfigTransfer"
+		},
+		{
+			"path": "../OFM-FileTransferModule"
+		},
+		{
+			"path": "../OGM-HardwareConfig"
+		},
+		{
+			"path": "../knx"
+		},
+		{
+			"path": "../OFM-LogicModule"
+		}
+	],
+	"settings": {}
+}

@@ -9,7 +9,7 @@
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
-        <op:version OpenKnxId="0xAF" ApplicationNumber="255" ApplicationVersion="6" ReplacesVersions="5 4 3 2 1 0" ApplicationRevision="0" />
+        <op:version OpenKnxId="0xAF" ApplicationNumber="255" ApplicationVersion="6" ReplacesVersions="5 4 3 2 1 0" ApplicationRevision="0" FirmwareRevision="-1" />
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-07B0" Name="ENO_TestApp" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de-DE" DynamicTableManagement="false" Linkable="true" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" IPConfig="Custom" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0">
           <Static>
             <Code>
@@ -19,7 +19,9 @@
               <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" prefix="BASE" />
               <op:include href="../lib/OFM-ConfigTransfer/src/ConfigTransfer.share.xml" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" prefix="UCT" />
               <op:include href="EnoceanModule.share.xml" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" prefix="ENO" />
+              <op:include href="EnoceanModule.templ.xml" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" type="template" prefix="ENO" />
               <op:include href="../lib/OFM-LogicModule/src/Logikmodul.share.xml" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" prefix="LOG" />
+              <op:include href="../lib/OFM-LogicModule/src/Logikmodul.templ.xml" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" type="template" prefix="LOG" />
             </ParameterTypes>
             <Parameters>
               <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="BASE" />
@@ -102,7 +104,7 @@
               <op:include href="EnoceanModule.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="ENO" />
               <op:include href="../lib/OFM-LogicModule/src/Logikmodul.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="LOG" />
             </Script>
-            <Options TextParameterEncoding="iso-8859-15" />
+            <Options TextParameterEncoding="iso-8859-15" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" />
           </Static>
           <ModuleDefs>
             <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/ModuleDefs/*" prefix="BASE" />

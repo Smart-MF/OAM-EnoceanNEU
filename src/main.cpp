@@ -43,21 +43,21 @@ void setup()
                                          func1test = !func1test;
                                          logInfo("ButtonTest", "Func1 button short click");
 #ifdef INFO1_LED_PIN
-                                         openknx.info1Led.on(func1test);
+                                         openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO1)->on(func1test);
 #endif
                                      });
     openknx.func1Button.onDoubleClick([]() -> void
                                       {
                                           logInfo("ButtonTest", "Func1 button double click");
 #ifdef INFO1_LED_PIN
-                                          openknx.info1Led.pulsing();
+                                          openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO1)->pulsing();
 #endif
                                       });
     openknx.func1Button.onLongClick([]() -> void
                                     {
                                         logInfo("ButtonTest", "Func1 button long click");
 #ifdef INFO1_LED_PIN
-                                        openknx.info1Led.blinking();
+                                        openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO1)->blinking();
 #endif
                                     });
 #endif
@@ -67,21 +67,21 @@ void setup()
                                          func2test = !func2test;
                                          logInfo("ButtonTest", "Func2 button short click");
 #ifdef INFO2_LED_PIN
-                                         openknx.info2Led.on(func2test);
+                                         openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO2)->on(func2test);
 #endif
                                      });
     openknx.func2Button.onDoubleClick([]() -> void
                                       {
                                           logInfo("ButtonTest", "Func2 button double click");
 #ifdef INFO2_LED_PIN
-                                          openknx.info2Led.pulsing();
+                                          openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO2)->pulsing();
 #endif
                                       });
     openknx.func2Button.onLongClick([]() -> void
                                     {
                                         logInfo("ButtonTest", "Func2 button long click");
 #ifdef INFO2_LED_PIN
-                                        openknx.info2Led.blinking();
+                                        openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO2)->blinking();
 #endif
                                     });
 #endif
@@ -91,42 +91,42 @@ void setup()
                                          func3test = !func3test;
                                          logInfo("ButtonTest", "Func3 button short click");
 #ifdef INFO3_LED_PIN
-                                         openknx.info3Led.on(func3test);
+                                         openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO3)->on(func3test);
 #endif
                                      });
     openknx.func3Button.onDoubleClick([]() -> void
                                       {
                                           logInfo("ButtonTest", "Func3 button double click");
 #ifdef INFO3_LED_PIN
-                                          openknx.info3Led.pulsing();
+                                          openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO3)->pulsing();
 #endif
                                       });
     openknx.func3Button.onLongClick([]() -> void
                                     {
                                         logInfo("ButtonTest", "Func3 button long click");
 #ifdef INFO3_LED_PIN
-                                        openknx.info3Led.blinking();
+                                        openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO3)->blinking();
 #endif
                                     });
 #endif
 
-    // openknx.progLed.off();
-    // openknx.progLed.on();
-    // openknx.progLed.blinking();
-    // openknx.progLed.pulsing();
-    // openknx.progLed.brightness(60);
+    // openknx.leds.getProgLed()->off();
+    // openknx.leds.getProgLed()->on();
+    // openknx.leds.getProgLed()->blinking();
+    // openknx.leds.getProgLed()->pulsing();
+    // openknx.leds.getProgLed()->brightness(60);
 
 #ifdef INFO1_LED_PIN
-    openknx.info1Led.pulsing();
-// openknx.info1Led.brightness(60);
+    openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO1)->pulsing();
+// openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO1)->brightness(60);
 #endif
 #ifdef INFO2_LED_PIN
-    openknx.info2Led.pulsing();
-// openknx.info2Led.brightness(60);
+    openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO2)->pulsing();
+// openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO2)->brightness(60);
 #endif
 #ifdef INFO3_LED_PIN
-    openknx.info3Led.pulsing();
-// openknx.info3Led.brightness(60);
+    openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO3)->pulsing();
+// openknx.leds.getLed(OpenKNX::Led::LED_TYPE_INFO3)->brightness(60);
 #endif
 }
 
