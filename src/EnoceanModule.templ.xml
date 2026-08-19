@@ -152,10 +152,21 @@
                 <Parameter Id="%AID%_UP-%TT%%CC%082" Name="CH%C%D2010EdeltaPw"  Offset="0" BitOffset="0" ParameterType="%AID%_PT-D2010delta"  Text="delta Value:"  Value="0" />
                 <Parameter Id="%AID%_UP-%TT%%CC%083" Name="CH%C%D2010EdeltaPkw" Offset="0" BitOffset="0" ParameterType="%AID%_PT-D2010delta"  Text="delta Value:"  Value="0" />
               </Union> <!-- Union 6 -->
-              <Union SizeInBit="8">
+              <Union SizeInBit="80">
                 <Memory CodeSegment="%AID%_RS-04-00000" Offset="28" BitOffset="0" />
-                <Parameter Id="%AID%_UP-%TT%%CC%084" Name="CH%C%Productsel" Offset="0" BitOffset="0" ParameterType="%AID%_PT-ProductSelection"  Text="Auswahl:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%084" Name="CH%C%Productsel"        Offset="0" BitOffset="0" ParameterType="%AID%_PT-ProductSelection"  Text="Auswahl:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%085" Name="CH%C%ProductselType"    Offset="1" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionType"  Text="Produkt-Kategorie:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%086" Name="CH%C%ProductselTypeTas" Offset="2" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeTaster"  Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%087" Name="CH%C%ProductselTypeKon" Offset="3" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeKontakte"  Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%088" Name="CH%C%ProductselTypeUmw" Offset="4" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeUmwelt"    Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%089" Name="CH%C%ProductselTypeHell" Offset="5" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHelligkeit"  Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%090" Name="CH%C%ProductselTypeBew" Offset="6" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeBewegung"  Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%091" Name="CH%C%ProductselTypeRau" Offset="7" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeMelder"    Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%092" Name="CH%C%ProductselTypeHei" Offset="8" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHeizung"   Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%093" Name="CH%C%ProductselTypeWas" Offset="9" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeWasser"    Text="Produkt:" Value="0" />
               </Union> <!-- Union 7 -->
+
+             
 
                
               <!-- next is offset 28 !!! -->
@@ -245,6 +256,15 @@
               <ParameterRef Id="%AID%_UP-%TT%%CC%082_R-%TT%%CC%08201" RefId="%AID%_UP-%TT%%CC%082" SuffixText="W"/>
               <ParameterRef Id="%AID%_UP-%TT%%CC%083_R-%TT%%CC%08301" RefId="%AID%_UP-%TT%%CC%083" SuffixText="KW"/>
               <ParameterRef Id="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401" RefId="%AID%_UP-%TT%%CC%084" />  <!-- Auswahl Produkt -->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%085_R-%TT%%CC%08501" RefId="%AID%_UP-%TT%%CC%085" />  <!-- Auswahl Produkt Type -->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%086_R-%TT%%CC%08601" RefId="%AID%_UP-%TT%%CC%086" />  <!-- Auswahl Produkt Type Taster -->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%087_R-%TT%%CC%08701" RefId="%AID%_UP-%TT%%CC%087" />  <!-- Auswahl Produkt Type KOntakte-->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%088_R-%TT%%CC%08801" RefId="%AID%_UP-%TT%%CC%088" />  <!-- Auswahl Produkt Type Umwelt-->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%089_R-%TT%%CC%08901" RefId="%AID%_UP-%TT%%CC%089" />  <!-- Auswahl Produkt Type Helligkeit-->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%090_R-%TT%%CC%09001" RefId="%AID%_UP-%TT%%CC%090" />  <!-- Auswahl Produkt Type Bewegung-->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%091_R-%TT%%CC%09101" RefId="%AID%_UP-%TT%%CC%091" />  <!-- Auswahl Produkt Type Melder-->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%092_R-%TT%%CC%09201" RefId="%AID%_UP-%TT%%CC%092" />  <!-- Auswahl Produkt Type Heizung-->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%093_R-%TT%%CC%09301" RefId="%AID%_UP-%TT%%CC%093" />  <!-- Auswahl Produkt Type Wasser-->       
             </ParameterRefs>
             <ComObjectTable>
               <!-- ComOject Kanal 1 -->
@@ -422,8 +442,7 @@
                     <ParameterSeparator Id="%AID%_PS-1" Text="Profildefinition" UIHint="Headline" />
                     <ParameterRefRef RefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401" IndentLevel="1"  />
                     <choose ParamRefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401">
-                      <when test="1">
-                        <!-- AUSWAHL EEP-Profile -->
+                      <when test="1">  <!-- AUSWAHL EEP-Profile -->
                         <ParameterRefRef RefId="%AID%_P-%TT%%CC%004_R-%TT%%CC%00401" IndentLevel="1"  />
                         <choose ParamRefId="%AID%_P-%TT%%CC%004_R-%TT%%CC%00401">
                           <!-- RPS F6 (0xF6 = 246Dez)-->
@@ -1176,9 +1195,67 @@
                           </when>
                         </choose>
                       </when>
-                      <when test="2">
-                        <!-- AUSWAHL ELTAKO -->
-
+                      <when test="2"> <!-- AUSWAHL ELTAKO -->
+                        <!-- AUSWAHL ELTAKO Produkt Type-->
+                        <ParameterRefRef RefId="%AID%_UP-%TT%%CC%085_R-%TT%%CC%08501" IndentLevel="2"  />
+                        <choose ParamRefId="%AID%_UP-%TT%%CC%085_R-%TT%%CC%08501">
+                          <when test="1">  <!-- AUSWAHL Taster -->
+                             <ParameterRefRef RefId="%AID%_UP-%TT%%CC%086_R-%TT%%CC%08601" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%086_R-%TT%%CC%08601">
+                                <when test="0">  
+                                </when>
+                              </choose>  
+                          </when>
+                          <when test="2">  <!-- AUSWAHL Kontakte -->
+                            <ParameterRefRef RefId="%AID%_UP-%TT%%CC%087_R-%TT%%CC%08701" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%087_R-%TT%%CC%08701">
+                                <when test="0">  
+                                </when>
+                              </choose>  
+                          </when>
+                          <when test="3">  <!-- AUSWAHL Umwelt -->
+                            <ParameterRefRef RefId="%AID%_UP-%TT%%CC%088_R-%TT%%CC%08801" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%088_R-%TT%%CC%08801">
+                                <when test="0">  
+                                </when>
+                              </choose> 
+                          </when>
+                          <when test="4">  <!-- AUSWAHL Helligekeitsensoren -->
+                            <ParameterRefRef RefId="%AID%_UP-%TT%%CC%089_R-%TT%%CC%08901" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%089_R-%TT%%CC%08901">
+                                <when test="0">  
+                                </when>
+                              </choose> 
+                          </when>
+                          <when test="5">  <!-- AUSWAHL Bewegungsmelder -->
+                            <ParameterRefRef RefId="%AID%_UP-%TT%%CC%090_R-%TT%%CC%09001" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%090_R-%TT%%CC%09001">
+                                <when test="0">  
+                                </when>
+                              </choose> 
+                          </when>
+                          <when test="6">  <!-- AUSWAHL Melder -->
+                            <ParameterRefRef RefId="%AID%_UP-%TT%%CC%091_R-%TT%%CC%09101" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%091_R-%TT%%CC%09101">
+                                <when test="0">  
+                                </when>
+                              </choose> 
+                          </when>
+                          <when test="7">  <!-- AUSWAHL Heizung -->
+                            <ParameterRefRef RefId="%AID%_UP-%TT%%CC%092_R-%TT%%CC%09201" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%092_R-%TT%%CC%09201">
+                                <when test="0">  
+                                </when>
+                              </choose> 
+                          </when>
+                          <when test="8">  <!-- AUSWAHL Wasser -->
+                            <ParameterRefRef RefId="%AID%_UP-%TT%%CC%093_R-%TT%%CC%09301" IndentLevel="3"  />
+                              <choose ParamRefId="%AID%_UP-%TT%%CC%093_R-%TT%%CC%09301">
+                                <when test="0">  
+                                </when>
+                              </choose> 
+                          </when>
+                        </choose> 
                       </when>
                     </choose>
                   </ParameterBlock>

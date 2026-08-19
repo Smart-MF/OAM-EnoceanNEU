@@ -77,6 +77,86 @@
                   <Enumeration Text="ELTAKO"           Value="2" Id="%AID%_PT-ProductSelection_EN-2" />
                 </TypeRestriction>
               </ParameterType>
+              <!-- Parameter type for  Product selection -->
+              <ParameterType Id="%AID%_PT-ProductSelectionType" Name="ProductSelectionType">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="auswählen"                   Value="0" Id="%AID%_PT-ProductSelectionType_EN-0" />
+                  <Enumeration Text="Taster"                      Value="1" Id="%AID%_PT-ProductSelectionType_EN-1" />
+                  <Enumeration Text="Fenster/Tür-Kontakte"        Value="2" Id="%AID%_PT-ProductSelectionType_EN-2" />
+                  <Enumeration Text="Umweltsensoren (T,H,P,VOC)"  Value="3" Id="%AID%_PT-ProductSelectionType_EN-3" />
+                  <Enumeration Text="Helligkeit/Dämmerungssensoren" Value="4" Id="%AID%_PT-ProductSelectionType_EN-4" />
+                  <Enumeration Text="Bewegungsmelder"             Value="5" Id="%AID%_PT-ProductSelectionType_EN-5" />
+                  <Enumeration Text="Rauch/Hitzemelder"           Value="6" Id="%AID%_PT-ProductSelectionType_EN-6" />
+                  <Enumeration Text="Heizungsstellaktoren"        Value="7" Id="%AID%_PT-ProductSelectionType_EN-7" />
+                  <Enumeration Text="Wassersensoren"              Value="8" Id="%AID%_PT-ProductSelectionType_EN-8" />
+                </TypeRestriction>
+              </ParameterType>
+              <!-- Parameter type for  Product selection Kontakte-->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeTaster" Name="ProductSelectionTypeTaster">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="XXXX - Taster" Value="0" Id="%AID%_PT-ProductSelectionTypeTaster_EN-0" />
+                </TypeRestriction>
+              </ParameterType>
+              <!-- Parameter type for  Product selection Kontakte-->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeKontakte" Name="ProductSelectionTypeKontakte">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="auswählen"                  Value="0" Id="%AID%_PT-ProductSelectionTypeKontakte_EN-0" />
+                  <Enumeration Text="FFG7B - Fenstergriffsensor" Value="1" Id="%AID%_PT-ProductSelectionTypeKontakte_EN-1" />
+                  <Enumeration Text="FFKB - Tür/Fensterkontakt"  Value="2" Id="%AID%_PT-ProductSelectionTypeKontakte_EN-2" />
+                  <Enumeration Text="FTK - Tür/Fensterkontakt"   Value="3" Id="%AID%_PT-ProductSelectionTypeKontakte_EN-3" />
+                  <Enumeration Text="FTKB - Tür/Fensterkontakt"  Value="4" Id="%AID%_PT-ProductSelectionTypeKontakte_EN-4" />
+                  <Enumeration Text="FTKE - Fenster-Türkontakt"  Value="5" Id="%AID%_PT-ProductSelectionTypeKontakte_EN-5" />
+                  <Enumeration Text="FFTE - Fenster-Tastkontakt" Value="6" Id="%AID%_PT-ProductSelectionTypeKontakte_EN-6" />
+                </TypeRestriction>
+              </ParameterType>
+              <!-- Parameter type for  Product selection Umweltsensoren-->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeUmwelt" Name="ProductSelectionTypeUmwelt">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="FFT60SB - Temperatur Feuchtesensor (Außen)"   Value="0" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-0" />
+                  <Enumeration Text="FFT60SB - Temperatur Feuchtesensor (Außen)"   Value="1" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-1" />
+                  <Enumeration Text="FTFB - Temperatur-Feuchtesensor"              Value="2" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-2" />
+                  <Enumeration Text="FTFSB - Temperatur-Feuchtesensor(Solarzelle)" Value="3" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-3" />
+                  <Enumeration Text="FFT55EB - Temperatur-Feuchtesensor"           Value="4" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-4" />
+                  <Enumeration Text="FLGTF55E - Temperatur-Feuchte-Luftgütesensor" Value="5" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-5" />                  
+                  <Enumeration Text="FCO2TF65 - Temperatur-Feuchte-CO2-Sensor"     Value="6" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-6" />                  
+                  <Enumeration Text="FLT58 - Luftgüte-Tischsensor + Temperatur und Feuchtigkeit"  Value="7" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-7" />                  
+                </TypeRestriction>
+              </ParameterType>
+              <!-- Parameter type for  Product selection Helligkeit/Dämmerung-->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeHelligkeit" Name="ProductSelectionTypeHelligkeit">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="FHD60SB - Helligkeits-Dämmerungs-Sensor"   Value="0" Id="%AID%_PT-ProductSelectionTypeHelligkeit_EN-0" />            
+                </TypeRestriction>
+              </ParameterType>
+              <!-- Parameter type for  Product selection Bewegung -->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeBewegung" Name="ProductSelectionTypeBewegung">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="auswählen"                                            Value="0" Id="%AID%_PT-ProductSelectionTypeBewegung_EN-0" />            
+                  <Enumeration Text="FB55EB - Bewegungsmelder"                             Value="1" Id="%AID%_PT-ProductSelectionTypeBewegung_EN-1" />            
+                  <Enumeration Text="FBHT55ESB - Bewegungs-Helligkeits-Temperatursensor"   Value="2" Id="%AID%_PT-ProductSelectionTypeBewegung_EN-2" />            
+                  <Enumeration Text="FABH65S - Außen-Bewegungs-Helligkeitssensor"          Value="3" Id="%AID%_PT-ProductSelectionTypeBewegung_EN-3" />            
+                  <Enumeration Text="FABH130/230V - Außen-Bewegungs-Helligkeitssensor"     Value="4" Id="%AID%_PT-ProductSelectionTypeBewegung_EN-4" />               
+                </TypeRestriction>
+              </ParameterType>
+               <!-- Parameter type for  Product selection Rauchmelder -->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeMelder" Name="ProductSelectionTypeMelder">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="FRWB - Rauchmelder"  Value="0" Id="%AID%_PT-ProductSelectionTypeMelder_EN-0" />  
+                  <Enumeration Text="FHMB - Hitzemelder"  Value="1" Id="%AID%_PT-ProductSelectionTypeMelder_EN-1" />  
+                </TypeRestriction>
+              </ParameterType>
+              <!-- Parameter type for  Product selection Heizung -->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeHeizung" Name="ProductSelectionTypeHeizung">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="FKS-SV- Klein-Stellantrieb Smart Valve"  Value="0" Id="%AID%_PT-ProductSelectionTypeHeizung_EN-0" />  
+                </TypeRestriction>
+              </ParameterType>
+               <!-- Parameter type for  Product selection Wassersensoren -->
+              <ParameterType Id="%AID%_PT-ProductSelectionTypeWasser" Name="ProductSelectionTypeWasser">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="FWS81 - Wassersensor"  Value="0" Id="%AID%_PT-ProductSelectionTypeWasser_EN-0" />  
+                </TypeRestriction>
+              </ParameterType>
               <!-- Parameter type for EEP Profil selection -->
               <ParameterType Id="%AID%_PT-ProfilSelection" Name="ProfilSelection">
                 <TypeRestriction Base="Value" SizeInBit="8">
