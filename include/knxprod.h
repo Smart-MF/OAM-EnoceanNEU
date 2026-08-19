@@ -16,9 +16,9 @@
 #define MAIN_FirmwareName "ENO_TestApp"
 #define MAIN_OpenKnxId 0xAF
 #define MAIN_ApplicationNumber 255
-#define MAIN_ApplicationVersion 6
+#define MAIN_ApplicationVersion 7
 #define MAIN_ApplicationEncoding iso-8859-15
-#define MAIN_ParameterSize 4902
+#define MAIN_ParameterSize 5199
 #define MAIN_MaxKoNumber 399
 #define MAIN_OrderNumber "ENO-TESTAPP"
 #define BASE_ModuleVersion 25
@@ -185,286 +185,655 @@
 
 
 
-#define ENO_VisibleChannels                     114      // uint8_t
+#define ENO_RepeaterFunc                        114      // 1 Bit, Bit 7
+#define     ENO_RepeaterFuncMask 0x80
+#define     ENO_RepeaterFuncShift 7
+#define ENO_SetBaseIdFunc                       115      // 1 Bit, Bit 7
+#define     ENO_SetBaseIdFuncMask 0x80
+#define     ENO_SetBaseIdFuncShift 7
+#define ENO_Id0                                 116      // 4 Bits, Bit 7-4
+#define     ENO_Id0Mask 0xF0
+#define     ENO_Id0Shift 4
+#define ENO_Id1                                 116      // 4 Bits, Bit 3-0
+#define     ENO_Id1Mask 0x0F
+#define     ENO_Id1Shift 0
+#define ENO_Id2                                 117      // 4 Bits, Bit 7-4
+#define     ENO_Id2Mask 0xF0
+#define     ENO_Id2Shift 4
+#define ENO_Id3                                 117      // 4 Bits, Bit 3-0
+#define     ENO_Id3Mask 0x0F
+#define     ENO_Id3Shift 0
+#define ENO_Id4                                 118      // 4 Bits, Bit 7-4
+#define     ENO_Id4Mask 0xF0
+#define     ENO_Id4Shift 4
+#define ENO_Id5                                 118      // 4 Bits, Bit 3-0
+#define     ENO_Id5Mask 0x0F
+#define     ENO_Id5Shift 0
+#define ENO_Id6                                 119      // 4 Bits, Bit 7-4
+#define     ENO_Id6Mask 0xF0
+#define     ENO_Id6Shift 4
+#define ENO_Id7                                 119      // 4 Bits, Bit 3-0
+#define     ENO_Id7Mask 0x0F
+#define     ENO_Id7Shift 0
+#define ENO_RepeaterLevel                       120      // 8 Bits, Bit 7-0
+#define ENO_VisibleChannels                     121      // uint8_t
 
+// Repeater-Function:
+#define ParamENO_RepeaterFunc                        ((bool)(knx.paramByte(ENO_RepeaterFunc) & ENO_RepeaterFuncMask))
+// Base-ID anpassen?
+#define ParamENO_SetBaseIdFunc                       ((bool)(knx.paramByte(ENO_SetBaseIdFunc) & ENO_SetBaseIdFuncMask))
+// 
+#define ParamENO_Id0                                 ((knx.paramByte(ENO_Id0) & ENO_Id0Mask) >> ENO_Id0Shift)
+// 
+#define ParamENO_Id1                                 (knx.paramByte(ENO_Id1) & ENO_Id1Mask)
+// 
+#define ParamENO_Id2                                 ((knx.paramByte(ENO_Id2) & ENO_Id2Mask) >> ENO_Id2Shift)
+// 
+#define ParamENO_Id3                                 (knx.paramByte(ENO_Id3) & ENO_Id3Mask)
+// 
+#define ParamENO_Id4                                 ((knx.paramByte(ENO_Id4) & ENO_Id4Mask) >> ENO_Id4Shift)
+// 
+#define ParamENO_Id5                                 (knx.paramByte(ENO_Id5) & ENO_Id5Mask)
+// 
+#define ParamENO_Id6                                 ((knx.paramByte(ENO_Id6) & ENO_Id6Mask) >> ENO_Id6Shift)
+// 
+#define ParamENO_Id7                                 (knx.paramByte(ENO_Id7) & ENO_Id7Mask)
+// Option:
+#define ParamENO_RepeaterLevel                       (knx.paramByte(ENO_RepeaterLevel))
 // Verfügbare Kanäle
 #define ParamENO_VisibleChannels                     (knx.paramByte(ENO_VisibleChannels))
 
 #define ENO_ChannelCount 10
 
 // Parameter per channel
-#define ENO_ParamBlockOffset 0
-#define ENO_ParamBlockSize -1
+#define ENO_ParamBlockOffset 122
+#define ENO_ParamBlockSize 29
 #define ENO_ParamCalcIndex(index) (index + ENO_ParamBlockOffset + _channelIndex * ENO_ParamBlockSize)
 
+#define ENO_CHProfilSelection                    0      // 8 Bits, Bit 7-0
+#define ENO_CHProfilSelectionRPS                 1      // 16 Bits, Bit 15-0
+#define ENO_CHProfilSelection1BS                 1      // 16 Bits, Bit 15-0
+#define ENO_CHProfilSelection4BS                 1      // 16 Bits, Bit 15-0
+#define ENO_CHProfilSelectionVLD                 1      // 16 Bits, Bit 15-0
+#define ENO_CHDirectionKnxEnocean                3      // 8 Bits, Bit 7-0
+#define ENO_CHProfil4BS02                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS04                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS05                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS06                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS07                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS08                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS09                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS10                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS11                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS12                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS13                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS14                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS20                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BS30                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfil4BSAdd                       4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD00                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD01                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD02                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD03                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD04                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD05                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD06                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD10                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD11                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD20                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD30                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD31                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD32                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD33                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD34                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD40                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD50                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLDA0                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLDB0                        4      // 16 Bits, Bit 15-0
+#define ENO_CHProfilVLD14                        4      // 16 Bits, Bit 15-0
+#define ENO_CHRockerProfil                       6      // 8 Bits, Bit 7-0
+#define ENO_CHRockerFunktionA                    7      // 8 Bits, Bit 7-0
+#define ENO_CHRockerASzeneA                      8      // 8 Bits, Bit 7-0
+#define ENO_CHRockerASzeneB                      9      // 8 Bits, Bit 7-0
+#define ENO_CHRockerFunktionB                   10      // 8 Bits, Bit 7-0
+#define ENO_CHRockerBSzeneA                     11      // 8 Bits, Bit 7-0
+#define ENO_CHRockerBSzeneB                     12      // 8 Bits, Bit 7-0
+#define ENO_CHRockerFunktionC                   13      // 8 Bits, Bit 7-0
+#define ENO_CHRockerCSzeneA                     14      // 8 Bits, Bit 7-0
+#define ENO_CHRockerCSzeneB                     15      // 8 Bits, Bit 7-0
+#define ENO_CHProfilRockerFunktionKNX           16      // 8 Bits, Bit 7-0
+#define ENO_CHId0                               17      // 4 Bits, Bit 7-4
+#define     ENO_CHId0Mask 0xF0
+#define     ENO_CHId0Shift 4
+#define ENO_CHId1                               17      // 4 Bits, Bit 3-0
+#define     ENO_CHId1Mask 0x0F
+#define     ENO_CHId1Shift 0
+#define ENO_CHId2                               18      // 4 Bits, Bit 7-4
+#define     ENO_CHId2Mask 0xF0
+#define     ENO_CHId2Shift 4
+#define ENO_CHId3                               18      // 4 Bits, Bit 3-0
+#define     ENO_CHId3Mask 0x0F
+#define     ENO_CHId3Shift 0
+#define ENO_CHId4                               19      // 4 Bits, Bit 7-4
+#define     ENO_CHId4Mask 0xF0
+#define     ENO_CHId4Shift 4
+#define ENO_CHId5                               19      // 4 Bits, Bit 3-0
+#define     ENO_CHId5Mask 0x0F
+#define     ENO_CHId5Shift 0
+#define ENO_CHId6                               20      // 4 Bits, Bit 7-4
+#define     ENO_CHId6Mask 0xF0
+#define     ENO_CHId6Shift 4
+#define ENO_CHId7                               20      // 4 Bits, Bit 3-0
+#define     ENO_CHId7Mask 0x0F
+#define     ENO_CHId7Shift 0
+#define ENO_CHA52006RFC                         21      // 3 Bits, Bit 6-4
+#define     ENO_CHA52006RFCMask 0x70
+#define     ENO_CHA52006RFCShift 4
+#define ENO_CHA52006SPS                         21      // 1 Bit, Bit 2
+#define     ENO_CHA52006SPSMask 0x04
+#define     ENO_CHA52006SPSShift 2
+#define ENO_CHA52006TSL                         21      // 1 Bit, Bit 1
+#define     ENO_CHA52006TSLMask 0x02
+#define     ENO_CHA52006TSLShift 1
+#define ENO_CHWindowcloseValue                  21      // 1 Bit, Bit 7
+#define     ENO_CHWindowcloseValueMask 0x80
+#define     ENO_CHWindowcloseValueShift 7
+#define ENO_CHRockerLongPressWaitTime           21      // 8 Bits, Bit 7-0
+#define ENO_CHA52001SPS                         21      // 1 Bit, Bit 4
+#define     ENO_CHA52001SPSMask 0x10
+#define     ENO_CHA52001SPSShift 4
+#define ENO_CHA52004MC                          21      // 1 Bit, Bit 7
+#define     ENO_CHA52004MCMask 0x80
+#define     ENO_CHA52004MCShift 7
+#define ENO_CHA52004DSO                         21      // 2 Bits, Bit 6-5
+#define     ENO_CHA52004DSOMask 0x60
+#define     ENO_CHA52004DSOShift 5
+#define ENO_CHD2010EMIT                         21      // uint8_t
+#define ENO_CHA52004WCU                         22      // 8 Bits, Bit 7-0
+#define ENO_CHD2010ERM                          22      // 1 Bit, Bit 6
+#define     ENO_CHD2010ERMMask 0x40
+#define     ENO_CHD2010ERMShift 6
+#define ENO_CHD2010EUNE                         22      // 1 Bit, Bit 5
+#define     ENO_CHD2010EUNEMask 0x20
+#define     ENO_CHD2010EUNEShift 5
+#define ENO_CHD2010EUNP                         22      // 1 Bit, Bit 4
+#define     ENO_CHD2010EUNPMask 0x10
+#define     ENO_CHD2010EUNPShift 4
+#define ENO_CHD2010EMAT                         23      // uint8_t
+#define ENO_CHD2010EdeltaEwh                    24      // uint16_t
+#define ENO_CHD2010EdeltaEkwh                   24      // uint16_t
+#define ENO_CHD2010EdeltaPw                     26      // uint16_t
+#define ENO_CHD2010EdeltaPkw                    26      // uint16_t
+#define ENO_CHProductsel                        28      // 8 Bits, Bit 7-0
 
+// Wähle EEP Profil
+#define ParamENO_CHProfilSelection                   (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProfilSelection)))
+// EEP Profil: RPS
+#define ParamENO_CHProfilSelectionRPS                (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilSelectionRPS)))
+// EEP Profil: 1BS
+#define ParamENO_CHProfilSelection1BS                (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilSelection1BS)))
+// EEP Profil: 4BS
+#define ParamENO_CHProfilSelection4BS                (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilSelection4BS)))
+// EEP Profil: VLD
+#define ParamENO_CHProfilSelectionVLD                (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilSelectionVLD)))
+// Auswahl:
+#define ParamENO_CHDirectionKnxEnocean               (knx.paramByte(ENO_ParamCalcIndex(ENO_CHDirectionKnxEnocean)))
+// Temperature Sensors
+#define ParamENO_CHProfil4BS02                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS02)))
+// Temperature and Humidity Sensor 
+#define ParamENO_CHProfil4BS04                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS04)))
+// Barometric Sensor 
+#define ParamENO_CHProfil4BS05                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS05)))
+// Light Sensor
+#define ParamENO_CHProfil4BS06                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS06)))
+// Occupancy Sensor
+#define ParamENO_CHProfil4BS07                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS07)))
+// Light, Temperature and Occupancy Sensor
+#define ParamENO_CHProfil4BS08                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS08)))
+// Gas Sensor 
+#define ParamENO_CHProfil4BS09                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS09)))
+// Room Operating Panel 
+#define ParamENO_CHProfil4BS10                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS10)))
+// Controller Status 
+#define ParamENO_CHProfil4BS11                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS11)))
+// Automated Meter Reading (AMR)
+#define ParamENO_CHProfil4BS12                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS12)))
+// Environmental Applications 
+#define ParamENO_CHProfil4BS13                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS13)))
+// Multi-Func Sensor 
+#define ParamENO_CHProfil4BS14                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS14)))
+// HVAC Components 
+#define ParamENO_CHProfil4BS20                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS20)))
+// Digital Input 
+#define ParamENO_CHProfil4BS30                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BS30)))
+// Special Profil
+#define ParamENO_CHProfil4BSAdd                      (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfil4BSAdd)))
+// Room Control Panel (RCP)
+#define ParamENO_CHProfilVLD00                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD00)))
+// Electronic switches and dimmers
+#define ParamENO_CHProfilVLD01                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD01)))
+// Sensors for Temperature, Illumination, Occupancy And Smoke
+#define ParamENO_CHProfilVLD02                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD02)))
+// Light, Switching + Blind Control
+#define ParamENO_CHProfilVLD03                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD03)))
+// CO2, Humidity, Temperature, Day/Night and Autonomy
+#define ParamENO_CHProfilVLD04                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD04)))
+// Blinds Control for Position and Angle
+#define ParamENO_CHProfilVLD05                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD05)))
+// Multisensor Window Handle
+#define ParamENO_CHProfilVLD06                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD06)))
+// Room Control Panels with Temperature and Fan Speed Control, Room Status Information and Time Program
+#define ParamENO_CHProfilVLD10                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD10)))
+// Bidirectional Room Operating Panel
+#define ParamENO_CHProfilVLD11                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD11)))
+// Fan Contro
+#define ParamENO_CHProfilVLD20                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD20)))
+// Floor Heating Controls and Automated Meter Reading
+#define ParamENO_CHProfilVLD30                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD30)))
+// Automated Meter Reading Gateway
+#define ParamENO_CHProfilVLD31                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD31)))
+// A.C. Current Clamp
+#define ParamENO_CHProfilVLD32                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD32)))
+// Intelligent, Bi-directional Heaters and Controllers
+#define ParamENO_CHProfilVLD33                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD33)))
+// Heating Actuator
+#define ParamENO_CHProfilVLD34                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD34)))
+// LED Controller Status
+#define ParamENO_CHProfilVLD40                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD40)))
+// Heat Recovery Ventilation
+#define ParamENO_CHProfilVLD50                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD50)))
+// Standard Valve
+#define ParamENO_CHProfilVLDA0                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLDA0)))
+// Liquid Leakage Sensor
+#define ParamENO_CHProfilVLDB0                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLDB0)))
+// Multi Sensor
+#define ParamENO_CHProfilVLD14                       (knx.paramWord(ENO_ParamCalcIndex(ENO_CHProfilVLD14)))
+// Schaltertyp
+#define ParamENO_CHRockerProfil                      (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerProfil)))
+// Funktion Wippe A
+#define ParamENO_CHRockerFunktionA                   (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerFunktionA)))
+// Szene a
+#define ParamENO_CHRockerASzeneA                     (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerASzeneA)))
+// Szene b
+#define ParamENO_CHRockerASzeneB                     (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerASzeneB)))
+// Funktion Wippe B
+#define ParamENO_CHRockerFunktionB                   (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerFunktionB)))
+// Szene a
+#define ParamENO_CHRockerBSzeneA                     (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerBSzeneA)))
+// Szene b
+#define ParamENO_CHRockerBSzeneB                     (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerBSzeneB)))
+// Funktion Wippe AB
+#define ParamENO_CHRockerFunktionC                   (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerFunktionC)))
+// Szene a
+#define ParamENO_CHRockerCSzeneA                     (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerCSzeneA)))
+// Szene b
+#define ParamENO_CHRockerCSzeneB                     (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerCSzeneB)))
+// Rocker Funktion
+#define ParamENO_CHProfilRockerFunktionKNX           (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProfilRockerFunktionKNX)))
+// 
+#define ParamENO_CHId0                               ((knx.paramByte(ENO_ParamCalcIndex(ENO_CHId0)) & ENO_CHId0Mask) >> ENO_CHId0Shift)
+// 
+#define ParamENO_CHId1                               (knx.paramByte(ENO_ParamCalcIndex(ENO_CHId1)) & ENO_CHId1Mask)
+// 
+#define ParamENO_CHId2                               ((knx.paramByte(ENO_ParamCalcIndex(ENO_CHId2)) & ENO_CHId2Mask) >> ENO_CHId2Shift)
+// 
+#define ParamENO_CHId3                               (knx.paramByte(ENO_ParamCalcIndex(ENO_CHId3)) & ENO_CHId3Mask)
+// 
+#define ParamENO_CHId4                               ((knx.paramByte(ENO_ParamCalcIndex(ENO_CHId4)) & ENO_CHId4Mask) >> ENO_CHId4Shift)
+// 
+#define ParamENO_CHId5                               (knx.paramByte(ENO_ParamCalcIndex(ENO_CHId5)) & ENO_CHId5Mask)
+// 
+#define ParamENO_CHId6                               ((knx.paramByte(ENO_ParamCalcIndex(ENO_CHId6)) & ENO_CHId6Mask) >> ENO_CHId6Shift)
+// 
+#define ParamENO_CHId7                               (knx.paramByte(ENO_ParamCalcIndex(ENO_CHId7)) & ENO_CHId7Mask)
+// RFC Interval
+#define ParamENO_CHA52006RFC                         ((knx.paramByte(ENO_ParamCalcIndex(ENO_CHA52006RFC)) & ENO_CHA52006RFCMask) >> ENO_CHA52006RFCShift)
+// Set Point Selection
+#define ParamENO_CHA52006SPS                         ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHA52006SPS)) & ENO_CHA52006SPSMask))
+// Temperatur Auswahl
+#define ParamENO_CHA52006TSL                         ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHA52006TSL)) & ENO_CHA52006TSLMask))
+// Wert für geschlossen
+#define ParamENO_CHWindowcloseValue                  ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHWindowcloseValue)) & ENO_CHWindowcloseValueMask))
+// Zeit langer Tastendruck
+#define ParamENO_CHRockerLongPressWaitTime           (knx.paramByte(ENO_ParamCalcIndex(ENO_CHRockerLongPressWaitTime)))
+// Set Point Selection
+#define ParamENO_CHA52001SPS                         ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHA52001SPS)) & ENO_CHA52001SPSMask))
+// Auswahl KO:
+#define ParamENO_CHA52004MC                          ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHA52004MC)) & ENO_CHA52004MCMask))
+// Orientierung Display
+#define ParamENO_CHA52004DSO                         ((knx.paramByte(ENO_ParamCalcIndex(ENO_CHA52004DSO)) & ENO_CHA52004DSOMask) >> ENO_CHA52004DSOShift)
+// Sende-Interval (min):
+#define ParamENO_CHD2010EMIT                         (knx.paramByte(ENO_ParamCalcIndex(ENO_CHD2010EMIT)))
+// Sende Zyklus
+#define ParamENO_CHA52004WCU                         (knx.paramByte(ENO_ParamCalcIndex(ENO_CHA52004WCU)))
+// Sende-Modus:
+#define ParamENO_CHD2010ERM                          ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHD2010ERM)) & ENO_CHD2010ERMMask))
+// Einheit:
+#define ParamENO_CHD2010EUNE                         ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHD2010EUNE)) & ENO_CHD2010EUNEMask))
+// Einheit:
+#define ParamENO_CHD2010EUNP                         ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHD2010EUNP)) & ENO_CHD2010EUNPMask))
+// Sende-Interval (max):
+#define ParamENO_CHD2010EMAT                         (knx.paramByte(ENO_ParamCalcIndex(ENO_CHD2010EMAT)))
+// delta Value:
+#define ParamENO_CHD2010EdeltaEwh                    (knx.paramWord(ENO_ParamCalcIndex(ENO_CHD2010EdeltaEwh)))
+// delta Value:
+#define ParamENO_CHD2010EdeltaEkwh                   (knx.paramWord(ENO_ParamCalcIndex(ENO_CHD2010EdeltaEkwh)))
+// delta Value:
+#define ParamENO_CHD2010EdeltaPw                     (knx.paramWord(ENO_ParamCalcIndex(ENO_CHD2010EdeltaPw)))
+// delta Value:
+#define ParamENO_CHD2010EdeltaPkw                    (knx.paramWord(ENO_ParamCalcIndex(ENO_CHD2010EdeltaPkw)))
+// Auswahl:
+#define ParamENO_CHProductsel                        (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProductsel)))
 
-#define LOG_VisibleChannels                     115      // uint8_t
-#define LOG_VacationKo                          116      // 1 Bit, Bit 7
+// deprecated
+#define ENO_KoOffset 50
+
+// Communication objects per channel (multiple occurrence)
+#define ENO_KoBlockOffset 50
+#define ENO_KoBlockSize 10
+
+#define ENO_KoCalcNumber(index) (index + ENO_KoBlockOffset + _channelIndex * ENO_KoBlockSize)
+#define ENO_KoCalcIndex(number) ((number >= ENO_KoCalcNumber(0) && number < ENO_KoCalcNumber(ENO_KoBlockSize)) ? (number - ENO_KoBlockOffset) % ENO_KoBlockSize : -1)
+#define ENO_KoCalcChannel(number) ((number >= ENO_KoBlockOffset && number < ENO_KoBlockOffset + ENO_ChannelCount * ENO_KoBlockSize) ? (number - ENO_KoBlockOffset) / ENO_KoBlockSize : -1)
+
+#define ENO_KoGO_BASE__1 0
+#define ENO_KoGO_BASE__2 1
+#define ENO_KoGO_BASE__3 2
+#define ENO_KoGO_BASE__4 3
+#define ENO_KoGO_BASE__5 4
+#define ENO_KoGO_BASE__6 5
+#define ENO_KoGO_BASE__7 6
+#define ENO_KoGO_BASE__8 7
+#define ENO_KoGO_BASE__9 8
+#define ENO_KoGO_BASE__10 9
+
+// GO_BASE_%C%_1
+#define KoENO_GO_BASE__1                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__1)))
+// GO_BASE_%C%_2
+#define KoENO_GO_BASE__2                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__2)))
+// GO_BASE_%C%_3
+#define KoENO_GO_BASE__3                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__3)))
+// GO_BASE_%C%_4
+#define KoENO_GO_BASE__4                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__4)))
+// GO_BASE_%C%_5
+#define KoENO_GO_BASE__5                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__5)))
+// GO_BASE_%C%_6
+#define KoENO_GO_BASE__6                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__6)))
+// GO_BASE_%C%_7
+#define KoENO_GO_BASE__7                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__7)))
+// GO_BASE_%C%_8
+#define KoENO_GO_BASE__8                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__8)))
+// GO_BASE_%C%_9
+#define KoENO_GO_BASE__9                          (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__9)))
+// GO_BASE_%C%_10
+#define KoENO_GO_BASE__10                         (knx.getGroupObject(ENO_KoCalcNumber(ENO_KoGO_BASE__10)))
+
+#define LOG_VisibleChannels                     412      // uint8_t
+#define LOG_VacationKo                          413      // 1 Bit, Bit 7
 #define     LOG_VacationKoMask 0x80
 #define     LOG_VacationKoShift 7
-#define LOG_HolidayKo                           116      // 1 Bit, Bit 6
+#define LOG_HolidayKo                           413      // 1 Bit, Bit 6
 #define     LOG_HolidayKoMask 0x40
 #define     LOG_HolidayKoShift 6
-#define LOG_VacationRead                        116      // 1 Bit, Bit 5
+#define LOG_VacationRead                        413      // 1 Bit, Bit 5
 #define     LOG_VacationReadMask 0x20
 #define     LOG_VacationReadShift 5
-#define LOG_HolidaySend                         116      // 1 Bit, Bit 4
+#define LOG_HolidaySend                         413      // 1 Bit, Bit 4
 #define     LOG_HolidaySendMask 0x10
 #define     LOG_HolidaySendShift 4
-#define LOG_Neujahr                             117      // 1 Bit, Bit 7
+#define LOG_Neujahr                             414      // 1 Bit, Bit 7
 #define     LOG_NeujahrMask 0x80
 #define     LOG_NeujahrShift 7
-#define LOG_DreiKoenige                         117      // 1 Bit, Bit 6
+#define LOG_DreiKoenige                         414      // 1 Bit, Bit 6
 #define     LOG_DreiKoenigeMask 0x40
 #define     LOG_DreiKoenigeShift 6
-#define LOG_Weiberfastnacht                     117      // 1 Bit, Bit 5
+#define LOG_Weiberfastnacht                     414      // 1 Bit, Bit 5
 #define     LOG_WeiberfastnachtMask 0x20
 #define     LOG_WeiberfastnachtShift 5
-#define LOG_Rosenmontag                         117      // 1 Bit, Bit 4
+#define LOG_Rosenmontag                         414      // 1 Bit, Bit 4
 #define     LOG_RosenmontagMask 0x10
 #define     LOG_RosenmontagShift 4
-#define LOG_Fastnachtsdienstag                  117      // 1 Bit, Bit 3
+#define LOG_Fastnachtsdienstag                  414      // 1 Bit, Bit 3
 #define     LOG_FastnachtsdienstagMask 0x08
 #define     LOG_FastnachtsdienstagShift 3
-#define LOG_Aschermittwoch                      117      // 1 Bit, Bit 2
+#define LOG_Aschermittwoch                      414      // 1 Bit, Bit 2
 #define     LOG_AschermittwochMask 0x04
 #define     LOG_AschermittwochShift 2
-#define LOG_Frauentag                           117      // 1 Bit, Bit 1
+#define LOG_Frauentag                           414      // 1 Bit, Bit 1
 #define     LOG_FrauentagMask 0x02
 #define     LOG_FrauentagShift 1
-#define LOG_Gruendonnerstag                     117      // 1 Bit, Bit 0
+#define LOG_Gruendonnerstag                     414      // 1 Bit, Bit 0
 #define     LOG_GruendonnerstagMask 0x01
 #define     LOG_GruendonnerstagShift 0
-#define LOG_Karfreitag                          118      // 1 Bit, Bit 7
+#define LOG_Karfreitag                          415      // 1 Bit, Bit 7
 #define     LOG_KarfreitagMask 0x80
 #define     LOG_KarfreitagShift 7
-#define LOG_Ostersonntag                        118      // 1 Bit, Bit 6
+#define LOG_Ostersonntag                        415      // 1 Bit, Bit 6
 #define     LOG_OstersonntagMask 0x40
 #define     LOG_OstersonntagShift 6
-#define LOG_Ostermontag                         118      // 1 Bit, Bit 5
+#define LOG_Ostermontag                         415      // 1 Bit, Bit 5
 #define     LOG_OstermontagMask 0x20
 #define     LOG_OstermontagShift 5
-#define LOG_TagDerArbeit                        118      // 1 Bit, Bit 4
+#define LOG_TagDerArbeit                        415      // 1 Bit, Bit 4
 #define     LOG_TagDerArbeitMask 0x10
 #define     LOG_TagDerArbeitShift 4
-#define LOG_Himmelfahrt                         118      // 1 Bit, Bit 3
+#define LOG_Himmelfahrt                         415      // 1 Bit, Bit 3
 #define     LOG_HimmelfahrtMask 0x08
 #define     LOG_HimmelfahrtShift 3
-#define LOG_Pfingstsonntag                      118      // 1 Bit, Bit 2
+#define LOG_Pfingstsonntag                      415      // 1 Bit, Bit 2
 #define     LOG_PfingstsonntagMask 0x04
 #define     LOG_PfingstsonntagShift 2
-#define LOG_Pfingstmontag                       118      // 1 Bit, Bit 1
+#define LOG_Pfingstmontag                       415      // 1 Bit, Bit 1
 #define     LOG_PfingstmontagMask 0x02
 #define     LOG_PfingstmontagShift 1
-#define LOG_Fronleichnam                        118      // 1 Bit, Bit 0
+#define LOG_Fronleichnam                        415      // 1 Bit, Bit 0
 #define     LOG_FronleichnamMask 0x01
 #define     LOG_FronleichnamShift 0
-#define LOG_Friedensfest                        119      // 1 Bit, Bit 7
+#define LOG_Friedensfest                        416      // 1 Bit, Bit 7
 #define     LOG_FriedensfestMask 0x80
 #define     LOG_FriedensfestShift 7
-#define LOG_MariaHimmelfahrt                    119      // 1 Bit, Bit 6
+#define LOG_MariaHimmelfahrt                    416      // 1 Bit, Bit 6
 #define     LOG_MariaHimmelfahrtMask 0x40
 #define     LOG_MariaHimmelfahrtShift 6
-#define LOG_DeutscheEinheit                     119      // 1 Bit, Bit 5
+#define LOG_DeutscheEinheit                     416      // 1 Bit, Bit 5
 #define     LOG_DeutscheEinheitMask 0x20
 #define     LOG_DeutscheEinheitShift 5
-#define LOG_Reformationstag                     119      // 1 Bit, Bit 4
+#define LOG_Reformationstag                     416      // 1 Bit, Bit 4
 #define     LOG_ReformationstagMask 0x10
 #define     LOG_ReformationstagShift 4
-#define LOG_Allerheiligen                       119      // 1 Bit, Bit 3
+#define LOG_Allerheiligen                       416      // 1 Bit, Bit 3
 #define     LOG_AllerheiligenMask 0x08
 #define     LOG_AllerheiligenShift 3
-#define LOG_BussBettag                          119      // 1 Bit, Bit 2
+#define LOG_BussBettag                          416      // 1 Bit, Bit 2
 #define     LOG_BussBettagMask 0x04
 #define     LOG_BussBettagShift 2
-#define LOG_Advent1                             119      // 1 Bit, Bit 1
+#define LOG_Advent1                             416      // 1 Bit, Bit 1
 #define     LOG_Advent1Mask 0x02
 #define     LOG_Advent1Shift 1
-#define LOG_Advent2                             119      // 1 Bit, Bit 0
+#define LOG_Advent2                             416      // 1 Bit, Bit 0
 #define     LOG_Advent2Mask 0x01
 #define     LOG_Advent2Shift 0
-#define LOG_Advent3                             120      // 1 Bit, Bit 7
+#define LOG_Advent3                             417      // 1 Bit, Bit 7
 #define     LOG_Advent3Mask 0x80
 #define     LOG_Advent3Shift 7
-#define LOG_Advent4                             120      // 1 Bit, Bit 6
+#define LOG_Advent4                             417      // 1 Bit, Bit 6
 #define     LOG_Advent4Mask 0x40
 #define     LOG_Advent4Shift 6
-#define LOG_Heiligabend                         120      // 1 Bit, Bit 5
+#define LOG_Heiligabend                         417      // 1 Bit, Bit 5
 #define     LOG_HeiligabendMask 0x20
 #define     LOG_HeiligabendShift 5
-#define LOG_Weihnachtstag1                      120      // 1 Bit, Bit 4
+#define LOG_Weihnachtstag1                      417      // 1 Bit, Bit 4
 #define     LOG_Weihnachtstag1Mask 0x10
 #define     LOG_Weihnachtstag1Shift 4
-#define LOG_Weihnachtstag2                      120      // 1 Bit, Bit 3
+#define LOG_Weihnachtstag2                      417      // 1 Bit, Bit 3
 #define     LOG_Weihnachtstag2Mask 0x08
 #define     LOG_Weihnachtstag2Shift 3
-#define LOG_Silvester                           120      // 1 Bit, Bit 2
+#define LOG_Silvester                           417      // 1 Bit, Bit 2
 #define     LOG_SilvesterMask 0x04
 #define     LOG_SilvesterShift 2
-#define LOG_Nationalfeiertag                    120      // 1 Bit, Bit 1
+#define LOG_Nationalfeiertag                    417      // 1 Bit, Bit 1
 #define     LOG_NationalfeiertagMask 0x02
 #define     LOG_NationalfeiertagShift 1
-#define LOG_MariaEmpfaengnis                    120      // 1 Bit, Bit 0
+#define LOG_MariaEmpfaengnis                    417      // 1 Bit, Bit 0
 #define     LOG_MariaEmpfaengnisMask 0x01
 #define     LOG_MariaEmpfaengnisShift 0
-#define LOG_NationalfeiertagSchweiz             121      // 1 Bit, Bit 7
+#define LOG_NationalfeiertagSchweiz             418      // 1 Bit, Bit 7
 #define     LOG_NationalfeiertagSchweizMask 0x80
 #define     LOG_NationalfeiertagSchweizShift 7
-#define LOG_Totensonntag                        121      // 1 Bit, Bit 6
+#define LOG_Totensonntag                        418      // 1 Bit, Bit 6
 #define     LOG_TotensonntagMask 0x40
 #define     LOG_TotensonntagShift 6
-#define LOG_Weltkindertag                       121      // 1 Bit, Bit 5
+#define LOG_Weltkindertag                       418      // 1 Bit, Bit 5
 #define     LOG_WeltkindertagMask 0x20
 #define     LOG_WeltkindertagShift 5
-#define LOG_UserFormula1                        122      // char*, 99 Byte
+#define LOG_UserFormula1                        419      // char*, 99 Byte
 #define     LOG_UserFormula1Length 99
-#define LOG_UserFormula1Active                  221      // 1 Bit, Bit 7
+#define LOG_UserFormula1Active                  518      // 1 Bit, Bit 7
 #define     LOG_UserFormula1ActiveMask 0x80
 #define     LOG_UserFormula1ActiveShift 7
-#define LOG_UserFormula2                        222      // char*, 99 Byte
+#define LOG_UserFormula2                        519      // char*, 99 Byte
 #define     LOG_UserFormula2Length 99
-#define LOG_UserFormula2Active                  321      // 1 Bit, Bit 7
+#define LOG_UserFormula2Active                  618      // 1 Bit, Bit 7
 #define     LOG_UserFormula2ActiveMask 0x80
 #define     LOG_UserFormula2ActiveShift 7
-#define LOG_UserFormula3                        322      // char*, 99 Byte
+#define LOG_UserFormula3                        619      // char*, 99 Byte
 #define     LOG_UserFormula3Length 99
-#define LOG_UserFormula3Active                  421      // 1 Bit, Bit 7
+#define LOG_UserFormula3Active                  718      // 1 Bit, Bit 7
 #define     LOG_UserFormula3ActiveMask 0x80
 #define     LOG_UserFormula3ActiveShift 7
-#define LOG_UserFormula4                        422      // char*, 99 Byte
+#define LOG_UserFormula4                        719      // char*, 99 Byte
 #define     LOG_UserFormula4Length 99
-#define LOG_UserFormula4Active                  521      // 1 Bit, Bit 7
+#define LOG_UserFormula4Active                  818      // 1 Bit, Bit 7
 #define     LOG_UserFormula4ActiveMask 0x80
 #define     LOG_UserFormula4ActiveShift 7
-#define LOG_UserFormula5                        522      // char*, 99 Byte
+#define LOG_UserFormula5                        819      // char*, 99 Byte
 #define     LOG_UserFormula5Length 99
-#define LOG_UserFormula5Active                  621      // 1 Bit, Bit 7
+#define LOG_UserFormula5Active                  918      // 1 Bit, Bit 7
 #define     LOG_UserFormula5ActiveMask 0x80
 #define     LOG_UserFormula5ActiveShift 7
-#define LOG_UserFormula6                        622      // char*, 99 Byte
+#define LOG_UserFormula6                        919      // char*, 99 Byte
 #define     LOG_UserFormula6Length 99
-#define LOG_UserFormula6Active                  721      // 1 Bit, Bit 7
+#define LOG_UserFormula6Active                  1018      // 1 Bit, Bit 7
 #define     LOG_UserFormula6ActiveMask 0x80
 #define     LOG_UserFormula6ActiveShift 7
-#define LOG_UserFormula7                        722      // char*, 99 Byte
+#define LOG_UserFormula7                        1019      // char*, 99 Byte
 #define     LOG_UserFormula7Length 99
-#define LOG_UserFormula7Active                  821      // 1 Bit, Bit 7
+#define LOG_UserFormula7Active                  1118      // 1 Bit, Bit 7
 #define     LOG_UserFormula7ActiveMask 0x80
 #define     LOG_UserFormula7ActiveShift 7
-#define LOG_UserFormula8                        822      // char*, 99 Byte
+#define LOG_UserFormula8                        1119      // char*, 99 Byte
 #define     LOG_UserFormula8Length 99
-#define LOG_UserFormula8Active                  921      // 1 Bit, Bit 7
+#define LOG_UserFormula8Active                  1218      // 1 Bit, Bit 7
 #define     LOG_UserFormula8ActiveMask 0x80
 #define     LOG_UserFormula8ActiveShift 7
-#define LOG_UserFormula9                        922      // char*, 99 Byte
+#define LOG_UserFormula9                        1219      // char*, 99 Byte
 #define     LOG_UserFormula9Length 99
-#define LOG_UserFormula9Active                  1021      // 1 Bit, Bit 7
+#define LOG_UserFormula9Active                  1318      // 1 Bit, Bit 7
 #define     LOG_UserFormula9ActiveMask 0x80
 #define     LOG_UserFormula9ActiveShift 7
-#define LOG_UserFormula10                       1022      // char*, 99 Byte
+#define LOG_UserFormula10                       1319      // char*, 99 Byte
 #define     LOG_UserFormula10Length 99
-#define LOG_UserFormula10Active                 1121      // 1 Bit, Bit 7
+#define LOG_UserFormula10Active                 1418      // 1 Bit, Bit 7
 #define     LOG_UserFormula10ActiveMask 0x80
 #define     LOG_UserFormula10ActiveShift 7
-#define LOG_UserFormula11                       1122      // char*, 99 Byte
+#define LOG_UserFormula11                       1419      // char*, 99 Byte
 #define     LOG_UserFormula11Length 99
-#define LOG_UserFormula11Active                 1221      // 1 Bit, Bit 7
+#define LOG_UserFormula11Active                 1518      // 1 Bit, Bit 7
 #define     LOG_UserFormula11ActiveMask 0x80
 #define     LOG_UserFormula11ActiveShift 7
-#define LOG_UserFormula12                       1222      // char*, 99 Byte
+#define LOG_UserFormula12                       1519      // char*, 99 Byte
 #define     LOG_UserFormula12Length 99
-#define LOG_UserFormula12Active                 1321      // 1 Bit, Bit 7
+#define LOG_UserFormula12Active                 1618      // 1 Bit, Bit 7
 #define     LOG_UserFormula12ActiveMask 0x80
 #define     LOG_UserFormula12ActiveShift 7
-#define LOG_UserFormula13                       1322      // char*, 99 Byte
+#define LOG_UserFormula13                       1619      // char*, 99 Byte
 #define     LOG_UserFormula13Length 99
-#define LOG_UserFormula13Active                 1421      // 1 Bit, Bit 7
+#define LOG_UserFormula13Active                 1718      // 1 Bit, Bit 7
 #define     LOG_UserFormula13ActiveMask 0x80
 #define     LOG_UserFormula13ActiveShift 7
-#define LOG_UserFormula14                       1422      // char*, 99 Byte
+#define LOG_UserFormula14                       1719      // char*, 99 Byte
 #define     LOG_UserFormula14Length 99
-#define LOG_UserFormula14Active                 1521      // 1 Bit, Bit 7
+#define LOG_UserFormula14Active                 1818      // 1 Bit, Bit 7
 #define     LOG_UserFormula14ActiveMask 0x80
 #define     LOG_UserFormula14ActiveShift 7
-#define LOG_UserFormula15                       1522      // char*, 99 Byte
+#define LOG_UserFormula15                       1819      // char*, 99 Byte
 #define     LOG_UserFormula15Length 99
-#define LOG_UserFormula15Active                 1621      // 1 Bit, Bit 7
+#define LOG_UserFormula15Active                 1918      // 1 Bit, Bit 7
 #define     LOG_UserFormula15ActiveMask 0x80
 #define     LOG_UserFormula15ActiveShift 7
-#define LOG_UserFormula16                       1622      // char*, 99 Byte
+#define LOG_UserFormula16                       1919      // char*, 99 Byte
 #define     LOG_UserFormula16Length 99
-#define LOG_UserFormula16Active                 1721      // 1 Bit, Bit 7
+#define LOG_UserFormula16Active                 2018      // 1 Bit, Bit 7
 #define     LOG_UserFormula16ActiveMask 0x80
 #define     LOG_UserFormula16ActiveShift 7
-#define LOG_UserFormula17                       1722      // char*, 99 Byte
+#define LOG_UserFormula17                       2019      // char*, 99 Byte
 #define     LOG_UserFormula17Length 99
-#define LOG_UserFormula17Active                 1821      // 1 Bit, Bit 7
+#define LOG_UserFormula17Active                 2118      // 1 Bit, Bit 7
 #define     LOG_UserFormula17ActiveMask 0x80
 #define     LOG_UserFormula17ActiveShift 7
-#define LOG_UserFormula18                       1822      // char*, 99 Byte
+#define LOG_UserFormula18                       2119      // char*, 99 Byte
 #define     LOG_UserFormula18Length 99
-#define LOG_UserFormula18Active                 1921      // 1 Bit, Bit 7
+#define LOG_UserFormula18Active                 2218      // 1 Bit, Bit 7
 #define     LOG_UserFormula18ActiveMask 0x80
 #define     LOG_UserFormula18ActiveShift 7
-#define LOG_UserFormula19                       1922      // char*, 99 Byte
+#define LOG_UserFormula19                       2219      // char*, 99 Byte
 #define     LOG_UserFormula19Length 99
-#define LOG_UserFormula19Active                 2021      // 1 Bit, Bit 7
+#define LOG_UserFormula19Active                 2318      // 1 Bit, Bit 7
 #define     LOG_UserFormula19ActiveMask 0x80
 #define     LOG_UserFormula19ActiveShift 7
-#define LOG_UserFormula20                       2022      // char*, 99 Byte
+#define LOG_UserFormula20                       2319      // char*, 99 Byte
 #define     LOG_UserFormula20Length 99
-#define LOG_UserFormula20Active                 2121      // 1 Bit, Bit 7
+#define LOG_UserFormula20Active                 2418      // 1 Bit, Bit 7
 #define     LOG_UserFormula20ActiveMask 0x80
 #define     LOG_UserFormula20ActiveShift 7
-#define LOG_UserFormula21                       2122      // char*, 99 Byte
+#define LOG_UserFormula21                       2419      // char*, 99 Byte
 #define     LOG_UserFormula21Length 99
-#define LOG_UserFormula21Active                 2221      // 1 Bit, Bit 7
+#define LOG_UserFormula21Active                 2518      // 1 Bit, Bit 7
 #define     LOG_UserFormula21ActiveMask 0x80
 #define     LOG_UserFormula21ActiveShift 7
-#define LOG_UserFormula22                       2222      // char*, 99 Byte
+#define LOG_UserFormula22                       2519      // char*, 99 Byte
 #define     LOG_UserFormula22Length 99
-#define LOG_UserFormula22Active                 2321      // 1 Bit, Bit 7
+#define LOG_UserFormula22Active                 2618      // 1 Bit, Bit 7
 #define     LOG_UserFormula22ActiveMask 0x80
 #define     LOG_UserFormula22ActiveShift 7
-#define LOG_UserFormula23                       2322      // char*, 99 Byte
+#define LOG_UserFormula23                       2619      // char*, 99 Byte
 #define     LOG_UserFormula23Length 99
-#define LOG_UserFormula23Active                 2421      // 1 Bit, Bit 7
+#define LOG_UserFormula23Active                 2718      // 1 Bit, Bit 7
 #define     LOG_UserFormula23ActiveMask 0x80
 #define     LOG_UserFormula23ActiveShift 7
-#define LOG_UserFormula24                       2422      // char*, 99 Byte
+#define LOG_UserFormula24                       2719      // char*, 99 Byte
 #define     LOG_UserFormula24Length 99
-#define LOG_UserFormula24Active                 2521      // 1 Bit, Bit 7
+#define LOG_UserFormula24Active                 2818      // 1 Bit, Bit 7
 #define     LOG_UserFormula24ActiveMask 0x80
 #define     LOG_UserFormula24ActiveShift 7
-#define LOG_UserFormula25                       2522      // char*, 99 Byte
+#define LOG_UserFormula25                       2819      // char*, 99 Byte
 #define     LOG_UserFormula25Length 99
-#define LOG_UserFormula25Active                 2621      // 1 Bit, Bit 7
+#define LOG_UserFormula25Active                 2918      // 1 Bit, Bit 7
 #define     LOG_UserFormula25ActiveMask 0x80
 #define     LOG_UserFormula25ActiveShift 7
-#define LOG_UserFormula26                       2622      // char*, 99 Byte
+#define LOG_UserFormula26                       2919      // char*, 99 Byte
 #define     LOG_UserFormula26Length 99
-#define LOG_UserFormula26Active                 2721      // 1 Bit, Bit 7
+#define LOG_UserFormula26Active                 3018      // 1 Bit, Bit 7
 #define     LOG_UserFormula26ActiveMask 0x80
 #define     LOG_UserFormula26ActiveShift 7
-#define LOG_UserFormula27                       2722      // char*, 99 Byte
+#define LOG_UserFormula27                       3019      // char*, 99 Byte
 #define     LOG_UserFormula27Length 99
-#define LOG_UserFormula27Active                 2821      // 1 Bit, Bit 7
+#define LOG_UserFormula27Active                 3118      // 1 Bit, Bit 7
 #define     LOG_UserFormula27ActiveMask 0x80
 #define     LOG_UserFormula27ActiveShift 7
-#define LOG_UserFormula28                       2822      // char*, 99 Byte
+#define LOG_UserFormula28                       3119      // char*, 99 Byte
 #define     LOG_UserFormula28Length 99
-#define LOG_UserFormula28Active                 2921      // 1 Bit, Bit 7
+#define LOG_UserFormula28Active                 3218      // 1 Bit, Bit 7
 #define     LOG_UserFormula28ActiveMask 0x80
 #define     LOG_UserFormula28ActiveShift 7
-#define LOG_UserFormula29                       2922      // char*, 99 Byte
+#define LOG_UserFormula29                       3219      // char*, 99 Byte
 #define     LOG_UserFormula29Length 99
-#define LOG_UserFormula29Active                 3021      // 1 Bit, Bit 7
+#define LOG_UserFormula29Active                 3318      // 1 Bit, Bit 7
 #define     LOG_UserFormula29ActiveMask 0x80
 #define     LOG_UserFormula29ActiveShift 7
-#define LOG_UserFormula30                       3022      // char*, 99 Byte
+#define LOG_UserFormula30                       3319      // char*, 99 Byte
 #define     LOG_UserFormula30Length 99
-#define LOG_UserFormula30Active                 3121      // 1 Bit, Bit 7
+#define LOG_UserFormula30Active                 3418      // 1 Bit, Bit 7
 #define     LOG_UserFormula30ActiveMask 0x80
 #define     LOG_UserFormula30ActiveShift 7
 
@@ -713,7 +1082,7 @@
 #define LOG_ChannelCount 20
 
 // Parameter per channel
-#define LOG_ParamBlockOffset 3122
+#define LOG_ParamBlockOffset 3419
 #define LOG_ParamBlockSize 89
 #define LOG_ParamCalcIndex(index) (index + LOG_ParamBlockOffset + _channelIndex * LOG_ParamBlockSize)
 
