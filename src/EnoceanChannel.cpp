@@ -1,33 +1,227 @@
 #include "EnoceanChannel.h"
+#include "1BS_Telegram.h"
 #include "Arduino.h"
+#include "EnoceanModule.h"
+#include "knxprod.h"
 
-EnoceanChannel::EnoceanChannel(uint8_t index)
-{
-    _channelIndex = index;
+// #include "4BS_Telegram.h"
+// #include "VLD_Telegram.h"
+// #include "RPS_Telegram.h"
+
+EnoceanChannel::EnoceanChannel(uint8_t index) { _channelIndex = index; }
+
+const std::string EnoceanChannel::name() { return "EnoceanChannel"; }
+
+void EnoceanChannel::setup() {
+  logInfoP("setup");
+  logIndentUp();
+  logDebugP("debug setup");
+  logTraceP("trace setup");
+  logIndentDown();
 }
 
-const std::string EnoceanChannel::name()
-{
-    return "EnoceanChannel";
-}
-
-void EnoceanChannel::setup()
-{
-    logInfoP("setup");
-    logIndentUp();
-    logDebugP("debug setup");
-    logTraceP("trace setup");
-    logIndentDown();
-}
-
-void EnoceanChannel::loop()
-{
+void EnoceanChannel::loop() {
   // Dummy Action
   delayMicroseconds(100);
 }
 
-void EnoceanChannel::check_Eno_ID()
-{
+bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
+  // pPacket->u8DataBuffer holds RORG + data + sender-ID + status.
+  // Position of the 4 sender-ID bytes depends on u8DataBuffer[0] (RORG):
+  //  - RPS/1BS: bytes [2..5]
+  //  - 4BS:     bytes [5..8]
+  //  - VLD:     bytes [u16DataLength-5 .. u16DataLength-2]
+  // TODO: compare the extracted ID against this channel's configured EnOcean
+  // ID.
 
+  // Read Parameter: ENOCEAN-ID
+  deviceId_Arr[0] = (ParamENO_CHId0 << 4) | ParamENO_CHId1;
+  deviceId_Arr[1] = (ParamENO_CHId2 << 4) | ParamENO_CHId3;
+  deviceId_Arr[2] = (ParamENO_CHId4 << 4) | ParamENO_CHId5;
+  deviceId_Arr[3] = (ParamENO_CHId6 << 4) | ParamENO_CHId7;
 
+  // Get rid of messages we can't handle
+  if (pPacket->u8DataBuffer[0] != ParamENO_CHProfilSelection &&
+      ParamENO_CHProfilSelection != u8RORG_Rocker)
+    return false;
+
+  switch (ParamENO_CHProfilSelection) {
+  case u8RORG_1BS:
+    // Get rid of messages not intended for us
+    if (pPacket->u8DataBuffer[2] != deviceId_Arr[0])
+      return false;
+    if (pPacket->u8DataBuffer[3] != deviceId_Arr[1])
+      return false;
+    if (pPacket->u8DataBuffer[4] != deviceId_Arr[2])
+      return false;
+    if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
+      return false;
+
+#ifdef KDEBUG_ID
+    SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
+#endif
+
+    handle_1BS(pPacket, _channelIndex);
+    break;
+
+  case u8RORG_RPS:
+    // Get rid of messages not intended for us
+    if (pPacket->u8DataBuffer[2] != deviceId_Arr[0])
+      return false;
+    if (pPacket->u8DataBuffer[3] != deviceId_Arr[1])
+      return false;
+    if (pPacket->u8DataBuffer[4] != deviceId_Arr[2])
+      return false;
+    if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
+      return false;
+
+#ifdef KDEBUG_ID
+    SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
+    SERIAL_PORT.print("-");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
+    SERIAL_PORT.print("-");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
+    SERIAL_PORT.print("-");
+    SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
+#endif
+
+    // handle_RPS(pPacket, _channelIndex);
+    break;
+
+  case u8RORG_4BS:
+
+    // Get rid of messages not intended for us
+    if (pPacket->u8DataBuffer[5] != deviceId_Arr[0])
+      return false;
+    if (pPacket->u8DataBuffer[6] != deviceId_Arr[1])
+      return false;
+    if (pPacket->u8DataBuffer[7] != deviceId_Arr[2])
+      return false;
+    if (pPacket->u8DataBuffer[8] != deviceId_Arr[3])
+      return false;
+
+#ifdef KDEBUG_ID
+    SERIAL_PORT.print(pPacket->u8DataBuffer[5], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[6], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[7], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.println(pPacket->u8DataBuffer[8], HEX);
+#endif
+    // unionMSG.msg_sent_after_receive = handle_4BS(pPacket, profil, profil2nd,
+    // firstComObj, firstParameter);
+    break;
+
+  case u8RORG_VLD:
+
+    // Get rid of messages not intended for us
+    if (pPacket->u8DataBuffer[pPacket->u16DataLength - 5] != deviceId_Arr[0])
+      return false;
+    if (pPacket->u8DataBuffer[pPacket->u16DataLength - 4] != deviceId_Arr[1])
+      return false;
+    if (pPacket->u8DataBuffer[pPacket->u16DataLength - 3] != deviceId_Arr[2])
+      return false;
+    if (pPacket->u8DataBuffer[pPacket->u16DataLength - 2] != deviceId_Arr[3])
+      return false;
+
+#ifdef KDEBUG_ID
+    SERIAL_PORT.print(pPacket->u8DataBuffer[pPacket->u16DataLength - 5], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[pPacket->u16DataLength - 4], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.print(pPacket->u8DataBuffer[pPacket->u16DataLength - 3], HEX);
+    SERIAL_PORT.print(" ");
+    SERIAL_PORT.println(pPacket->u8DataBuffer[pPacket->u16DataLength - 2], HEX);
+#endif
+
+    //handle_VLD(pPacket, _channelIndex);
+    break;
+    //
+    //    case u8RORG_Rocker:
+    //      // Get rid of messages not intended for us
+    //      if (pPacket->u8DataBuffer[2] != deviceId_Arr[0])
+    //        return false;
+    //      if (pPacket->u8DataBuffer[3] != deviceId_Arr[1])
+    //        return false;
+    //      if (pPacket->u8DataBuffer[4] != deviceId_Arr[2])
+    //        return false;
+    //      if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
+    //        return false;
+    //
+    // #ifdef KDEBUG_Rocker
+    //      SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
+    //      SERIAL_PORT.print(".");
+    //      SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
+    //      SERIAL_PORT.print(".");
+    //      SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
+    //      SERIAL_PORT.print(".");
+    //      SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
+    // #endif
+    //      // uint8_t stateRocker = handle_RPS_Rocker(pPacket, profil,
+    //      firstComObj, firstParameter, index); uint8_t stateRocker =
+    //      pPacket->u8DataBuffer[1];
+    // #ifdef KDEBUG
+    //      // SERIAL_PORT.println(stateRocker, HEX);
+    // #endif
+    //      switch (stateRocker)
+    //      {
+    //      case AI_pressed:
+    //        unionMSG.rockerState_pressed = stateRocker;
+    //        break;
+    //      case AI_release:
+    //        union2.rockerState_Release = stateRocker;
+    //        break;
+    //      case AO_pressed:
+    //        unionMSG.rockerState_pressed = stateRocker;
+    //        break;
+    //      case AO_release:
+    //        union2.rockerState_Release = stateRocker;
+    //        break;
+    //      case BI_pressed:
+    //        unionMSG.rockerState_pressed = stateRocker;
+    //        break;
+    //      case BI_release:
+    //        union2.rockerState_Release = stateRocker;
+    //        break;
+    //      case BO_pressed:
+    //        unionMSG.rockerState_pressed = stateRocker;
+    //        break;
+    //      case BO_release:
+    //        union2.rockerState_Release = stateRocker;
+    //        break;
+    //      case CI_pressed:
+    //        unionMSG.rockerState_pressed = stateRocker;
+    //        break;
+    //      case CI_release:
+    //        union2.rockerState_Release = stateRocker;
+    //        break;
+    //      case CO_pressed:
+    //        unionMSG.rockerState_pressed = stateRocker;
+    //        break;
+    //      case CO_release:
+    //        union2.rockerState_Release = stateRocker;
+    //        break;
+    //      case Contact_pressed:
+    //        if (knx.paramByte(firstParameter + ENO_CHRockerProfil) == Wippen1)
+    //          handle_RPS_Rocker(pPacket, _channelIndex);
+    //        break;
+    //      case Contact_release:
+    //        if (knx.paramByte(firstParameter + ENO_CHRockerProfil) == Wippen1)
+    //          handle_RPS_Rocker(pPacket, _channelIndex);
+    //        break;
+    //      default:
+    //        union2.rockerState_Release = stateRocker; // Für Wert = 0
+    //        break;
+    //      }
+    //      break;
+  }
+
+  return false;
 }

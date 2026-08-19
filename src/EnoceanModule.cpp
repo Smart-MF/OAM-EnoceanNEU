@@ -677,27 +677,25 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal,
       }
 #endif
 
-      /*
-            bool packetWasHandled = false;
-            for (int i = 0; i < lastDevice; ++i)
-            {
-              if (deviceRegistry[i]->handleEnOceanPacket(f_Pkt_st))
-              {
-                packetWasHandled = true;
-              }
-            }
+      bool packetWasHandled = false;
+      for (uint8_t i = 0; i < ParamENO_VisibleChannels; i++)
+      {
+        if (_channels[i]->check_Eno_ID(f_Pkt_st))
+        {
+          packetWasHandled = true;
+        }
+      }
 
-      #ifdef KDEBUG_handled
-            if (!packetWasHandled)
-            {
-              Serial.println(F("Data not handled!"));
-            }
-            else
-            {
-              Serial.println(F("Data handled :-)"));
-            }
-      #endif
-      */
+#ifdef KDEBUG_handled
+      if (!packetWasHandled)
+      {
+        Serial.println(F("Data not handled!"));
+      }
+      else
+      {
+        Serial.println(F("Data handled :-)"));
+      }
+#endif
     }
   }
 }

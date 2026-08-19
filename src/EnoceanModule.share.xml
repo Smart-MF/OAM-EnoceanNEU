@@ -72,9 +72,9 @@
               <!-- Parameter type for EEP Profil or Prduct selection -->
               <ParameterType Id="%AID%_PT-ProductSelection" Name="ProductSelection">
                 <TypeRestriction Base="Value" SizeInBit="8">
-                  <Enumeration Text="inaktiv"  Value="0" Id="%AID%_PT-ProductSelection_EN-0" />
-                  <Enumeration Text="über EEP-Profil"  Value="1" Id="%AID%_PT-ProductSelection_EN-1" />
-                  <Enumeration Text="ELTAKO"           Value="2" Id="%AID%_PT-ProductSelection_EN-2" />
+                  <Enumeration Text="inaktiv"              Value="0" Id="%AID%_PT-ProductSelection_EN-0" />
+                  <Enumeration Text="über EEP-Profil"      Value="1" Id="%AID%_PT-ProductSelection_EN-1" />
+                  <Enumeration Text="Hersteller: ELTAKO"   Value="2" Id="%AID%_PT-ProductSelection_EN-2" />
                 </TypeRestriction>
               </ParameterType>
               <!-- Parameter type for  Product selection -->
@@ -112,14 +112,15 @@
               <!-- Parameter type for  Product selection Umweltsensoren-->
               <ParameterType Id="%AID%_PT-ProductSelectionTypeUmwelt" Name="ProductSelectionTypeUmwelt">
                 <TypeRestriction Base="Value" SizeInBit="8">
-                  <Enumeration Text="FFT60SB - Temperatur Feuchtesensor (Außen)"   Value="0" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-0" />
+                  <Enumeration Text="auswählen"                                    Value="0" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-0" />
                   <Enumeration Text="FFT60SB - Temperatur Feuchtesensor (Außen)"   Value="1" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-1" />
-                  <Enumeration Text="FTFB - Temperatur-Feuchtesensor"              Value="2" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-2" />
-                  <Enumeration Text="FTFSB - Temperatur-Feuchtesensor(Solarzelle)" Value="3" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-3" />
-                  <Enumeration Text="FFT55EB - Temperatur-Feuchtesensor"           Value="4" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-4" />
-                  <Enumeration Text="FLGTF55E - Temperatur-Feuchte-Luftgütesensor" Value="5" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-5" />                  
-                  <Enumeration Text="FCO2TF65 - Temperatur-Feuchte-CO2-Sensor"     Value="6" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-6" />                  
-                  <Enumeration Text="FLT58 - Luftgüte-Tischsensor + Temperatur und Feuchtigkeit"  Value="7" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-7" />                  
+                  <Enumeration Text="FFT60SB - Temperatur Feuchtesensor (Außen)"   Value="2" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-2" />
+                  <Enumeration Text="FTFB - Temperatur-Feuchtesensor"              Value="3" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-3" />
+                  <Enumeration Text="FTFSB - Temperatur-Feuchtesensor(Solarzelle)" Value="4" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-4" />
+                  <Enumeration Text="FFT55EB - Temperatur-Feuchtesensor"           Value="5" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-5" />
+                  <Enumeration Text="FLGTF55E - Temperatur-Feuchte-Luftgütesensor" Value="6" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-6" />                  
+                  <Enumeration Text="FCO2TF65 - Temperatur-Feuchte-CO2-Sensor"     Value="7" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-7" />                  
+                  <Enumeration Text="FLT58 - Luftgüte-Tischsensor + Temperatur und Feuchtigkeit"  Value="8" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-8" />                  
                 </TypeRestriction>
               </ParameterType>
               <!-- Parameter type for  Product selection Helligkeit/Dämmerung-->

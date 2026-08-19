@@ -6,3 +6,4 @@
 src/EnoceanGateway.knxprod
 src/EnoceanGateway.debug.xml
 src/EnoceanGateway.appl.debug.xml
+include/buildtime.h

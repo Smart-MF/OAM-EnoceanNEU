@@ -402,7 +402,7 @@
                     <ParameterRefRef RefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" IndentLevel="1"  />
                     <ParameterSeparator Id="%AID%_PS-1" Text="" UIHint="HorizontalRuler" />
                     <!-- Profil Selection -->
-                    <choose ParamRefId="%AID%_P-%TT%%CC%004_R-%TT%%CC%00401">
+                    <choose ParamRefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401">
                       <!-- Anzeige Enocean ID -->
                       <when test="!=0">
                         <ParameterSeparator Id="%AID%_PS-1" Text="Device-Id" UIHint="Headline" />
@@ -1199,7 +1199,7 @@
                         <!-- AUSWAHL ELTAKO Produkt Type-->
                         <ParameterRefRef RefId="%AID%_UP-%TT%%CC%085_R-%TT%%CC%08501" IndentLevel="2"  />
                         <choose ParamRefId="%AID%_UP-%TT%%CC%085_R-%TT%%CC%08501">
-                          <when test="1">  <!-- AUSWAHL Taster -->
+                          <when test="1">  <!-- AUSWAHL Taster -->         
                              <ParameterRefRef RefId="%AID%_UP-%TT%%CC%086_R-%TT%%CC%08601" IndentLevel="3"  />
                               <choose ParamRefId="%AID%_UP-%TT%%CC%086_R-%TT%%CC%08601">
                                 <when test="0">  

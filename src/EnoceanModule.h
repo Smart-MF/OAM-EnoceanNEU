@@ -66,6 +66,35 @@
 #define SER_SYNCH_CODE 0x55
 #define SER_HEADER_NR_BYTES 4
 
+//Rocker States
+#define ButtonStateO 0
+#define ButtonStateI 1
+
+#define RockerIdle 0x01
+#define AI_pressed 0x10
+#define AO_pressed 0x30
+#define BI_pressed 0x50
+#define BO_pressed 0x70
+#define CI_pressed 0x15
+#define CO_pressed 0x37
+#define Contact_pressed 0xF0
+
+#define AI_release 0x00
+#define AO_release 0x20
+#define BI_release 0x40
+#define BO_release 0x60
+#define CI_release 0x05
+#define CO_release 0x07
+#define Contact_release 0xE0
+
+#define ROCKER_INACTIVE 0x00
+#define ROCKER_AI 0x01
+#define ROCKER_AO 0x02
+#define ROCKER_BI 0x03
+#define ROCKER_BO 0x04
+#define ROCKER_CI 0x05
+#define ROCKER_CO 0x06
+
 //! uart_getPacket state machine states.
 enum STATES_GET_PACKET_
 {
