@@ -10,5 +10,6 @@ class EnoceanChannel : public OpenKNX::Channel
     const std::string name() override;
     void setup() override;
     void loop() override;
+    void check_Eno_ID();
 
 };

@@ -25,3 +25,9 @@ void EnoceanChannel::loop()
   // Dummy Action
   delayMicroseconds(100);
 }
+
+void EnoceanChannel::check_Eno_ID()
+{
+
+
+}

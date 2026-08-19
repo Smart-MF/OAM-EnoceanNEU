@@ -1211,6 +1211,23 @@
                               <choose ParamRefId="%AID%_UP-%TT%%CC%087_R-%TT%%CC%08701">
                                 <when test="0">  
                                 </when>
+                                <when test="1">   <!-- FFG7B - Fenstergriffsensor    HelpContext="ENO-ELTAKO-FFG7B"-->   
+                                    <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
+                                    <ParameterSeparator Id="%AID%_PS-2" Text="EEP: A5-14-09 (Default) Zyklisch: 15min" />
+                                    <ParameterSeparator Id="%AID%_PS-3" Text="EEP: F6-10-00 (Option1) Zyklisch: NEIN" />
+                                    <ParameterSeparator Id="%AID%_PS-4" Text="EEP: F6-10-00 (Option2) Zyklisch: 15min" />
+                                </when>
+                                <when test="2 3 4">   <!-- FFKB - Tür/Fensterkontakt -->
+                                   <!-- FTK - Tür/Fensterkontakt --> 
+                                   <!-- FTKB - Tür/Fensterkontakt -->
+                                  <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP: D5-00-01" />
+                                  <ParameterSeparator Id="%AID%_PS-3" Text="Zusätzlich kann eine Nachicht mit dem Batteriezustand gesendet werden" />   
+                                </when>
+                                <when test="5 6">   <!-- FTKE - Fenster-Türkontakt --> <!-- FFFTE - Fenster-Tastkontakt -->
+                                  <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP: F6-10-00" /> 
+                                </when>
                               </choose>  
                           </when>
                           <when test="3">  <!-- AUSWAHL Umwelt -->
@@ -1223,7 +1240,9 @@
                           <when test="4">  <!-- AUSWAHL Helligekeitsensoren -->
                             <ParameterRefRef RefId="%AID%_UP-%TT%%CC%089_R-%TT%%CC%08901" IndentLevel="3"  />
                               <choose ParamRefId="%AID%_UP-%TT%%CC%089_R-%TT%%CC%08901">
-                                <when test="0">  
+                                <when test="0">  <!-- FHD60SB - Helligkeits-Dämmerungs-Sensor -->
+                                  <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-06-01" /> 
                                 </when>
                               </choose> 
                           </when>
