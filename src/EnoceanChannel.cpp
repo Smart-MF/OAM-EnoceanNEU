@@ -22,7 +22,7 @@ void EnoceanChannel::setup() {
 
 void EnoceanChannel::loop() {
   // Dummy Action
-  delayMicroseconds(100);
+  // delayMicroseconds(100);
 }
 
 bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
