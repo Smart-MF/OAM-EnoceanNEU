@@ -5,7 +5,7 @@
 #include "EnoceanStructs.h"
 #include "knxprod.h"
 
-inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t profil2nd, uint16_t firstComObj, uint16_t firstParameter)
+inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
 {
       union intParts
       {
@@ -43,14 +43,13 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t
       // Special Profil for a 4BS MSG from a 1BS Device
       ONEBS_TELEGRAM_TYPE_V2 *l1bsV2Tlg_p;
 
-      logDebug("4BS", "Profil: 4BS - %u", firstParameter + ENO_CHProfilSelection4BS);
+      logDebug("4BS", "Profil: 4BS - %u", ParamENO_CHProfilSelection4BS);
  
-#ifndef EnOceanTEST
-      //switch((knx.paramWord(firstParameter + ENO_CHProfilSelection4BS)))
+//#ifndef EnOceanTEST
       switch (ParamENO_CHProfilSelection4BS) 
-#else
-      switch (profil)
-#endif
+//#else
+//      switch (profil)
+//#endif
       {
       case A5_02:
             logDebug("4BS", "A5-02-");
@@ -816,7 +815,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t
             //**************************************************************
             case A5_14_09:
                   fourBsA5_17_09_0A_Tlg_p = (FOURBS_A5_14_09_0A_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-                  logDebug("4BS", "09 %u", firstParameter);
+                  //logDebug("4BS", "09 %u", firstParameter);
                   // ...................  Supply Voltage .......................
                   KoENO_GO_BASE__5.value(fourBsA5_17_09_0A_Tlg_p->u8SupplyVoltage * 20.0, Dpt(9, 1));
                   logDebug("4BS", "Supply Voltage: %.1f", fourBsA5_17_09_0A_Tlg_p->u8SupplyVoltage / 50.0);
@@ -922,12 +921,11 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t
             break; // ENDE A5-14-XX
       case A5_20:
             logDebug("4BS", "A5-20-");
-#ifndef EnOceanTEST
-            //switch (knx.paramWord(firstParameter + ENO_CHProfil4BS20))
+//#ifndef EnOceanTEST
             switch (ParamENO_CHProfil4BS20)
-#else
-            switch (profil2nd)
-#endif
+//#else
+//            switch (profil2nd)
+//#endif
             {
             //**************************************************************
             // ----------------- Profil: A5-20-01 --------------------------

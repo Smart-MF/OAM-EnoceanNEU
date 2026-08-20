@@ -1,4 +1,6 @@
 #include "EnoceanModule.h"
+#include "EnoceanProfils.h"
+#include "knxprod.h"
 
 #define KDEBUG_Received
 
@@ -164,7 +166,7 @@ void EnoceanModule::begin() {
   logInfoP("read BaseID");
   readBaseId(&lui8_BaseID_p[0]);
 
-  /*
+  
   // 2.) compare old base-ID with the new ID
   if ((knx.paramByte(ENO_SetBaseIdFunc) >> ENO_SetBaseIdFuncShift) & 1)
   {
@@ -184,7 +186,7 @@ void EnoceanModule::begin() {
 #endif
     }
   }
- */
+ 
 
   for (int i = 0; i < BASEID_BYTES; i++) {
     logDebugP("Base-ID: %i", lui8_BaseID_p[i], HEX);
@@ -205,6 +207,135 @@ void EnoceanModule::begin() {
   */
 
   isInited = true;
+}
+
+bool EnoceanModule::checkBaseID()
+{
+  if (lui8_BaseID_p[0] != 0xFF)
+    return 1;
+  else if (lui8_BaseID_p[1] != ParamENO_Id2)
+    return 1;
+  else if (lui8_BaseID_p[2] != ParamENO_Id4)
+    return 1;
+  else if (lui8_BaseID_p[3] != ParamENO_Id6)
+    return 1;
+  else
+    return 0;
+}
+
+void EnoceanModule::setBaseId(uint8_t *fui8_BaseID_p)
+{
+  PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
+
+  uint8_t lu8SndBuf[5];
+  // uint8_t loopCount = 0;
+
+  lu8SndBuf[0] = u8CO_WR_IDBASE;
+  lu8SndBuf[1] = 0xFF;
+  lu8SndBuf[2] = knx.paramByte(ENO_Id2);
+  lu8SndBuf[3] = knx.paramByte(ENO_Id4);
+  lu8SndBuf[4] = knx.paramByte(ENO_Id6);
+
+  lRdBaseIDPkt_st.u16DataLength = 0x0005;
+  lRdBaseIDPkt_st.u8OptionLength = 0x00;
+  lRdBaseIDPkt_st.u8Type = u8RORG_COMMON_COMMAND;
+  lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+#ifdef KDEBUG_BaseID
+  SERIAL_PORT.println("Sending telegram (set base ID).");
+#endif
+
+  if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
+  {
+    u8RetVal = ENOCEAN_NO_RX_TEL;
+#ifdef KDEBUG_BaseID
+    SERIAL_PORT.println("Receiving telegram (set base ID).");
+#endif
+    while (u8RetVal == ENOCEAN_NO_RX_TEL)
+    {
+      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
+    }
+
+    switch (u8RetVal)
+    {
+    case ENOCEAN_OK:
+    {
+#ifdef KDEBUG_BaseID
+      SERIAL_PORT.print("Data: ");
+      for (int i = 0; i < m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength; i++)
+      {
+
+        // SERIAL_PORT.print("%X", m_Pkt_st.u8DataBuffer[i]);
+        SERIAL_PORT.print(m_Pkt_st.u8DataBuffer[i], HEX);
+        SERIAL_PORT.print(" ");
+      }
+      SERIAL_PORT.println("");
+#endif
+
+      switch (m_Pkt_st.u8Type)
+      {
+      case u8RESPONSE:
+      {
+#ifdef KDEBUG
+        SERIAL_PORT.print("Received Response: ");
+#endif
+        switch (m_Pkt_st.u8DataBuffer[0])
+        {
+        case 0x00:
+#ifdef KDEBUG
+          SERIAL_PORT.println("RET_OK");
+#endif
+          break;
+        case 0x02:
+#ifdef KDEBUG
+          SERIAL_PORT.println("RET_NOT_SUPPORTED");
+#endif
+          break;
+        case 0x82:
+#ifdef KDEBUG
+          SERIAL_PORT.println("FLASH_HW_ERROR");
+#endif
+          break;
+        case 0x90:
+#ifdef KDEBUG
+          SERIAL_PORT.println("BASEID_OUT_OF_RANGE");
+#endif
+          break;
+        case 0x91:
+#ifdef KDEBUG
+          SERIAL_PORT.println("BASEID_MAX_REACHED");
+#endif
+          break;
+
+        default:
+          break;
+        }
+      }
+      break;
+      default:
+      {
+#ifdef KDEBUG
+        SERIAL_PORT.print("Wrong packet type. Expected response. Received: ");
+        /// SERIAL_PORT.println("%X", m_Pkt_st.u8Type);
+        SERIAL_PORT.println(m_Pkt_st.u8Type);
+#endif
+      }
+      }
+    }
+    break;
+    case ENOCEAN_NO_RX_TEL:
+#ifdef KDEBUG
+      SERIAL_PORT.println("ERROR Receiving telegram (set base ID).");
+#endif
+      break;
+    default:
+    {
+#ifdef KDEBUG
+      SERIAL_PORT.println("set receiving base ID");
+#endif
+    }
+    } // ENDE SWITCH
+  }
 }
 
 // Fragt beim Transceiver die Basis-ID per ESP3-Common-Command an und wartet blockierend auf die Antwort.
@@ -269,7 +400,407 @@ void EnoceanModule::processInputKo(GroupObject &iKo) {
   int koIndex = ENO_KoCalcIndex(iKo.asap());
 
   logDebugP("processInputKo: Kanal %u, KO-Index %d", _channelIndex, koIndex);
-  _channels[_channelIndex]->handleKnxEvent(koIndex, iKo);
+  handleKnxEvent(_channelIndex, koIndex, iKo);
+}
+
+// Wird aufgerufen, wenn ein Gruppenobjekt eines EnOcean-Kanals von der KNX-Seite beschrieben wurde; _channelIndex ist der betroffene Kanal, koIndex die lokale
+// Position (0-basiert) innerhalb des Kanal-Blocks, ko der Wert.
+void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &iKo) {
+  logDebugP("handleKnxEvent: KO-Index %d, Value:", koIndex);
+  logHexDebugP(iKo.valueRef(), iKo.valueSize());
+  // TODO: je nach konfiguriertem EEP-Profil und koIndex das passende EnOcean-Funktelegramm senden.
+
+  uint8_t teachinCH = 0;
+
+//  if (koIndex != _channelIndex) // prüft ob KO zum CHannel passt
+//  {
+//    return;
+//  }
+
+  // SERIAL_PORT.print(F("Profil: "));
+  // SERIAL_PORT.println(knx.paramByte(ENO_CHProfilSelection + firstParameter));
+
+  switch (ParamENO_CHProfilSelection) {
+  case u8RORG_4BS:
+#ifdef KDEBUG
+    SERIAL_PORT.print(F("4BS "));
+    SERIAL_PORT.println(knx.paramWord(ENO_CHProfil4BS20 + firstParameter));
+#endif
+    switch (ParamENO_CHProfil4BS20) {
+    // *************** A5-20-01 ***********************************************************
+    case A5_20_01:
+//      switch (koNr) {
+//      case KO_0: // SET Temp / SET Pos
+//        if ((knx.paramByte(ENO_CHA52001SPS + firstParameter) >> ENO_CHA52001SPSShift) & 1) {
+//          union1.val_A5_20_01[0] = (float)iKo.value(getDPT(VAL_DPT_9)) * 2.5; // Set Point Temp#
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("SET Temp to: "));
+//          SERIAL_PORT.print(union1.val_A5_20_01[0] / 2.5);
+//          SERIAL_PORT.println(F("°C"));
+//#endif
+//        } else {
+//          union1.val_A5_20_01[0] = (uint8_t)iKo.value(getDPT(VAL_DPT_5)); // Set Point Pos
+//          union1.val_A5_20_01[0] = round(union1.val_A5_20_01[0] / 2.55);
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("SET Pos to: "));
+//          SERIAL_PORT.print(union1.val_A5_20_01[0]);
+//          SERIAL_PORT.println(F("%"));
+//#endif
+//        }
+//        break;
+//      case KO_1: // Summer Bit
+//        if (iKo.value(getDPT(VAL_DPT_1))) {
+//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] | (1 << 3); // Set Bit
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("Sommer Umschaltung: aktiv"));
+//#endif
+//        } else {
+//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] & ~(1 << 3); // clear Bit
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("Sommer Umschaltung: inaktiv"));
+//#endif
+//        }
+//        break;
+//      case KO_2: // Run Init
+//        if (iKo.value(getDPT(VAL_DPT_1))) {
+//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] | (1 << 7); // Set Bit
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("Run Init"));
+//#endif
+//        } else {
+//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] & ~(1 << 7); // clear Bit
+//        }
+//
+//        break;
+//      case KO_3: // Raum Temp
+//        union1.val_A5_20_01[1] = (uint8_t)iKo.value(getDPT(VAL_DPT_9)) * 6.375;
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("Raum-Temp: "));
+//        SERIAL_PORT.print(union1.val_A5_20_01[1] / 6.375);
+//        SERIAL_PORT.println(F("°C"));
+//#endif
+//        break;
+//      case KO_4: // Service CMD
+//
+//        union3.A52001_CMD = iKo.value(getDPT(VAL_DPT_5));
+//        if (union3.A52001_CMD < 8) {
+//          if (union3.A52001_CMD == 0) {
+//            union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
+//            union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
+//            union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
+//          } else if (union3.A52001_CMD == 1) {
+//            union1.val_A5_20_01[2] |= (1 << 4);  // Set   Bit4
+//            union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
+//            union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
+//          } else if (union3.A52001_CMD == 2) {
+//            union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
+//            union1.val_A5_20_01[2] |= (1 << 5);  // set   Bit5
+//            union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
+//          } else if (union3.A52001_CMD == 3) {
+//            union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
+//            union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
+//            union1.val_A5_20_01[2] |= (1 << 6);  // set   Bit6
+//          }
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("Service CMD: "));
+//          SERIAL_PORT.println(union3.A52001_CMD);
+//#endif
+//        } else {
+//          union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
+//          union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
+//          union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("Service CMD: Wrong Value"));
+//#endif
+//        }
+//        break;
+//      }
+      break;
+    // *************** A5-20-04 ***********************************************************
+    case A5_20_04:
+//      switch (koNr) {
+//      case KO_0: //  SET Pos
+//        union1.val_A5_20_04[0] = (uint8_t)iKo.value(getDPT(VAL_DPT_5));
+//        union1.val_A5_20_04[0] = round(union1.val_A5_20_04[0] / 2.55);
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("SET Pos to: "));
+//        SERIAL_PORT.print(union1.val_A5_20_04[0]);
+//        SERIAL_PORT.println(F("%"));
+//#endif
+//        break;
+//      case KO_1: //  SET Temp
+//        union1.val_A5_20_04[1] = ((float)iKo.value(getDPT(VAL_DPT_9)) - 10.0) / 0.078;
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("SET Temp to: "));
+//        SERIAL_PORT.print(union1.val_A5_20_04[1] * 0.078 + 10.0);
+//        SERIAL_PORT.println(F("°C"));
+//#endif
+//        break;
+//      case KO_2: // Wake UP cycle
+//        union3.A52004 = iKo.value(getDPT(VAL_DPT_5));
+//        if (union3.A52004 <= 63) {
+//          union1.val_A5_20_04[2] = ((uint8_t)union3.A52004); // Set WCU
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("WCU: "));
+//          SERIAL_PORT.println(union3.A52004);
+//          SERIAL_PORT.print(F("DB1: "));
+//          SERIAL_PORT.println(union1.val_A5_20_04[2]);
+//#endif
+//        } else {
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("WCU: wrong Value"));
+//#endif
+//        }
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("MC: "));
+//        SERIAL_PORT.println((knx.paramByte(ENO_CHA52004MC + firstParameter) >> ENO_CHA52004MCShift) & 1);
+//#endif
+//        break;
+//      case KO_3: // Button Lock
+//        if (iKo.value(getDPT(VAL_DPT_1))) {
+//          union1.val_A5_20_04[3] |= (1 << 2); // set   Bit2
+//        } else {
+//          union1.val_A5_20_04[3] &= ~(1 << 2); // clear Bit2
+//        }
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("BLC: "));
+//        SERIAL_PORT.println((bool)iKo.value(getDPT(VAL_DPT_1)));
+//#endif
+//        break;
+//      case KO_4: // Service CMD
+//        union3.A52004 = iKo.value(getDPT(VAL_DPT_5));
+//
+//        switch (union3.A52004) {
+//        case 0:                                // No Change
+//          union1.val_A5_20_04[3] &= ~(1 << 0); // clear Bit0
+//          union1.val_A5_20_04[3] &= ~(1 << 1); // clear Bit1
+//          break;
+//        case 1:                                // open Value
+//          union1.val_A5_20_04[3] |= (1 << 0);  // set   Bit0
+//          union1.val_A5_20_04[3] &= ~(1 << 1); // clear Bit1
+//          break;
+//        case 2:                                // RUN initilistation
+//          union1.val_A5_20_04[3] &= ~(1 << 0); // clear Bit0
+//          union1.val_A5_20_04[3] |= (1 << 1);  // set   Bit1
+//          break;
+//        case 3:                               // RUN initilistation
+//          union1.val_A5_20_04[3] |= (1 << 0); // set   Bit0
+//          union1.val_A5_20_04[3] |= (1 << 1); // set   Bit1
+//          break;
+//        default:
+//          union1.val_A5_20_04[3] &= ~(1 << 0); // clear Bit0
+//          union1.val_A5_20_04[3] &= ~(1 << 1); // clear Bit1
+//          break;
+//        }
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("Service : "));
+//        SERIAL_PORT.println(union3.A52004);
+//#endif
+//        break;
+//      }
+      break;
+    // *************** A5-20-06 ***********************************************************
+    case A5_20_06:
+//
+//      switch (koNr) {
+//      case KO_Teachin: // Teach-in MSG
+//        teachinCH = iKo.value(getDPT(VAL_DPT_5));
+//#ifdef KDEBUG_min
+//        SERIAL_PORT.println(teachinCH);
+//        SERIAL_PORT.println(index + 1);
+//#endif
+//        if (teachinCH != index + 1) {
+//          return;
+//        }
+//#ifdef KDEBUG_min
+//        SERIAL_PORT.println(F("ready to send"));
+//#endif
+//        union1.val_A5_20_06[0] = 0x80;
+//        union1.val_A5_20_06[1] = 0x30;
+//        union1.val_A5_20_06[2] = 0x49;
+//        union1.val_A5_20_06[3] = 0x80;
+//        send_4BS_Msg(lui8_SendeID_p, index, union1.val_A5_20_06, 0);
+//        break;
+//
+//      case KO_0: // SET Temp oder SET Pos
+//        if ((knx.paramByte(ENO_CHA52006SPS + firstParameter) >> ENO_CHA52006SPSShift) & 1) {
+//          union1.val_A5_20_06[0] = (float)iKo.value(getDPT(VAL_DPT_9)) * 2.0; // Set Point Temp#
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("SET Temp to: "));
+//          SERIAL_PORT.print(union1.val_A5_20_06[0] / 2.0);
+//          SERIAL_PORT.println(F("°C"));
+//#endif
+//        } else {
+//          union1.val_A5_20_06[0] = (uint8_t)iKo.value(getDPT(VAL_DPT_5)); // Set Point Pos
+//          union1.val_A5_20_06[0] = round(union1.val_A5_20_06[0] / 2.55);
+//#ifdef KDEBUG
+//          SERIAL_PORT.print(F("SET Pos to: "));
+//          SERIAL_PORT.print(union1.val_A5_20_06[0]);
+//          SERIAL_PORT.println(F("%"));
+//#endif
+//        }
+//        break;
+//
+//      case KO_1: // Sommer Umschaltung
+//        if (iKo.value(getDPT(VAL_DPT_1))) {
+//          union1.val_A5_20_06[2] = (uint8_t)union1.val_A5_20_06[2] | (1 << 3); // Set Bit
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("Sommer Umschaltung: aktiv"));
+//#endif
+//        } else {
+//          union1.val_A5_20_06[2] = (uint8_t)union1.val_A5_20_06[2] & ~(1 << 3); // clear Bit
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("Sommer Umschaltung: inaktiv"));
+//#endif
+//        }
+//        break;
+//
+//      case KO_2: // Set Communications Interval
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("Com Interval: "));
+//        SERIAL_PORT.println((uint8_t)iKo.value(getDPT(VAL_DPT_5)));
+//#endif
+//        union1.val_A5_20_06[2] &= ~(1 << ENO_CHA52006RFCShift);                                    // clear Bit4
+//        union1.val_A5_20_06[2] &= ~(1 << (ENO_CHA52006RFCShift + 1));                              // clear Bit5
+//        union1.val_A5_20_06[2] &= ~(1 << (ENO_CHA52006RFCShift + 2));                              // clear Bit6
+//        union1.val_A5_20_06[2] |= ((uint8_t)iKo.value(getDPT(VAL_DPT_5)) << ENO_CHA52006RFCShift); // Set Bit
+//        break;
+//
+//      case KO_3:                                                              // Raum Temperatur
+//        union1.val_A5_20_06[1] = (uint8_t)iKo.value(getDPT(VAL_DPT_9)) * 4.0; // Raumtemperatur
+//#ifdef KDEBUG
+//        SERIAL_PORT.print(F("Raum-Temp: "));
+//        SERIAL_PORT.print(union1.val_A5_20_06[1]);
+//        SERIAL_PORT.println(F("°C"));
+//#endif
+//        break;
+//
+//      case KO_4: // Standby
+//        if (iKo.value(getDPT(VAL_DPT_1))) {
+//          union1.val_A5_20_06[2] = (uint8_t)union1.val_A5_20_06[2] | (1 << 0); // Set Bit
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("Standby"));
+//#endif
+//        } else {
+//          union1.val_A5_20_06[2] = (uint8_t)union1.val_A5_20_06[2] & ~(1 << 0); // clear Bit
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("normal Mode"));
+//#endif
+//        }
+//        break;
+//
+//      default:
+//        break;
+//      }
+//      // gesendet wird in der TASK() da das Device nur nachrichten Empfangen kann, 1sek nachdem es eine Nachrticht
+//      // geschickt hat send_4BS_Msg(lui8_SendeID_p, index, union1.val_A5_20_06);
+//      break;
+//    } // ENDE 2BS
+    break;
+  case u8RORG_VLD:
+    switch (ParamENO_CHProfilSelectionVLD) {
+    case D2_01:
+//      switch (knx.paramWord(ENO_CHProfilVLD01 + firstParameter)) {
+//      case D2_01_0E:
+//        switch (koNr) {
+//        case KO_0: // schalten Aktor
+//          if (iKo.value(getDPT(VAL_DPT_1))) {
+//            buttonStateSimulation1 = SIMULATE_PUSH;
+//            buttonMessage1 = true;
+//          } else {
+//            buttonStateSimulation1 = SIMULATE_PUSH;
+//            buttonMessage1 = false;
+//          }
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("KNX KO_0 handled"));
+//#endif
+//          break;
+//        case KO_1: // Anfrage Messwerte
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("KNX KO_1 handled"));
+//#endif
+//          getActorsMeasurmentValue(lui8_SendeID_p, index, union1.val_D2_01_0E_Energy,
+//                                   iKo.value(getDPT(VAL_DPT_1))); // Energy = 0  / Power = 1
+//          break;
+//        case KO_2: // Anfrage Statuswerte SWITCH
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("KNX KO_2 handled"));
+//#endif
+//          getStatusActors(lui8_SendeID_p, index); // Request Aktor Status
+//          break;
+//        }
+//      default:
+        break; // ENDE VLD D2_01_0E
+      case D2_01_12:
+//        switch (koNr) {
+//        case KO_0: // schalten Aktor CH1
+//          setStatusActors(lui8_SendeID_p, index, iKo.value(getDPT(VAL_DPT_1)));
+//
+//          if (iKo.value(getDPT(VAL_DPT_1))) {
+//
+//            /*buttonStateSimulation1 = SIMULATE_PUSH;
+//            buttonMessage1 = true;*/
+//#ifdef KDEBUG
+//            SERIAL_PORT.println(F("KO value = HIGH"));
+//#endif
+//          } else {
+//            /*buttonStateSimulation1 = SIMULATE_PUSH;
+//            buttonMessage1 = false;*/
+//#ifdef KDEBUG
+//            SERIAL_PORT.println(F("KO value = LOW"));
+//#endif
+//          }
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("KNX KO_0 handled"));
+//#endif
+//          break;
+//        case KO_1: //  Schalten Aktor CH2
+//          // union4.koIndex2 = index + 2;
+//          if (iKo.value(getDPT(VAL_DPT_1))) {
+//            buttonStateSimulation2 = SIMULATE_PUSH;
+//            buttonMessage2 = true;
+//          } else {
+//            buttonStateSimulation2 = SIMULATE_PUSH;
+//            buttonMessage2 = false;
+//          }
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("KNX KO_1 handled"));
+//#endif
+//          break;
+//        case KO_4:
+//#ifdef KDEBUG
+//          SERIAL_PORT.println(F("KNX KO_4 handled"));
+//#endif
+//          getStatusActors(lui8_SendeID_p, index); // Request Aktor Status
+//          break;
+//        default:
+//          break;
+//        }
+        break; // ENDE VLD D2_01_12
+      }
+      break; // ENDE VLD D2_01
+    }
+    break; // ENDE VLD
+
+  case u8RORG_Rocker:
+    switch (ParamENO_CHDirectionKnxEnocean) {
+    case 1:
+#ifdef KDEBUG
+      SERIAL_PORT.println(F("send Rocker MSG"));
+#endif  
+      if (iKo.value(Dpt(1, 1))) {
+        send_RPS_Taster(lui8_BaseID_p, false, true, 0); // BaseID_CH = 0
+      } else {
+        send_RPS_Taster(lui8_BaseID_p, true, true, 0); // BaseID_CH = 0
+      }
+      break;
+    }
+    break;
+
+  default:
+    return;
+    break; // ENDE ROCKER
+  }
 }
 
 // Registriert den Hilfetext für den Konsolenbefehl "dummy".
@@ -638,6 +1169,279 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
 #endif
     }
   }
+}
+
+
+
+void EnoceanModule::send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH)
+{
+    PACKET_SERIAL_TYPE_ l_TestPacket_st;
+    uint8_t l_TestBuf_p[10];
+    l_TestPacket_st.u16DataLength = 0x000A;
+    l_TestPacket_st.u8OptionLength = 0x00;
+    l_TestPacket_st.u8Type = u8RADIO_ERP1;
+    l_TestPacket_st.u8DataBuffer = &l_TestBuf_p[0];
+
+    l_TestBuf_p[0] = u8RORG_4BS;
+
+    l_TestBuf_p[1] = inputs[0];
+    l_TestBuf_p[2] = inputs[1];
+    l_TestBuf_p[3] = inputs[2];
+    l_TestBuf_p[4] = inputs[3];
+
+    for (int i = 0; i < 4; i++)
+    {
+        l_TestBuf_p[i + 5] = fui8_BaseID_p[i];
+    }
+    if (baseID_CH <= 4) // anpassen der Sende ID -> baseID_CH max 4 !!!
+        l_TestBuf_p[8] = l_TestBuf_p[8] + baseID_CH;
+
+#ifdef KDEBUG
+    SERIAL_PORT.print(F("ID: "));
+    SERIAL_PORT.println(l_TestBuf_p[8]);
+#endif
+
+    uart_sendPacket(&l_TestPacket_st);
+}
+
+void EnoceanModule::send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boolean pressed, uint8_t baseID_CH)
+{
+    PACKET_SERIAL_TYPE_ l_TestPacket_st;
+    uint8_t l_TestBuf_p[7];
+    l_TestPacket_st.u16DataLength = 0x0007;
+    l_TestPacket_st.u8OptionLength = 0x00;
+    l_TestPacket_st.u8Type = u8RADIO_ERP1;
+    l_TestPacket_st.u8DataBuffer = &l_TestBuf_p[0];
+
+    l_TestBuf_p[0] = u8RORG_RPS;
+
+    if (state == true)
+    {
+        if (pressed == true)
+        {
+            l_TestBuf_p[1] = 0x10;
+            l_TestBuf_p[6] = 0x30;
+        }
+        else
+        {
+            l_TestBuf_p[1] = 0x00;
+            l_TestBuf_p[6] = 0x20;
+        }
+    }
+    else
+    {
+        if (pressed == true)
+        {
+            l_TestBuf_p[1] = 0x30;
+            l_TestBuf_p[6] = 0x30;
+        }
+        else
+        {
+            l_TestBuf_p[1] = 0x00;
+            l_TestBuf_p[6] = 0x20;
+        }
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        l_TestBuf_p[i + 2] = fui8_BaseID_p[i];
+    }
+
+    if (baseID_CH <= 4) // anpassen der Sende ID -> baseID_CH max 4 !!!
+        l_TestBuf_p[5] = l_TestBuf_p[5] + baseID_CH;
+
+#ifdef KDEBUG
+    SERIAL_PORT.print(F("Send-ID: "));
+    SERIAL_PORT.print(l_TestBuf_p[2], HEX);
+    SERIAL_PORT.print(F(" "));
+    SERIAL_PORT.print(l_TestBuf_p[3], HEX);
+    SERIAL_PORT.print(F(" "));
+    SERIAL_PORT.print(l_TestBuf_p[4], HEX);
+    SERIAL_PORT.print(F(" "));
+    SERIAL_PORT.println(l_TestBuf_p[5], HEX);
+#endif
+
+    uart_sendPacket(&l_TestPacket_st);
+}
+
+void EnoceanModule::setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool state)
+{
+    PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
+
+    uint8_t lu8SndBuf[16];
+
+    lRdBaseIDPkt_st.u16DataLength = 0x0009;
+    lRdBaseIDPkt_st.u8OptionLength = 0x07;
+    lRdBaseIDPkt_st.u8Type = u8RADIO_ERP1;
+    lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+    lu8SndBuf[0] = u8RORG_VLD;
+    lu8SndBuf[1] = VLD_CMD_ID_01;
+    lu8SndBuf[2] = 0x1E; // Channel
+    if (state == true)
+        lu8SndBuf[3] = 0x01;
+    else
+        lu8SndBuf[3] = 0x00;
+    lu8SndBuf[4] = mySenderId[0];
+    lu8SndBuf[5] = mySenderId[1];
+    lu8SndBuf[6] = mySenderId[2];
+    lu8SndBuf[7] = mySenderId[3] + idExtra;
+    lu8SndBuf[8] = 0x00;
+    // optional data
+    lu8SndBuf[9] = 0x03;
+    lu8SndBuf[10] = 0xFF;
+    lu8SndBuf[11] = 0xFF;
+    lu8SndBuf[12] = 0xFF;
+    lu8SndBuf[13] = 0xFF;
+    lu8SndBuf[14] = 0x00;
+    lu8SndBuf[15] = 0x00;
+
+    if (!uart_sendPacket(&lRdBaseIDPkt_st))
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.println("Sending telegram failed.");
+#endif
+    }
+    else
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.print(F("Requested status"));
+#endif
+    }
+}
+
+void EnoceanModule::getStatusActors(uint8_t *mySenderId, uint8_t idExtra)
+{
+    PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
+
+    uint8_t lu8SndBuf[15];
+
+    lRdBaseIDPkt_st.u16DataLength = 0x0008;
+    lRdBaseIDPkt_st.u8OptionLength = 0x07;
+    lRdBaseIDPkt_st.u8Type = u8RADIO_ERP1;
+    lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+    lu8SndBuf[0] = u8RORG_VLD;
+    lu8SndBuf[1] = VLD_CMD_ID_03;
+    lu8SndBuf[2] = 0x1e;
+
+    lu8SndBuf[3] = mySenderId[0];
+    lu8SndBuf[4] = mySenderId[1];
+    lu8SndBuf[5] = mySenderId[2];
+    lu8SndBuf[6] = mySenderId[3] + idExtra;
+    lu8SndBuf[7] = 0x00;
+    // optional data
+    lu8SndBuf[8] = 0x03;
+    lu8SndBuf[9] = 0xFF;
+    lu8SndBuf[10] = 0xFF;
+    lu8SndBuf[11] = 0xFF;
+    lu8SndBuf[12] = 0xFF;
+    lu8SndBuf[13] = 0x00;
+    lu8SndBuf[14] = 0x00;
+
+    if (!uart_sendPacket(&lRdBaseIDPkt_st))
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.println("Sending telegram failed.");
+#endif
+    }
+    else
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.print(F("Requested status"));
+#endif
+    }
+}
+
+void EnoceanModule::setActorsMeasurment(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs)
+{
+    PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
+
+    uint8_t lu8SndBuf[19];
+
+    lRdBaseIDPkt_st.u16DataLength = 0x000C;
+    lRdBaseIDPkt_st.u8OptionLength = 0x07;
+    lRdBaseIDPkt_st.u8Type = u8RADIO_ERP1;
+    lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+    lu8SndBuf[0] = u8RORG_VLD;
+    lu8SndBuf[1] = VLD_CMD_ID_05;
+    lu8SndBuf[2] = inputs[0];
+    lu8SndBuf[3] = inputs[1];
+    lu8SndBuf[4] = inputs[2];
+    lu8SndBuf[5] = inputs[3];
+    lu8SndBuf[6] = inputs[4];
+    lu8SndBuf[7] = mySenderId[0];
+    lu8SndBuf[8] = mySenderId[1];
+    lu8SndBuf[9] = mySenderId[2];
+    lu8SndBuf[10] = mySenderId[3] + idExtra;
+    lu8SndBuf[11] = 0x00;
+    // optional data
+    lu8SndBuf[12] = 0x03;
+    lu8SndBuf[13] = 0xFF;
+    lu8SndBuf[14] = 0xFF;
+    lu8SndBuf[15] = 0xFF;
+    lu8SndBuf[16] = 0xFF;
+    lu8SndBuf[17] = 0x00;
+    lu8SndBuf[18] = 0x00;
+
+    if (!uart_sendPacket(&lRdBaseIDPkt_st))
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.println("Sending telegram failed.");
+#endif
+    }
+    else
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.println(F("Requested Meas Setup"));
+#endif
+    }
+}
+
+void EnoceanModule::getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs, bool unit)
+{
+    PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
+
+    uint8_t lu8SndBuf[15];
+
+    lRdBaseIDPkt_st.u16DataLength = 0x0008;
+    lRdBaseIDPkt_st.u8OptionLength = 0x07;
+    lRdBaseIDPkt_st.u8Type = u8RADIO_ERP1;
+    lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+    lu8SndBuf[0] = u8RORG_VLD;
+    lu8SndBuf[1] = VLD_CMD_ID_06;
+    lu8SndBuf[2] = 0x00; // 0x00 = Energy
+    if (unit == 1)
+        lu8SndBuf[2] = 0x20; // 0x20 = Power
+    lu8SndBuf[2] = lu8SndBuf[2] + 0x1E;
+    lu8SndBuf[3] = mySenderId[0];
+    lu8SndBuf[4] = mySenderId[1];
+    lu8SndBuf[5] = mySenderId[2];
+    lu8SndBuf[6] = mySenderId[3] + idExtra;
+    lu8SndBuf[7] = 0x00;
+    // optional data
+    lu8SndBuf[8] = 0x03;
+    lu8SndBuf[9] = 0xFF;
+    lu8SndBuf[10] = 0xFF;
+    lu8SndBuf[11] = 0xFF;
+    lu8SndBuf[12] = 0xFF;
+    lu8SndBuf[13] = 0x00;
+    lu8SndBuf[14] = 0x00;
+
+    if (!uart_sendPacket(&lRdBaseIDPkt_st))
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.println("Sending telegram failed.");
+#endif
+    }
+    else
+    {
+#ifdef KDEBUG
+        SERIAL_PORT.println(F("Requested Meas Value"));
+#endif
+    }
 }
 
 EnoceanModule openknxEnoceanModule;

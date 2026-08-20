@@ -3,10 +3,11 @@
 #include "Arduino.h"
 #include "EnoceanModule.h"
 #include "knxprod.h"
+#include "4BS_Telegram.h"
+#include "RPS_Telegram.h"
+#include "VLD_Telegram.h"
 
-// #include "4BS_Telegram.h"
- #include "VLD_Telegram.h"
- #include "RPS_Telegram.h"
+EnoceanHandle unionMSG;
 
 // Konstruktor: speichert den Kanal-Index dieses EnoceanChannel-Objekts.
 EnoceanChannel::EnoceanChannel(uint8_t index) { _channelIndex = index; }
@@ -37,8 +38,9 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   //  - RPS/1BS: bytes [2..5]
   //  - 4BS:     bytes [5..8]
   //  - VLD:     bytes [u16DataLength-5 .. u16DataLength-2]
-  // TODO: compare the extracted ID against this channel's configured EnOcean
-  // ID.
+  
+  // init parameter
+  unionMSG.msg_sent_after_receive = 0;
 
   // Read Parameter: ENOCEAN-ID
   deviceId_Arr[0] = (ParamENO_CHId0 << 4) | ParamENO_CHId1;
@@ -66,7 +68,8 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
 
     logHexDebugP(&pPacket->u8DataBuffer[2], 4);
 
-    // Verarbeitet ein empfangenes 1BS-EnOcean-Telegramm (D5-00-01 Kontakt) und schreibt den Open/Close-Zustand auf das KNX-Objekt
+    // Verarbeitet ein empfangenes 1BS-EnOcean-Telegramm (D5-00-01 Kontakt) und schreibt den Open/Close-Zustand auf das
+    // KNX-Objekt
     handle_1BS(pPacket, _channelIndex);
     break;
 
@@ -101,7 +104,7 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
 
     logHexDebugP(&pPacket->u8DataBuffer[5], 4);
 
-    //unionMSG.msg_sent_after_receive = handle_4BS(pPacket, profil, profil2nd, firstComObj, firstParameter);
+    unionMSG.msg_sent_after_receive = handle_4BS(pPacket, _channelIndex);
     break;
 
   case u8RORG_VLD:
@@ -202,12 +205,4 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   }
 
   return false;
-}
-
-// Wird aufgerufen, wenn ein Gruppenobjekt dieses Kanals von der KNX-Seite beschrieben wurde; koIndex ist die lokale Position (0-basiert) innerhalb des Kanal-Blocks, ko der Wert.
-void EnoceanChannel::handleKnxEvent(int koIndex, GroupObject &ko)
-{
-  logDebugP("handleKnxEvent: KO-Index %d, Value:", koIndex);
-  logHexDebugP(ko.valueRef(), ko.valueSize());
-  // TODO: je nach konfiguriertem EEP-Profil und koIndex das passende EnOcean-Funktelegramm senden.
 }

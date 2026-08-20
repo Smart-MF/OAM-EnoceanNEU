@@ -70,7 +70,6 @@
 #define ButtonStateO 0
 #define ButtonStateI 1
 
-#define RockerIdle 0x01
 #define AI_pressed 0x10
 #define AO_pressed 0x30
 #define BI_pressed 0x50
@@ -139,7 +138,16 @@ private:
     void initSerial(Stream &serial);
     void task();
     void readBaseId(uint8_t *fui8_BaseID_p);
+    void setBaseId(uint8_t *fui8_BaseID_p);
+    bool checkBaseID();
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
+    void handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &ko);
+    void send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH);
+    void send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boolean pressed, uint8_t baseID_CH);
+    void setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool state);
+    void getStatusActors(uint8_t *mySenderId, uint8_t idExtra);
+    void setActorsMeasurment(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs);
+    void getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs, bool unit);
     uint8_t uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket, uint16_t u16BufferLength);
     uint8_t uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket);
 #ifdef ARDUINO_ARCH_RP2040
