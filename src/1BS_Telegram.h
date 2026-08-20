@@ -9,9 +9,9 @@
  *  1BS   D5-00-01 
  *******************************************************************************************/
 
-void handle_1BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
+inline void handle_1BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
 {
-    bool bvalue;
+    //bool bvalue;
 
     ONEBS_TELEGRAM_TYPE *l1bsTlg_p;
 

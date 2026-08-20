@@ -3,7 +3,7 @@
 #include "EnoceanProfils.h"
 #include "EnoceanStructs.h"
 
-uint8_t handle_4BS(PACKET_SERIAL_TYPE *f_Pkt_st, uint8_t profil, uint8_t profil2nd, uint16_t firstComObj, uint16_t firstParameter)
+inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t profil2nd, uint16_t firstComObj, uint16_t firstParameter)
 {
       union intParts
       {

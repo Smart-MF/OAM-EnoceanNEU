@@ -3,7 +3,7 @@
 #include "EnoceanProfils.h"
 #include "EnoceanStructs.h"
 
-void handle_VLD(PACKET_SERIAL_TYPE *f_Pkt_st, uint8_t profil, uint16_t firstComObj, uint16_t firstParameter)
+inline void handle_VLD(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint16_t firstComObj, uint16_t firstParameter)
 {
 
       uint8_t mem;
