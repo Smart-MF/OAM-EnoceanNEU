@@ -203,3 +203,11 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
 
   return false;
 }
+
+// Wird aufgerufen, wenn ein Gruppenobjekt dieses Kanals von der KNX-Seite beschrieben wurde; koIndex ist die lokale Position (0-basiert) innerhalb des Kanal-Blocks, ko der Wert.
+void EnoceanChannel::handleKnxEvent(int koIndex, GroupObject &ko)
+{
+  logDebugP("handleKnxEvent: KO-Index %d, Value:", koIndex);
+  logHexDebugP(ko.valueRef(), ko.valueSize());
+  // TODO: je nach konfiguriertem EEP-Profil und koIndex das passende EnOcean-Funktelegramm senden.
+}

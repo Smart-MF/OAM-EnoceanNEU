@@ -52,12 +52,14 @@ uint8_t getRockerTyp(uint8_t type)
   }
 }*/
 
+// Schreibt einen Bool-Wert (DPT 1.001) auf das übergebene Gruppenobjekt.
 inline void shortSend_DPT1(bool value, GroupObject &ko)
 {
   logDebug("RPS", "DPT1: %u", value);
   ko.value(value, Dpt(1, 1));
 }
 
+// Startet einen Dimmvorgang (DPT 3) in die angegebene Richtung auf dem übergebenen Gruppenobjekt.
 inline void SendDPT3_007(bool dir, GroupObject &ko)
 {
   uint8_t dpt3value = 0;
@@ -73,6 +75,7 @@ inline void SendDPT3_007(bool dir, GroupObject &ko)
   ko.value(dpt3value, Dpt(3, 7, 0));
 }
 
+// Liest die per ETS parametrierte Szenennummer aus und schreibt sie auf das übergebene Gruppenobjekt.
 inline void shortSend_Szene(uint8_t scene, uint16_t firstParameter, GroupObject &ko)
 {
   uint8_t szeneNr;
@@ -82,6 +85,7 @@ inline void shortSend_Szene(uint8_t scene, uint16_t firstParameter, GroupObject 
   ko.value(szeneNr, Dpt(17, 1));
 }
 
+// Beendet einen laufenden Dimmvorgang (DPT 3 Stop) auf dem übergebenen Gruppenobjekt.
 inline void stopDim(GroupObject &ko)
 {
   uint8_t dpt3value = 0;
@@ -93,6 +97,7 @@ inline void stopDim(GroupObject &ko)
   ko.value(dpt3value, Dpt(3, 7, 0));
 }
 
+// Wird beim Loslassen einer lang gedrückten Wippe aufgerufen und stoppt je nach konfigurierter Funktion den laufenden Dimmvorgang.
 inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex)
 {
   switch (rockerNr)
@@ -221,6 +226,7 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
   }
 }
 
+// Wertet einen langen Tastendruck aus und löst je nach konfigurierter Funktion Schalten, Dimmen oder Szenenaufruf aus; liefert true, wenn ein Dimmvorgang gestartet wurde.
 inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex)
 {
   // uint8_t szeneNr;
@@ -489,6 +495,7 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
   return false;
 }
 
+// Wertet einen kurzen Tastendruck aus und löst je nach konfigurierter Funktion Schalten, Dimmschritt oder Szenenaufruf aus.
 inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex)
 {
   // uint8_t szeneNr;
@@ -740,6 +747,7 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
   }
 }
 
+// Verarbeitet das Loslassen einer Taste (kurz oder lang) abhängig von der konfigurierten Funktion: Schalten, Dimmen, Jalousie oder Szenenaufruf.
 inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t firstComObj, uint8_t RockerFunktion, uint8_t RockerSzene, bool islong, uint8_t _channelIndex)
 {
   uint8_t szeneNr;
@@ -927,6 +935,7 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
   }
 }
 
+// Behandelt ein RPS-Wippentelegramm für einen einzelnen Kontakt (gedrückt/losgelassen) und schaltet das zugehörige Gruppenobjekt.
 inline void handle_RPS_Rocker(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t firstComObj, uint8_t firstParameter, uint8_t index, uint8_t _channelIndex)
 {
 
@@ -942,6 +951,7 @@ inline void handle_RPS_Rocker(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uin
   }
 }
 
+// Verarbeitet ein F6-02-03-Telegramm (zwei Wippen an einem Kontakt) und schaltet die beiden zugehörigen Gruppenobjekte je nach Tastencode.
 inline void handle_F6_02_03(uint8_t value, uint8_t _channelIndex)
 {
   logDebug("RPS", "Profil: F6-02-03");
@@ -968,6 +978,7 @@ inline void handle_F6_02_03(uint8_t value, uint8_t _channelIndex)
   }
 }
 
+// Verarbeitet die F6-05-xx-Telegramme (Rauch-/Wassermelder bzw. Energiestatus) und schreibt den passenden Alarm-/Statuswert.
 inline void handle_F6_05_0x(uint8_t value, uint8_t _channelIndex)
 {
   switch (value)
@@ -989,6 +1000,7 @@ inline void handle_F6_05_0x(uint8_t value, uint8_t _channelIndex)
   }
 }
 
+// Zentrale Dispatch-Funktion für empfangene RPS-Telegramme dieses Kanals: wertet das konfigurierte EEP-Profil aus und schaltet die zugehörigen Gruppenobjekte bzw. ruft die passende Behandlungsroutine auf.
 inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
 {
   RPS_F6_10_00_TYPE *lRpsTlg_p;

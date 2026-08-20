@@ -18,5 +18,6 @@ class EnoceanChannel : public OpenKNX::Channel
     void setup() override;
     void loop() override;
     bool check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket);
+    void handleKnxEvent(int koIndex, GroupObject &ko);
 
 };
