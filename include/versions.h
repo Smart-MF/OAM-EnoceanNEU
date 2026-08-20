@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAIN_Version "f3a0574"
+#define MAIN_Version "3851ade"
 #define KNX_Version "2.4.0+8e4c5bc"
 #define MODULE_Common_Version "1.9.1+66bc4af"
 #define MODULE_Common_Version_Major 1
@@ -17,7 +17,7 @@
 #define MODULE_FileTransferModule_Version_Minor 1
 #define MODULE_FileTransferModule_Version_Revision 5
 #define MODULE_FileTransferModule_ETS 1
-#define MODULE_HardwareConfig_Version "1.0.0+9ee1ef5"
+#define MODULE_HardwareConfig_Version "1.0.0+8d0480a"
 #define MODULE_HardwareConfig_Version_Major 1
 #define MODULE_HardwareConfig_Version_Minor 0
 #define MODULE_HardwareConfig_Version_Revision 0

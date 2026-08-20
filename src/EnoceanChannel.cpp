@@ -40,6 +40,14 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   deviceId_Arr[2] = (ParamENO_CHId4 << 4) | ParamENO_CHId5;
   deviceId_Arr[3] = (ParamENO_CHId6 << 4) | ParamENO_CHId7;
 
+  SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
+  SERIAL_PORT.print(" ");
+  SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
+  SERIAL_PORT.print(" ");
+  SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
+  SERIAL_PORT.print(" ");
+  SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
+
   // Get rid of messages we can't handle
   if (pPacket->u8DataBuffer[0] != ParamENO_CHProfilSelection &&
       ParamENO_CHProfilSelection != u8RORG_Rocker)
@@ -141,7 +149,7 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
     SERIAL_PORT.println(pPacket->u8DataBuffer[pPacket->u16DataLength - 2], HEX);
 #endif
 
-    //handle_VLD(pPacket, _channelIndex);
+    // handle_VLD(pPacket, _channelIndex);
     break;
     //
     //    case u8RORG_Rocker:

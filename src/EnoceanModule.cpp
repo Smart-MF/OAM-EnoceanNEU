@@ -52,6 +52,8 @@ void EnoceanModule::setup(bool configured)
   OPENKNX_ENO_SERIAL.begin(57600);
   initSerial(OPENKNX_ENO_SERIAL);
 
+  SERIAL_PORT.begin(9600);
+
   if (configured)
   {
     // setupCustomFlash();
