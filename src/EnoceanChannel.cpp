@@ -5,13 +5,16 @@
 #include "knxprod.h"
 
 // #include "4BS_Telegram.h"
-// #include "VLD_Telegram.h"
-// #include "RPS_Telegram.h"
+ #include "VLD_Telegram.h"
+ #include "RPS_Telegram.h"
 
+// Konstruktor: speichert den Kanal-Index dieses EnoceanChannel-Objekts.
 EnoceanChannel::EnoceanChannel(uint8_t index) { _channelIndex = index; }
 
+// Liefert den Anzeigenamen des Kanals für Logging/Debug-Ausgaben.
 const std::string EnoceanChannel::name() { return "EnoceanChannel"; }
 
+// Wird einmalig beim Start des Kanals aufgerufen, aktuell nur für Log-Testausgaben genutzt.
 void EnoceanChannel::setup() {
   logInfoP("setup");
   logIndentUp();
@@ -20,11 +23,14 @@ void EnoceanChannel::setup() {
   logIndentDown();
 }
 
+// Wird zyklisch aufgerufen; aktuell ohne Funktion (Platzhalter für spätere Logik).
 void EnoceanChannel::loop() {
   // Dummy Action
   // delayMicroseconds(100);
 }
 
+// Prüft anhand der EnOcean-ID und des RORG-Typs, ob ein empfangenes Paket zu diesem Kanal gehört,
+// und leitet es je nach Profil (1BS/RPS/4BS/VLD) an den passenden Telegramm-Handler weiter.
 bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   // pPacket->u8DataBuffer holds RORG + data + sender-ID + status.
   // Position of the 4 sender-ID bytes depends on u8DataBuffer[0] (RORG):
@@ -40,17 +46,10 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   deviceId_Arr[2] = (ParamENO_CHId4 << 4) | ParamENO_CHId5;
   deviceId_Arr[3] = (ParamENO_CHId6 << 4) | ParamENO_CHId7;
 
-  SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
-  SERIAL_PORT.print(" ");
-  SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
-  SERIAL_PORT.print(" ");
-  SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
-  SERIAL_PORT.print(" ");
-  SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
+  logHexDebugP(&pPacket->u8DataBuffer[2], 4);
 
   // Get rid of messages we can't handle
-  if (pPacket->u8DataBuffer[0] != ParamENO_CHProfilSelection &&
-      ParamENO_CHProfilSelection != u8RORG_Rocker)
+  if (pPacket->u8DataBuffer[0] != ParamENO_CHProfilSelection && ParamENO_CHProfilSelection != u8RORG_Rocker)
     return false;
 
   switch (ParamENO_CHProfilSelection) {
@@ -65,16 +64,9 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
     if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
       return false;
 
-#ifdef KDEBUG_ID
-    SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
-#endif
+    logHexDebugP(&pPacket->u8DataBuffer[2], 4);
 
+    // Verarbeitet ein empfangenes 1BS-EnOcean-Telegramm (D5-00-01 Kontakt) und schreibt den Open/Close-Zustand auf das KNX-Objekt
     handle_1BS(pPacket, _channelIndex);
     break;
 
@@ -89,17 +81,10 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
     if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
       return false;
 
-#ifdef KDEBUG_ID
-    SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
-    SERIAL_PORT.print("-");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
-    SERIAL_PORT.print("-");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
-    SERIAL_PORT.print("-");
-    SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
-#endif
+    logHexDebugP(&pPacket->u8DataBuffer[2], 4);
 
-    // handle_RPS(pPacket, _channelIndex);
+    handle_RPS(pPacket, _channelIndex);
+
     break;
 
   case u8RORG_4BS:
@@ -114,17 +99,9 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
     if (pPacket->u8DataBuffer[8] != deviceId_Arr[3])
       return false;
 
-#ifdef KDEBUG_ID
-    SERIAL_PORT.print(pPacket->u8DataBuffer[5], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[6], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[7], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.println(pPacket->u8DataBuffer[8], HEX);
-#endif
-    // unionMSG.msg_sent_after_receive = handle_4BS(pPacket, profil, profil2nd,
-    // firstComObj, firstParameter);
+    logHexDebugP(&pPacket->u8DataBuffer[5], 4);
+
+    //unionMSG.msg_sent_after_receive = handle_4BS(pPacket, profil, profil2nd, firstComObj, firstParameter);
     break;
 
   case u8RORG_VLD:
@@ -139,17 +116,10 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
     if (pPacket->u8DataBuffer[pPacket->u16DataLength - 2] != deviceId_Arr[3])
       return false;
 
-#ifdef KDEBUG_ID
-    SERIAL_PORT.print(pPacket->u8DataBuffer[pPacket->u16DataLength - 5], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[pPacket->u16DataLength - 4], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.print(pPacket->u8DataBuffer[pPacket->u16DataLength - 3], HEX);
-    SERIAL_PORT.print(" ");
-    SERIAL_PORT.println(pPacket->u8DataBuffer[pPacket->u16DataLength - 2], HEX);
-#endif
+    logHexDebugP(&pPacket->u8DataBuffer[pPacket->u16DataLength - 5], 4);
 
-    // handle_VLD(pPacket, _channelIndex);
+    handle_VLD(pPacket, _channelIndex);
+
     break;
     //
     //    case u8RORG_Rocker:

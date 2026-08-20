@@ -9,19 +9,16 @@
  *  1BS   D5-00-01
  *******************************************************************************************/
 
-inline void handle_1BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
-{
+// Verarbeitet ein empfangenes 1BS-EnOcean-Telegramm (D5-00-01 Kontakt) und schreibt den Open/Close-Zustand auf das
+// KNX-Gruppenobjekt.
+inline void handle_1BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   bool bvalue;
 
   ONEBS_TELEGRAM_TYPE *l1bsTlg_p;
 
-#ifdef KDEBUG
-  SERIAL_PORT.print("Profil: 1BS - ");
-  SERIAL_PORT.println(firstParameter + ENO_CHProfilSelection4BS);
-#endif
+  logDebug("1BS", "Profil: 1BS - %u", ParamENO_CHProfilSelection1BS);
 
-  switch (ParamENO_CHProfilSelection1BS)
-  {
+  switch (ParamENO_CHProfilSelection1BS) {
   case D5_00_01:
 
     // Läd den Wert in das Profil-Strukt
@@ -35,24 +32,16 @@ inline void handle_1BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
         bvalue = true;
       else
         bvalue = false;
-    }
-    else
-    { // OPEN
+    } else { // OPEN
       if (ParamENO_CHWindowcloseValue)
         bvalue = false;
       else
         bvalue = true;
     }
-    KoENO_GO_BASE__3.valueNoSend(bvalue, DPT_Bool);
-    KoENO_GO_BASE__3.objectWritten();
+    KoENO_GO_BASE__4.valueNoSend(bvalue, DPT_OpenClose);
+    KoENO_GO_BASE__4.objectWritten();
 
-#ifdef KDEBUG
-    SERIAL_PORT.println("D5-00-01");
-    SERIAL_PORT.print(F("detected: 1BS State: "));
-    SERIAL_PORT.println(l1bsTlg_p->u81bsTelData.State);
-    SERIAL_PORT.print(F("Output KNX: "));
-    SERIAL_PORT.println(bvalue);
-#endif
+    logDebug("1BS", "D5-00-01 detected: 1BS State: %u, Output KNX: %u", l1bsTlg_p->u81bsTelData.State, bvalue);
     break;
 
   default:
