@@ -1,0 +1,6 @@
+{
+    "clangd.arguments": [
+        "--query-driver=C:/Users/matthias.freudenreic/.platformio/packages/toolchain-rp2040-earlephilhower/bin/*",
+        "--compile-commands-dir=${workspaceFolder}"
+    ]
+}

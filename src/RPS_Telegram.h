@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EnoceanProfils.h"
+#include "EnoceanStructs.h"
 
 /*
 uint8_t getRockerTyp(uint8_t type)
