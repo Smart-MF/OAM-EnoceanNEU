@@ -159,11 +159,11 @@
                 <Parameter Id="%AID%_UP-%TT%%CC%086" Name="CH%C%ProductselTypeTas" Offset="2" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeTaster"  Text="Produkt:" Value="0" />
                 <Parameter Id="%AID%_UP-%TT%%CC%087" Name="CH%C%ProductselTypeKon" Offset="3" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeKontakte"  Text="Produkt:" Value="0" />
                 <Parameter Id="%AID%_UP-%TT%%CC%088" Name="CH%C%ProductselTypeUmw" Offset="4" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeUmwelt"    Text="Produkt:" Value="0" />
-                <Parameter Id="%AID%_UP-%TT%%CC%089" Name="CH%C%ProductselTypeHell" Offset="5" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHelligkeit"  Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%089" Name="CH%C%ProductselTypeHell" Offset="5" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHelligkeit"  Text="Produkt:" Value="1" />
                 <Parameter Id="%AID%_UP-%TT%%CC%090" Name="CH%C%ProductselTypeBew" Offset="6" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeBewegung"  Text="Produkt:" Value="0" />
-                <Parameter Id="%AID%_UP-%TT%%CC%091" Name="CH%C%ProductselTypeRau" Offset="7" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeMelder"    Text="Produkt:" Value="0" />
-                <Parameter Id="%AID%_UP-%TT%%CC%092" Name="CH%C%ProductselTypeHei" Offset="8" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHeizung"   Text="Produkt:" Value="0" />
-                <Parameter Id="%AID%_UP-%TT%%CC%093" Name="CH%C%ProductselTypeWas" Offset="9" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeWasser"    Text="Produkt:" Value="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%091" Name="CH%C%ProductselTypeRau" Offset="7" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeMelder"    Text="Produkt:" Value="1" />
+                <Parameter Id="%AID%_UP-%TT%%CC%092" Name="CH%C%ProductselTypeHei" Offset="8" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHeizung"   Text="Produkt:" Value="1" />
+                <Parameter Id="%AID%_UP-%TT%%CC%093" Name="CH%C%ProductselTypeWas" Offset="9" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeWasser"    Text="Produkt:" Value="1" />
               </Union> <!-- Union 7 -->
 
              

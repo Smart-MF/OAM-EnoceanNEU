@@ -172,28 +172,24 @@ void EnoceanModule::begin() {
   {
     if (checkBaseID())
     { // old != new
-#ifdef KDEBUG
-      logDebugP("Base-ID: OLD != NEW -> change! ");
-#endif
+      logInfoP("Base-ID: OLD != NEW -> change! ");
       setBaseId(&lui8_BaseID_p[0]);
       // 3.) read Base-ID again and print it out
       readBaseId(&lui8_BaseID_p[0]);
     }
     else // old == new
     {
-#ifdef KDEBUG
       logDebugP("Base-ID: OLD == NEW -> NO change! ");
-#endif
     }
   }
  
 
   for (int i = 0; i < BASEID_BYTES; i++) {
-    logDebugP("Base-ID: %i", lui8_BaseID_p[i], HEX);
+    logInfoP("Base-ID: %i", lui8_BaseID_p[i], HEX);
   }
 
   //****************** Repeater Function ************************************
-  /*
+  
   #ifdef KDEBUG
     logDebugP("----------------------");
   #endif
@@ -204,7 +200,7 @@ void EnoceanModule::begin() {
   #ifdef KDEBUG
     logDebugP("----------------------");
   #endif
-  */
+  
 
   isInited = true;
 }
@@ -241,16 +237,12 @@ void EnoceanModule::setBaseId(uint8_t *fui8_BaseID_p)
   lRdBaseIDPkt_st.u8Type = u8RORG_COMMON_COMMAND;
   lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
 
-#ifdef KDEBUG_BaseID
-  SERIAL_PORT.println("Sending telegram (set base ID).");
-#endif
+  logInfoP("Sending telegram (set base ID).");
 
   if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
   {
     u8RetVal = ENOCEAN_NO_RX_TEL;
-#ifdef KDEBUG_BaseID
-    SERIAL_PORT.println("Receiving telegram (set base ID).");
-#endif
+    logInfoP("Receiving telegram (set base ID).");
     while (u8RetVal == ENOCEAN_NO_RX_TEL)
     {
       u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
@@ -260,51 +252,38 @@ void EnoceanModule::setBaseId(uint8_t *fui8_BaseID_p)
     {
     case ENOCEAN_OK:
     {
-#ifdef KDEBUG_BaseID
-      SERIAL_PORT.print("Data: ");
-      for (int i = 0; i < m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength; i++)
       {
-
-        // SERIAL_PORT.print("%X", m_Pkt_st.u8DataBuffer[i]);
-        SERIAL_PORT.print(m_Pkt_st.u8DataBuffer[i], HEX);
-        SERIAL_PORT.print(" ");
+        std::string hexStr;
+        char hexByte[4];
+        for (int i = 0; i < m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength; i++)
+        {
+          // SERIAL_PORT.print("%X", m_Pkt_st.u8DataBuffer[i]);
+          sprintf(hexByte, "%02X ", m_Pkt_st.u8DataBuffer[i]);
+          hexStr += hexByte;
+        }
+        logInfoP("Data: %s", hexStr.c_str());
       }
-      SERIAL_PORT.println("");
-#endif
 
       switch (m_Pkt_st.u8Type)
       {
       case u8RESPONSE:
       {
-#ifdef KDEBUG
-        SERIAL_PORT.print("Received Response: ");
-#endif
         switch (m_Pkt_st.u8DataBuffer[0])
         {
         case 0x00:
-#ifdef KDEBUG
-          SERIAL_PORT.println("RET_OK");
-#endif
+          logInfoP("Received Response: RET_OK");
           break;
         case 0x02:
-#ifdef KDEBUG
-          SERIAL_PORT.println("RET_NOT_SUPPORTED");
-#endif
+          logInfoP("Received Response: RET_NOT_SUPPORTED");
           break;
         case 0x82:
-#ifdef KDEBUG
-          SERIAL_PORT.println("FLASH_HW_ERROR");
-#endif
+          logInfoP("Received Response: FLASH_HW_ERROR");
           break;
         case 0x90:
-#ifdef KDEBUG
-          SERIAL_PORT.println("BASEID_OUT_OF_RANGE");
-#endif
+          logInfoP("Received Response: BASEID_OUT_OF_RANGE");
           break;
         case 0x91:
-#ifdef KDEBUG
-          SERIAL_PORT.println("BASEID_MAX_REACHED");
-#endif
+          logInfoP("Received Response: BASEID_MAX_REACHED");
           break;
 
         default:
@@ -314,25 +293,18 @@ void EnoceanModule::setBaseId(uint8_t *fui8_BaseID_p)
       break;
       default:
       {
-#ifdef KDEBUG
-        SERIAL_PORT.print("Wrong packet type. Expected response. Received: ");
         /// SERIAL_PORT.println("%X", m_Pkt_st.u8Type);
-        SERIAL_PORT.println(m_Pkt_st.u8Type);
-#endif
+        logInfoP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
       }
       }
     }
     break;
     case ENOCEAN_NO_RX_TEL:
-#ifdef KDEBUG
-      SERIAL_PORT.println("ERROR Receiving telegram (set base ID).");
-#endif
+      logInfoP("ERROR Receiving telegram (set base ID).");
       break;
     default:
     {
-#ifdef KDEBUG
-      SERIAL_PORT.println("set receiving base ID");
-#endif
+      logInfoP("set receiving base ID");
     }
     } // ENDE SWITCH
   }
@@ -422,10 +394,7 @@ void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObje
 
   switch (ParamENO_CHProfilSelection) {
   case u8RORG_4BS:
-#ifdef KDEBUG
-    SERIAL_PORT.print(F("4BS "));
-    SERIAL_PORT.println(knx.paramWord(ENO_CHProfil4BS20 + firstParameter));
-#endif
+    logInfoP("4BS %u", ParamENO_CHProfil4BS20); //knx.paramWord(ENO_CHProfil4BS20 + firstParameter));
     switch (ParamENO_CHProfil4BS20) {
     // *************** A5-20-01 ***********************************************************
     case A5_20_01:
@@ -785,9 +754,7 @@ void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObje
   case u8RORG_Rocker:
     switch (ParamENO_CHDirectionKnxEnocean) {
     case 1:
-#ifdef KDEBUG
-      SERIAL_PORT.println(F("send Rocker MSG"));
-#endif  
+      logInfoP("send Rocker MSG");
       if (iKo.value(Dpt(1, 1))) {
         send_RPS_Taster(lui8_BaseID_p, false, true, 0); // BaseID_CH = 0
       } else {
@@ -1196,10 +1163,7 @@ void EnoceanModule::send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t 
     if (baseID_CH <= 4) // anpassen der Sende ID -> baseID_CH max 4 !!!
         l_TestBuf_p[8] = l_TestBuf_p[8] + baseID_CH;
 
-#ifdef KDEBUG
-    SERIAL_PORT.print(F("ID: "));
-    SERIAL_PORT.println(l_TestBuf_p[8]);
-#endif
+    logInfoP("ID: %u", l_TestBuf_p[8]);
 
     uart_sendPacket(&l_TestPacket_st);
 }
@@ -1250,16 +1214,7 @@ void EnoceanModule::send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boole
     if (baseID_CH <= 4) // anpassen der Sende ID -> baseID_CH max 4 !!!
         l_TestBuf_p[5] = l_TestBuf_p[5] + baseID_CH;
 
-#ifdef KDEBUG
-    SERIAL_PORT.print(F("Send-ID: "));
-    SERIAL_PORT.print(l_TestBuf_p[2], HEX);
-    SERIAL_PORT.print(F(" "));
-    SERIAL_PORT.print(l_TestBuf_p[3], HEX);
-    SERIAL_PORT.print(F(" "));
-    SERIAL_PORT.print(l_TestBuf_p[4], HEX);
-    SERIAL_PORT.print(F(" "));
-    SERIAL_PORT.println(l_TestBuf_p[5], HEX);
-#endif
+    logInfoP("Send-ID: %02X %02X %02X %02X", l_TestBuf_p[2], l_TestBuf_p[3], l_TestBuf_p[4], l_TestBuf_p[5]);
 
     uart_sendPacket(&l_TestPacket_st);
 }
@@ -1298,15 +1253,11 @@ void EnoceanModule::setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool s
 
     if (!uart_sendPacket(&lRdBaseIDPkt_st))
     {
-#ifdef KDEBUG
-        SERIAL_PORT.println("Sending telegram failed.");
-#endif
+        logInfoP("Sending telegram failed.");
     }
     else
     {
-#ifdef KDEBUG
-        SERIAL_PORT.print(F("Requested status"));
-#endif
+        logInfoP("Requested status");
     }
 }
 
@@ -1341,15 +1292,11 @@ void EnoceanModule::getStatusActors(uint8_t *mySenderId, uint8_t idExtra)
 
     if (!uart_sendPacket(&lRdBaseIDPkt_st))
     {
-#ifdef KDEBUG
-        SERIAL_PORT.println("Sending telegram failed.");
-#endif
+        logInfoP("Sending telegram failed.");
     }
     else
     {
-#ifdef KDEBUG
-        SERIAL_PORT.print(F("Requested status"));
-#endif
+        logInfoP("Requested status");
     }
 }
 
@@ -1387,15 +1334,11 @@ void EnoceanModule::setActorsMeasurment(uint8_t *mySenderId, uint8_t idExtra, ui
 
     if (!uart_sendPacket(&lRdBaseIDPkt_st))
     {
-#ifdef KDEBUG
-        SERIAL_PORT.println("Sending telegram failed.");
-#endif
+        logInfoP("Sending telegram failed.");
     }
     else
     {
-#ifdef KDEBUG
-        SERIAL_PORT.println(F("Requested Meas Setup"));
-#endif
+        logInfoP("Requested Meas Setup");
     }
 }
 
@@ -1432,16 +1375,186 @@ void EnoceanModule::getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtr
 
     if (!uart_sendPacket(&lRdBaseIDPkt_st))
     {
-#ifdef KDEBUG
-        SERIAL_PORT.println("Sending telegram failed.");
-#endif
+        logInfoP("Sending telegram failed.");
     }
     else
     {
-#ifdef KDEBUG
-        SERIAL_PORT.println(F("Requested Meas Value"));
-#endif
+        logInfoP("Requested Meas Value");
     }
+}
+
+
+void EnoceanModule::setRepeaterFunc()
+{
+  PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
+
+  uint8_t lu8SndBuf[3];
+  // uint8_t loopCount = 0;
+
+  lu8SndBuf[0] = u8CO_WR_REPEATER;
+  lu8SndBuf[1] = ParamENO_RepeaterFunc; //(knx.paramByte(ENO_RepeaterFunc) >> ENO_RepeaterFuncShift) & 1;
+  lu8SndBuf[2] = ParamENO_RepeaterLevel; //knx.paramByte(ENO_RepeaterLevel);
+
+  lRdBaseIDPkt_st.u16DataLength = 0x0003;
+  lRdBaseIDPkt_st.u8OptionLength = 0x00;
+  lRdBaseIDPkt_st.u8Type = u8RORG_COMMON_COMMAND;
+  lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+  logInfoP("Sending telegram (Repeater ON/OFF).");
+
+  if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
+  {
+    u8RetVal = ENOCEAN_NO_RX_TEL;
+    logInfoP("Receiving telegram (Repeater ON/OFF).");
+    while (u8RetVal == ENOCEAN_NO_RX_TEL)
+    {
+      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
+    }
+
+    switch (u8RetVal)
+    {
+    case ENOCEAN_OK:
+    {
+      {
+        std::string hexStr;
+        char hexByte[4];
+        for (int i = 0; i < m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength; i++)
+        {
+          sprintf(hexByte, "%02X ", m_Pkt_st.u8DataBuffer[i]);
+          hexStr += hexByte;
+        }
+        logInfoP("Data: %s", hexStr.c_str());
+      }
+
+      switch (m_Pkt_st.u8Type)
+      {
+      case u8RESPONSE:
+      {
+        switch (m_Pkt_st.u8DataBuffer[0])
+        {
+        case 0x00:
+          logInfoP("Received Response = OK");
+          break;
+        case 0x02:
+          logInfoP("Received Response = RET_NOT_SUPPORTED");
+          break;
+        case 0x03:
+          logInfoP("Received Response = RET_WRONG_PARAM");
+          break;
+        default:
+          break;
+        }
+      }
+      break;
+      default:
+      {
+        logInfoP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
+      }
+      }
+    }
+    break;
+    case ENOCEAN_NO_RX_TEL:
+      logInfoP("ERROR Receiving telegram (read base ID).");
+      break;
+    default:
+    {
+      logInfoP("Error receiving base ID");
+    }
+    }
+  }
+}
+
+void EnoceanModule::readRepeaterFunc()
+{
+  PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
+
+  uint8_t lu8SndBuf[1];
+  // uint8_t loopCount = 0;
+
+  lu8SndBuf[0] = u8CO_RD_REPEATER;
+
+  lRdBaseIDPkt_st.u16DataLength = 0x0001;
+  lRdBaseIDPkt_st.u8OptionLength = 0x00;
+  lRdBaseIDPkt_st.u8Type = u8RORG_COMMON_COMMAND;
+  lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+  logInfoP("Sending telegram (Repeater ON/OFF).");
+
+  if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
+  {
+    u8RetVal = ENOCEAN_NO_RX_TEL;
+    logInfoP("Receiving telegram (Repeater ON/OFF).");
+    while (u8RetVal == ENOCEAN_NO_RX_TEL)
+    {
+      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
+    }
+
+    switch (u8RetVal)
+    {
+    case ENOCEAN_OK:
+    {
+      {
+        std::string hexStr;
+        char hexByte[4];
+        for (int i = 0; i < m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength; i++)
+        {
+          sprintf(hexByte, "%02X ", m_Pkt_st.u8DataBuffer[i]);
+          hexStr += hexByte;
+        }
+        logInfoP("Data: %s", hexStr.c_str());
+      }
+
+      switch (m_Pkt_st.u8Type)
+      {
+      case u8RESPONSE:
+      {
+        if (m_Pkt_st.u8DataBuffer[0] == 0x00)
+        {
+          logInfoP("Received Response = OK");
+          switch (m_Pkt_st.u8DataBuffer[1])
+          {
+          case 0x00:
+            logInfoP("Repeater = OFF");
+            break;
+          case 0x01:
+            logInfoP("Repeater = ON");
+            break;
+          case 0x02:
+            logInfoP("Repeater = Seletive");
+            break;
+          default:
+            break;
+          }
+          switch (m_Pkt_st.u8DataBuffer[2])
+          {
+          case 0x01:
+            logInfoP("Repeater = Level-1");
+            break;
+          case 0x02:
+            logInfoP("Repeater = Level-2");
+            break;
+          default:
+            break;
+          }
+        }
+      }
+      break;
+      default:
+      {
+        logInfoP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
+      }
+      }
+    }
+    break;
+    case ENOCEAN_NO_RX_TEL:
+      logInfoP("ERROR Receiving telegram (read base ID).");
+      break;
+    default:
+    {
+      logInfoP("Error receiving base ID");
+    }
+    }
+  }
 }
 
 EnoceanModule openknxEnoceanModule;

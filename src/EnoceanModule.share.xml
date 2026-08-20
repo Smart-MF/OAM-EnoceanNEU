@@ -126,7 +126,7 @@
               <!-- Parameter type for  Product selection Helligkeit/Dämmerung-->
               <ParameterType Id="%AID%_PT-ProductSelectionTypeHelligkeit" Name="ProductSelectionTypeHelligkeit">
                 <TypeRestriction Base="Value" SizeInBit="8">
-                  <Enumeration Text="FHD60SB - Helligkeits-Dämmerungs-Sensor"   Value="0" Id="%AID%_PT-ProductSelectionTypeHelligkeit_EN-0" />            
+                  <Enumeration Text="FHD60SB - Helligkeits-Dämmerungs-Sensor"   Value="1" Id="%AID%_PT-ProductSelectionTypeHelligkeit_EN-1" />            
                 </TypeRestriction>
               </ParameterType>
               <!-- Parameter type for  Product selection Bewegung -->
@@ -142,20 +142,23 @@
                <!-- Parameter type for  Product selection Rauchmelder -->
               <ParameterType Id="%AID%_PT-ProductSelectionTypeMelder" Name="ProductSelectionTypeMelder">
                 <TypeRestriction Base="Value" SizeInBit="8">
-                  <Enumeration Text="FRWB - Rauchmelder"  Value="0" Id="%AID%_PT-ProductSelectionTypeMelder_EN-0" />  
-                  <Enumeration Text="FHMB - Hitzemelder"  Value="1" Id="%AID%_PT-ProductSelectionTypeMelder_EN-1" />  
+                  <Enumeration Text="FRWB - Rauchmelder"  Value="1" Id="%AID%_PT-ProductSelectionTypeMelder_EN-1" />  
+                  <Enumeration Text="FHMB - Hitzemelder"  Value="2" Id="%AID%_PT-ProductSelectionTypeMelder_EN-2" />  
                 </TypeRestriction>
               </ParameterType>
               <!-- Parameter type for  Product selection Heizung -->
               <ParameterType Id="%AID%_PT-ProductSelectionTypeHeizung" Name="ProductSelectionTypeHeizung">
                 <TypeRestriction Base="Value" SizeInBit="8">
-                  <Enumeration Text="FKS-SV- Klein-Stellantrieb Smart Valve"  Value="0" Id="%AID%_PT-ProductSelectionTypeHeizung_EN-0" />  
+                  <Enumeration Text="FKS-SV - Klein-Stellantrieb Smart Valve"  Value="1" Id="%AID%_PT-ProductSelectionTypeHeizung_EN-1" />  
+                  <Enumeration Text="FKS-B - Funk-Klein-Stellantrieb mit Batterie"  Value="2" Id="%AID%_PT-ProductSelectionTypeHeizung_EN-2" />  
+                
+               
                 </TypeRestriction>
               </ParameterType>
                <!-- Parameter type for  Product selection Wassersensoren -->
               <ParameterType Id="%AID%_PT-ProductSelectionTypeWasser" Name="ProductSelectionTypeWasser">
                 <TypeRestriction Base="Value" SizeInBit="8">
-                  <Enumeration Text="FWS81 - Wassersensor"  Value="0" Id="%AID%_PT-ProductSelectionTypeWasser_EN-0" />  
+                  <Enumeration Text="FWS81 - Wassersensor"  Value="1" Id="%AID%_PT-ProductSelectionTypeWasser_EN-1" />  
                 </TypeRestriction>
               </ParameterType>
               <!-- Parameter type for EEP Profil selection -->
@@ -888,9 +891,56 @@
 
                 <ParameterRefRef RefId="%AID%_UP-%TT%00011_R-%TT%0001101" HelpContext="BASE-Verfuegbare-Kanaele" IndentLevel="1" /> 
                 <ParameterSeparator Id="%AID%_PS-nnn" Text="" UIHint="HorizontalRuler" />
-
-
-                <ParameterRefRef RefId="%AID%_P-%TT%00001_R-%TT%0000101" HelpContext="BASE-Verfuegbare-Kanaele" IndentLevel="1" />
+                
+                <!-- Repeater Settings-->
+                <ParameterRefRef RefId="%AID%_P-%TT%00000_R-%TT%0000001" HelpContext="ENO-Repeater" IndentLevel="1"/> <!-- Repeater ON/OFF -->
+                <choose ParamRefId="%AID%_P-%TT%00000_R-%TT%0000001">
+                  <when test="1">
+                    <ParameterRefRef RefId="%AID%_P-%TT%00010_R-%TT%0001001" HelpContext="ENO-Repeater"/> <!-- Repeater Level -->
+                  </when>
+                </choose>
+                <ParameterSeparator Id="%AID%_PS-7" Text="" UIHint="HorizontalRuler" />
+                
+                <!-- Base-ID ändern -->
+                <ParameterRefRef RefId="%AID%_P-%TT%00001_R-%TT%0000101" HelpContext="ENO-BaseID" IndentLevel="1" />
+                <choose ParamRefId="%AID%_P-%TT%00001_R-%TT%0000101">
+                  <when test="0">
+                    <ParameterSeparator Id="%AID%_PS-99" Text="                                                                  ACHTUNG: die Base-ID kann nur 10x geändert werden!" />
+                  </when>
+                  <when test="1">
+                    <ParameterSeparator Id="%AID%_PS-8" Text="Hier die neue Base-ID eingeben:" />
+                    <ParameterBlock Id="%AID%_PB-3" Name="Id1" Text="Id" Inline="true" Layout="Grid">
+                      <Rows>
+                        <Row Id="%AID%_PB-3_R-1" Name="Row1" />
+                      </Rows>
+                      <Columns>
+                        <Column Id="%AID%_PB-3_C-1" Name="Col1" Width="25%" />
+                        <Column Id="%AID%_PB-3_C-2" Name="Col2" Width="9%" />
+                        <Column Id="%AID%_PB-3_C-3" Name="Col3" Width="9%" />
+                        <Column Id="%AID%_PB-3_C-4" Name="Col4" Width="2%" />
+                        <Column Id="%AID%_PB-3_C-5" Name="Col5" Width="9%" />
+                        <Column Id="%AID%_PB-3_C-6" Name="Col6" Width="9%" />
+                        <Column Id="%AID%_PB-3_C-7" Name="Col7" Width="2%" />
+                        <Column Id="%AID%_PB-3_C-8" Name="Col8" Width="9%" />
+                        <Column Id="%AID%_PB-3_C-9" Name="Col9" Width="9%" />
+                        <Column Id="%AID%_PB-3_C-10" Name="Col10" Width="2%" />
+                        <Column Id="%AID%_PB-3_C-11" Name="Col11" Width="9%" />
+                        <Column Id="%AID%_PB-3_C-12" Name="Col12" Width="9%" />
+                      </Columns>
+                      <ParameterSeparator Id="%AID%_PS-9" Text="Base-ID:"  Cell="1,1" />
+                      <!-- <ParameterSeparator Id="%AID%_PS-nnn" Text="." Cell="1,3"/> -->
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00002_R-%TT%0000201" Cell="1,2" />
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00003_R-%TT%0000301" Cell="1,3" />
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00004_R-%TT%0000401" Cell="1,5" />
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00005_R-%TT%0000501" Cell="1,6" />
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00006_R-%TT%0000601" Cell="1,8" />
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00007_R-%TT%0000701" Cell="1,9" />
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00008_R-%TT%0000801" Cell="1,11" />
+                      <ParameterRefRef RefId="%AID%_UP-%TT%00009_R-%TT%0000901" Cell="1,12" />
+                    </ParameterBlock>
+                    <ParameterSeparator Id="%AID%_PS-13" Text="Zulässiger Base-ID Bereich: 0xFF800000 to 0xFFFFFFFE" />
+                  </when>
+                </choose>
                 <ParameterSeparator Id="%AID%_PS-nnn" Text="" UIHint="HorizontalRuler" />
               </ParameterBlock>
               

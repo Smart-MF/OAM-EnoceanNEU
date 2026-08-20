@@ -140,6 +140,8 @@ private:
     void readBaseId(uint8_t *fui8_BaseID_p);
     void setBaseId(uint8_t *fui8_BaseID_p);
     bool checkBaseID();
+    void readRepeaterFunc();
+    void setRepeaterFunc();
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &ko);
     void send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH);
