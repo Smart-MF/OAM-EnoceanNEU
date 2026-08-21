@@ -161,10 +161,19 @@
                 <Parameter Id="%AID%_UP-%TT%%CC%088" Name="CH%C%ProductselTypeUmw" Offset="4" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeUmwelt"    Text="Produkt:" Value="0" />
                 <Parameter Id="%AID%_UP-%TT%%CC%089" Name="CH%C%ProductselTypeHell" Offset="5" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHelligkeit"  Text="Produkt:" Value="1" />
                 <Parameter Id="%AID%_UP-%TT%%CC%090" Name="CH%C%ProductselTypeBew" Offset="6" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeBewegung"  Text="Produkt:" Value="0" />
-                <Parameter Id="%AID%_UP-%TT%%CC%091" Name="CH%C%ProductselTypeRau" Offset="7" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeMelder"    Text="Produkt:" Value="1" />
+                <Parameter Id="%AID%_UP-%TT%%CC%091" Name="CH%C%ProductselTypeMel" Offset="7" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeMelder"    Text="Produkt:" Value="1" />
                 <Parameter Id="%AID%_UP-%TT%%CC%092" Name="CH%C%ProductselTypeHei" Offset="8" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeHeizung"   Text="Produkt:" Value="1" />
                 <Parameter Id="%AID%_UP-%TT%%CC%093" Name="CH%C%ProductselTypeWas" Offset="9" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeWasser"    Text="Produkt:" Value="1" />
               </Union> <!-- Union 7 -->
+              <Union SizeInBit="8">
+                <Memory CodeSegment="%AID%_RS-04-00000" Offset="26" BitOffset="0" />
+                <Parameter Id="%AID%_UP-%TT%%CC%094" Name="CH%C%SelectionFFG7B"  Offset="0" BitOffset="0" ParameterType="%AID%_PT-ProfilSelectionFFG7B"  Text="delta Value:"  Value="0" />  <!-- 1 Bit -->
+               
+              </Union> <!-- Union 8 -->
+
+
+              
+
 
              
 
@@ -265,6 +274,7 @@
               <ParameterRef Id="%AID%_UP-%TT%%CC%091_R-%TT%%CC%09101" RefId="%AID%_UP-%TT%%CC%091" />  <!-- Auswahl Produkt Type Melder-->       
               <ParameterRef Id="%AID%_UP-%TT%%CC%092_R-%TT%%CC%09201" RefId="%AID%_UP-%TT%%CC%092" />  <!-- Auswahl Produkt Type Heizung-->       
               <ParameterRef Id="%AID%_UP-%TT%%CC%093_R-%TT%%CC%09301" RefId="%AID%_UP-%TT%%CC%093" />  <!-- Auswahl Produkt Type Wasser-->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%094_R-%TT%%CC%09401" RefId="%AID%_UP-%TT%%CC%094" />  <!-- FFG7B - Fenstergriffsensor Auswahl EEP-Profil -->       
             </ParameterRefs>
             <ComObjectTable>
               <!-- ComOject Kanal 1 -->
@@ -1212,13 +1222,24 @@
                                 <when test="0">  
                                 </when>
                                 <when test="1">   <!-- FFG7B - Fenstergriffsensor    HelpContext="ENO-ELTAKO-FFG7B"-->  
+                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%094_R-%TT%%CC%09401" IndentLevel="1"  /> <!-- Auswahl EEP-Profil -->
                                     <ParameterRefRef RefId="%AID%_UP-%TT%%CC%067_R-%TT%%CC%06701" IndentLevel="1"  /> <!-- Par Wert für geschlossen -->
                                     <ParameterSeparator Id="%AID%_PS-1" Text="" UIHint="HorizontalRuler" />
                                     <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
                                     <ParameterSeparator Id="%AID%_PS-2" Text="EEP: A5-14-09 (Default) Zyklisch: 15min" />
                                     <ParameterSeparator Id="%AID%_PS-3" Text="EEP: F6-10-00 (Option1) Zyklisch: NEIN" />
                                     <ParameterSeparator Id="%AID%_PS-4" Text="EEP: F6-10-00 (Option2) Zyklisch: 15min" />
-                                </when>
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00107" /> <!-- Fenster open -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00204" /> <!-- Fenster gekippt -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00306" /> <!-- open/close-->  
+                                    <choose ParamRefId="%AID%_UP-%TT%%CC%094_R-%TT%%CC%09401">
+                                      <when test="0">  <!-- A5-14-09 --> 
+                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%004_R-%TT%%CC%00405" /> <!-- KO Batterie voltage -->
+                                      </when>
+                                      <when test="1">  <!--F6-10-00 -->
+                                      </when>
+                                    </choose> 
+                                  </when>
                                 <when test="2 3 4">   <!-- FFKB - Tür/Fensterkontakt -->
                                    <!-- FTK - Tür/Fensterkontakt --> 
                                    <!-- FTKB - Tür/Fensterkontakt -->
@@ -1227,12 +1248,16 @@
                                   <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
                                   <ParameterSeparator Id="%AID%_PS-2" Text="EEP: D5-00-01" />
                                   <ParameterSeparator Id="%AID%_PS-3" Text="Zusätzlich kann eine Nachicht mit dem Batteriezustand gesendet werden" />   
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00306" /> <!-- open/close-->
                                 </when>
                                 <when test="5 6">   <!-- FTKE - Fenster-Türkontakt --> <!-- FFFTE - Fenster-Tastkontakt -->
                                   <ParameterRefRef RefId="%AID%_UP-%TT%%CC%067_R-%TT%%CC%06701" IndentLevel="1"  /> <!-- Par Wert für geschlossen -->
                                   <ParameterSeparator Id="%AID%_PS-1" Text="" UIHint="HorizontalRuler" />
                                   <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
                                   <ParameterSeparator Id="%AID%_PS-2" Text="EEP: F6-10-00" /> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00306" /> <!-- open/close-->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00107" /> <!-- Fenster open -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00204" /> <!-- Fenster gekippt -->
                                 </when>
                               </choose>  
                           </when>

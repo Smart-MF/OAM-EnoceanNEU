@@ -53,15 +53,13 @@ uint8_t getRockerTyp(uint8_t type)
 }*/
 
 // Schreibt einen Bool-Wert (DPT 1.001) auf das übergebene Gruppenobjekt.
-inline void shortSend_DPT1(bool value, GroupObject &ko)
-{
+inline void shortSend_DPT1(bool value, GroupObject &ko) {
   logDebug("RPS", "DPT1: %u", value);
   ko.value(value, Dpt(1, 1));
 }
 
 // Startet einen Dimmvorgang (DPT 3) in die angegebene Richtung auf dem übergebenen Gruppenobjekt.
-inline void SendDPT3_007(bool dir, GroupObject &ko)
-{
+inline void SendDPT3_007(bool dir, GroupObject &ko) {
   uint8_t dpt3value = 0;
   // UP = 0
   // down = 1
@@ -76,8 +74,7 @@ inline void SendDPT3_007(bool dir, GroupObject &ko)
 }
 
 // Liest die per ETS parametrierte Szenennummer aus und schreibt sie auf das übergebene Gruppenobjekt.
-inline void shortSend_Szene(uint8_t scene, uint16_t firstParameter, GroupObject &ko)
-{
+inline void shortSend_Szene(uint8_t scene, uint16_t firstParameter, GroupObject &ko) {
   uint8_t szeneNr;
 
   logDebug("RPS", "Szene: %u", knx.paramByte(firstParameter + scene));
@@ -86,8 +83,7 @@ inline void shortSend_Szene(uint8_t scene, uint16_t firstParameter, GroupObject 
 }
 
 // Beendet einen laufenden Dimmvorgang (DPT 3 Stop) auf dem übergebenen Gruppenobjekt.
-inline void stopDim(GroupObject &ko)
-{
+inline void stopDim(GroupObject &ko) {
   uint8_t dpt3value = 0;
 
   logDebug("RPS", "Stop DIM");
@@ -97,16 +93,14 @@ inline void stopDim(GroupObject &ko)
   ko.value(dpt3value, Dpt(3, 7, 0));
 }
 
-// Wird beim Loslassen einer lang gedrückten Wippe aufgerufen und stoppt je nach konfigurierter Funktion den laufenden Dimmvorgang.
-inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex)
-{
-  switch (rockerNr)
-  {
+// Wird beim Loslassen einer lang gedrückten Wippe aufgerufen und stoppt je nach konfigurierter Funktion den laufenden
+// Dimmvorgang.
+inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex) {
+  switch (rockerNr) {
   case AO_pressed:
     logDebug("RPS", "A0"); // AO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
-    switch (ParamENO_CHRockerFunktionA)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
+    switch (ParamENO_CHRockerFunktionA) {
     case 3: // Long: Licht Heller
       stopDim(KoENO_GO_BASE__2);
       break;
@@ -118,9 +112,8 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
 
   case AI_pressed:
     logDebug("RPS", "AI"); // AI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
-    switch (ParamENO_CHRockerFunktionA)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
+    switch (ParamENO_CHRockerFunktionA) {
     case 3: // Long: Licht Dunkler
       stopDim(KoENO_GO_BASE__2);
       break;
@@ -132,9 +125,8 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
 
   case BO_pressed:
     logDebug("RPS", "B0"); // BO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
-    switch (ParamENO_CHRockerFunktionB)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
+    switch (ParamENO_CHRockerFunktionB) {
     case 3: // Long: Licht Heller
       stopDim(KoENO_GO_BASE__4);
       break;
@@ -146,9 +138,8 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
 
   case BI_pressed:
     logDebug("RPS", "BI"); // BI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
-    switch (ParamENO_CHRockerFunktionB)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
+    switch (ParamENO_CHRockerFunktionB) {
     case 3: // Long: Licht Dunkler
       stopDim(KoENO_GO_BASE__4);
       break;
@@ -160,11 +151,10 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
 
   case CO_pressed:
     logDebug("RPS", "C0"); // CO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
-    switch (ParamENO_CHRockerProfil)
-    {
-    case Wippen1:                                                    // Rocker Profil 1 Wippe
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
+    switch (ParamENO_CHRockerProfil) {
+    case Wippen1: // Rocker Profil 1 Wippe
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
       switch (ParamENO_CHRockerFunktionA) // FunctionA because of Wippen1
       {
       case 3: // Long: Licht Heller
@@ -177,9 +167,8 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
       break;
 
     default: // all other Rocker Profils
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
-      switch (ParamENO_CHRockerFunktionC)
-      {
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
+      switch (ParamENO_CHRockerFunktionC) {
       case 3: // Long: Licht Heller
         stopDim(KoENO_GO_BASE__6);
         break;
@@ -192,11 +181,10 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
 
   case CI_pressed:
     logDebug("RPS", "CI"); // CI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
-    switch (ParamENO_CHRockerProfil)
-    {
-    case Wippen1:                                                    // Rocker Profil 1 Wippe
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
+    switch (ParamENO_CHRockerProfil) {
+    case Wippen1: // Rocker Profil 1 Wippe
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
       switch (ParamENO_CHRockerFunktionA) // FunctionA because of Wippen1
       {
       case 3: // Long: Licht Heller
@@ -208,9 +196,8 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
       }
       break;
     default: // all other Rocker Profils
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
-      switch (ParamENO_CHRockerFunktionC)
-      {
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
+      switch (ParamENO_CHRockerFunktionC) {
       case 3: // Long: Licht Dunkler
         stopDim(KoENO_GO_BASE__6);
         break;
@@ -226,17 +213,15 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
   }
 }
 
-// Wertet einen langen Tastendruck aus und löst je nach konfigurierter Funktion Schalten, Dimmen oder Szenenaufruf aus; liefert true, wenn ein Dimmvorgang gestartet wurde.
-inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex)
-{
+// Wertet einen langen Tastendruck aus und löst je nach konfigurierter Funktion Schalten, Dimmen oder Szenenaufruf aus;
+// liefert true, wenn ein Dimmvorgang gestartet wurde.
+inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex) {
   // uint8_t szeneNr;
-  switch (rockerNr)
-  {
+  switch (rockerNr) {
   case AO_pressed:
     logDebug("RPS", "A0"); // AO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
-    switch (ParamENO_CHRockerFunktionA)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
+    switch (ParamENO_CHRockerFunktionA) {
     case 1: // Schalten EIN (Oben/unten Wippe)
       shortSend_DPT1(true, KoENO_GO_BASE__1);
       break;
@@ -265,9 +250,8 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
 
   case AI_pressed:
     logDebug("RPS", "AI"); // AI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
-    switch (ParamENO_CHRockerFunktionA)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
+    switch (ParamENO_CHRockerFunktionA) {
     case 1: // Schalten AUS (Oben/unten Wippe)
       shortSend_DPT1(false, KoENO_GO_BASE__1);
       break;
@@ -296,9 +280,8 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
 
   case BO_pressed:
     logDebug("RPS", "B0"); // BO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
-    switch (ParamENO_CHRockerFunktionB)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
+    switch (ParamENO_CHRockerFunktionB) {
     case 1: // Schalten EIN (Oben/unten Wippe)
       shortSend_DPT1(true, KoENO_GO_BASE__3);
       break;
@@ -327,9 +310,8 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
 
   case BI_pressed:
     logDebug("RPS", "BI"); // BI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
-    switch (ParamENO_CHRockerFunktionB)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
+    switch (ParamENO_CHRockerFunktionB) {
     case 1: // Schalten AUS (Oben/unten Wippe)
       shortSend_DPT1(false, KoENO_GO_BASE__3);
       break;
@@ -358,11 +340,10 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
 
   case CO_pressed:
     logDebug("RPS", "C0"); // CO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
-    switch (ParamENO_CHRockerProfil)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
+    switch (ParamENO_CHRockerProfil) {
     case Wippen1:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
       switch (ParamENO_CHRockerFunktionA) // FunctionA because of Wippen1
       {
       case 1: // Schalten EIN (Oben/unten Wippe)
@@ -391,9 +372,8 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
       }
       break;
     default:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
-      switch (ParamENO_CHRockerFunktionC)
-      {
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
+      switch (ParamENO_CHRockerFunktionC) {
       case 1: // Schalten EIN (Oben/unten Wippe)
         shortSend_DPT1(true, KoENO_GO_BASE__5);
         break;
@@ -424,11 +404,10 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
 
   case CI_pressed:
     logDebug("RPS", "CI"); // CI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
-    switch (ParamENO_CHRockerProfil)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
+    switch (ParamENO_CHRockerProfil) {
     case Wippen1:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
       switch (ParamENO_CHRockerFunktionA) // FunctionA because of Wippen1
       {
       case 1: // Schalten AUS (Oben/unten Wippe)
@@ -458,9 +437,8 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
       break;
 
     default:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
-      switch (ParamENO_CHRockerFunktionC)
-      {
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
+      switch (ParamENO_CHRockerFunktionC) {
       case 1: // Schalten AUS (Oben/unten Wippe)
         shortSend_DPT1(false, KoENO_GO_BASE__5);
         break;
@@ -495,17 +473,15 @@ inline bool longPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstC
   return false;
 }
 
-// Wertet einen kurzen Tastendruck aus und löst je nach konfigurierter Funktion Schalten, Dimmschritt oder Szenenaufruf aus.
-inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex)
-{
+// Wertet einen kurzen Tastendruck aus und löst je nach konfigurierter Funktion Schalten, Dimmschritt oder Szenenaufruf
+// aus.
+inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstComObj, uint8_t _channelIndex) {
   // uint8_t szeneNr;
-  switch (rockerNr)
-  {
+  switch (rockerNr) {
   case AO_pressed:
     logDebug("RPS", "A0"); // AO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
-    switch (ParamENO_CHRockerFunktionA)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
+    switch (ParamENO_CHRockerFunktionA) {
     case 1: // Schalten EIN (Oben/unten Wippe)
       shortSend_DPT1(true, KoENO_GO_BASE__1);
       break;
@@ -532,9 +508,8 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
 
   case AI_pressed:
     logDebug("RPS", "AI"); // AI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
-    switch (ParamENO_CHRockerFunktionA)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA))
+    switch (ParamENO_CHRockerFunktionA) {
     case 1: // Schalten AUS (Oben/unten Wippe)
       shortSend_DPT1(false, KoENO_GO_BASE__1);
       break;
@@ -561,9 +536,8 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
 
   case BO_pressed:
     logDebug("RPS", "B0"); // BO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
-    switch (ParamENO_CHRockerFunktionB)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
+    switch (ParamENO_CHRockerFunktionB) {
     case 1: // Schalten EIN (Oben/unten Wippe)
       shortSend_DPT1(true, KoENO_GO_BASE__3);
       break;
@@ -590,9 +564,8 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
 
   case BI_pressed:
     logDebug("RPS", "BI"); // BI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
-    switch (ParamENO_CHRockerFunktionB)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionB))
+    switch (ParamENO_CHRockerFunktionB) {
     case 1: // Schalten AUS (Oben/unten Wippe)
       shortSend_DPT1(false, KoENO_GO_BASE__3);
       break;
@@ -619,11 +592,10 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
 
   case CO_pressed:
     logDebug("RPS", "C0, RockerProfil: %u", ParamENO_CHRockerProfil); // CO = normal oben
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
-    switch (ParamENO_CHRockerProfil)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
+    switch (ParamENO_CHRockerProfil) {
     case Wippen1:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
       switch (ParamENO_CHRockerFunktionA) // FunctionA because of Wippen1
       {
       case 1: // Schalten EIN (Oben/unten Wippe)
@@ -651,9 +623,8 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
       break;
 
     default:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
-      switch (ParamENO_CHRockerFunktionC)
-      {
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionC))
+      switch (ParamENO_CHRockerFunktionC) {
       case 1: // Schalten EIN (Oben/unten Wippe)
         shortSend_DPT1(true, KoENO_GO_BASE__5);
         break;
@@ -682,11 +653,10 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
 
   case CI_pressed:
     logDebug("RPS", "CI"); // CI = normal unten
-    //switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
-    switch (ParamENO_CHRockerProfil)
-    {
+    // switch (knx.paramByte(firstParameter + ENO_CHRockerProfil))
+    switch (ParamENO_CHRockerProfil) {
     case Wippen1:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
       switch (ParamENO_CHRockerFunktionA) // FunctionA because of Wippen1
       {
       case 1: // Schalten AUS (Oben/unten Wippe)
@@ -714,7 +684,7 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
       break;
 
     default:
-      //switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
+      // switch (knx.paramByte(firstParameter + ENO_CHRockerFunktionA)) // FunctionA because of Wippen1
       switch (ParamENO_CHRockerFunktionA) // FunctionA because of Wippen1
       {
       case 1: // Schalten AUS (Oben/unten Wippe)
@@ -747,21 +717,20 @@ inline void shortPress(uint8_t rockerNr, uint16_t firstParameter, uint16_t first
   }
 }
 
-// Verarbeitet das Loslassen einer Taste (kurz oder lang) abhängig von der konfigurierten Funktion: Schalten, Dimmen, Jalousie oder Szenenaufruf.
-inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t firstComObj, uint8_t RockerFunktion, uint8_t RockerSzene, bool islong, uint8_t _channelIndex)
-{
+// Verarbeitet das Loslassen einer Taste (kurz oder lang) abhängig von der konfigurierten Funktion: Schalten, Dimmen,
+// Jalousie oder Szenenaufruf.
+inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t firstComObj, uint8_t RockerFunktion,
+                           uint8_t RockerSzene, bool islong, uint8_t _channelIndex) {
   uint8_t szeneNr;
   uint8_t dpt3value = 0;
 
-  switch (knx.paramByte(firstParameter + RockerFunktion))
-  {
+  switch (knx.paramByte(firstParameter + RockerFunktion)) {
   case 1:        // Schalten EIN/AUS (Oben/unten Wippe)
     if (stateIO) // Button I
     {
       logDebug("RPS", "Schalten AUS");
       KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-    }
-    else // Button O
+    } else // Button O
     {
       logDebug("RPS", "Schalten EIN");
       KoENO_GO_BASE__2.value(true, Dpt(1, 1));
@@ -773,8 +742,7 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
     {
       logDebug("RPS", "Schalten EIN");
       KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-    }
-    else // Button O
+    } else // Button O
     {
       logDebug("RPS", "Schalten AUS");
       KoENO_GO_BASE__2.value(false, Dpt(1, 1));
@@ -782,8 +750,7 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
     break;
 
   case 3: // short: Licht AN/AUS   long: Dimmen Heller/Dunkler (Oben/unten Wippe)
-    if (islong)
-    {
+    if (islong) {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Dimmen heller");
@@ -791,25 +758,19 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 7, 1));
         dpt3value = 8;
         KoENO_GO_BASE__3.value(dpt3value, Dpt(3, 7, 0));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Dimmen Dunkler");
         dpt3value = 1;
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 7, 1));
         dpt3value = 0;
         KoENO_GO_BASE__3.value(dpt3value, Dpt(3, 7, 0));
       }
-    }
-    else
-    {
+    } else {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Licht  AUS");
         KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Licht  AN");
         KoENO_GO_BASE__2.value(true, Dpt(1, 1));
       }
@@ -817,8 +778,7 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
     break;
 
   case 4: // short: Licht AN/AUS   long: Dimmen Heller/Dunkler (Oben/unten Wippe)
-    if (islong)
-    {
+    if (islong) {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Dimmen dunkler");
@@ -827,26 +787,20 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 7, 1));
         dpt3value = 0;
         KoENO_GO_BASE__3.value(dpt3value, Dpt(3, 7, 0));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Dimmen heller");
         dpt3value = 1;
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 7, 1));
         dpt3value = 8;
         KoENO_GO_BASE__3.value(dpt3value, Dpt(3, 7, 0));
       }
-    }
-    else
-    {
+    } else {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Licht AN");
         //+1
         KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Licht  AUS");
         KoENO_GO_BASE__2.value(false, Dpt(1, 1));
       }
@@ -854,21 +808,16 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
     break;
 
   case 5: // short: step AB/AUF   long: Jalousie AUF/AB (Oben/unten Wippe)
-    if (islong)
-    {
+    if (islong) {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Jalousie AB");
         KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Jalousie AUF");
         KoENO_GO_BASE__2.value(false, Dpt(1, 1));
       }
-    }
-    else
-    {
+    } else {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Jalousie Step AB");
@@ -876,9 +825,7 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 8, 1));
         dpt3value = 8;
         KoENO_GO_BASE__3.value(dpt3value, Dpt(3, 8, 0));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Jalousie Step AUF");
         dpt3value = 1;
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 8, 1));
@@ -889,21 +836,16 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
     break;
 
   case 6: // Jalousie AB/AUF (Oben/unten Wippe)
-    if (islong)
-    {
+    if (islong) {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Jalousie AB");
         KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Jalousie AUF");
         KoENO_GO_BASE__2.value(false, Dpt(1, 1));
       }
-    }
-    else
-    {
+    } else {
       if (stateIO) // Button I
       {
         logDebug("RPS", "Jalousie Step AUF");
@@ -911,9 +853,7 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 8, 1));
         dpt3value = 0;
         KoENO_GO_BASE__3.value(dpt3value, Dpt(3, 8, 0));
-      }
-      else
-      {
+      } else {
         logDebug("RPS", "Jalousie Step AB");
         dpt3value = 1;
         KoENO_GO_BASE__3.valueNoSend(dpt3value, Dpt(3, 8, 1));
@@ -935,12 +875,12 @@ inline void release_Button(bool stateIO, uint16_t firstParameter, uint16_t first
   }
 }
 
-// Behandelt ein RPS-Wippentelegramm für einen einzelnen Kontakt (gedrückt/losgelassen) und schaltet das zugehörige Gruppenobjekt.
-inline void handle_RPS_Rocker(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t firstComObj, uint8_t firstParameter, uint8_t index, uint8_t _channelIndex)
-{
+// Behandelt ein RPS-Wippentelegramm für einen einzelnen Kontakt (gedrückt/losgelassen) und schaltet das zugehörige
+// Gruppenobjekt.
+inline void handle_RPS_Rocker(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uint8_t firstComObj,
+                              uint8_t firstParameter, uint8_t index, uint8_t _channelIndex) {
 
-  switch (f_Pkt_st->u8DataBuffer[1])
-  {
+  switch (f_Pkt_st->u8DataBuffer[1]) {
   case Contact_pressed:
     shortSend_DPT1(true, KoENO_GO_BASE__2);
     break; // ENDE pressed
@@ -951,12 +891,11 @@ inline void handle_RPS_Rocker(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t profil, uin
   }
 }
 
-// Verarbeitet ein F6-02-03-Telegramm (zwei Wippen an einem Kontakt) und schaltet die beiden zugehörigen Gruppenobjekte je nach Tastencode.
-inline void handle_F6_02_03(uint8_t value, uint8_t _channelIndex)
-{
+// Verarbeitet ein F6-02-03-Telegramm (zwei Wippen an einem Kontakt) und schaltet die beiden zugehörigen Gruppenobjekte
+// je nach Tastencode.
+inline void handle_F6_02_03(uint8_t value, uint8_t _channelIndex) {
   logDebug("RPS", "Profil: F6-02-03");
-  switch (value)
-  {
+  switch (value) {
   case 0x30: // A0 Set
     KoENO_GO_BASE__1.value(true, Dpt(1, 1));
     logDebug("RPS", "A0 (0x30)");
@@ -978,11 +917,10 @@ inline void handle_F6_02_03(uint8_t value, uint8_t _channelIndex)
   }
 }
 
-// Verarbeitet die F6-05-xx-Telegramme (Rauch-/Wassermelder bzw. Energiestatus) und schreibt den passenden Alarm-/Statuswert.
-inline void handle_F6_05_0x(uint8_t value, uint8_t _channelIndex)
-{
-  switch (value)
-  {
+// Verarbeitet die F6-05-xx-Telegramme (Rauch-/Wassermelder bzw. Energiestatus) und schreibt den passenden
+// Alarm-/Statuswert.
+inline void handle_F6_05_0x(uint8_t value, uint8_t _channelIndex) {
+  switch (value) {
   case 0x00: // SMOKE/WATER Alarm OFF 3 2
     KoENO_GO_BASE__3.value(true, DPT_Bool);
     break;
@@ -1000,16 +938,16 @@ inline void handle_F6_05_0x(uint8_t value, uint8_t _channelIndex)
   }
 }
 
-// Zentrale Dispatch-Funktion für empfangene RPS-Telegramme dieses Kanals: wertet das konfigurierte EEP-Profil aus und schaltet die zugehörigen Gruppenobjekte bzw. ruft die passende Behandlungsroutine auf.
-inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
-{
+// Zentrale Dispatch-Funktion für empfangene RPS-Telegramme dieses Kanals: wertet das konfigurierte EEP-Profil aus und
+// schaltet die zugehörigen Gruppenobjekte bzw. ruft die passende Behandlungsroutine auf.
+inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   RPS_F6_10_00_TYPE *lRpsTlg_p;
   RPS_F6_10_01_TYPE *lRpsTlg2_p;
 
   bool bvalue;
 
 #ifndef EnOceanTEST
-  //switch (knx.paramWord(firstParameter + ENO_CHProfilSelectionRPS))
+  // switch (knx.paramWord(firstParameter + ENO_CHProfilSelectionRPS))
   switch (ParamENO_CHProfilSelectionRPS)
 #else
   switch (profil)
@@ -1034,7 +972,7 @@ inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
   //**************************************************************
   case F6_05_00:
     logDebug("RPS", "Profil: F6-05-00");
-    handle_F6_05_0x(f_Pkt_st->u8DataBuffer[1],_channelIndex);
+    handle_F6_05_0x(f_Pkt_st->u8DataBuffer[1], _channelIndex);
     break;
   //**************************************************************
   // ----------------- Profil: F6-05-01 --------------------------
@@ -1061,8 +999,7 @@ inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
 
     logDebug("RPS", "STATE: %u, NA: %u", lRpsTlg_p->u8RpsTelData.STATE, lRpsTlg_p->u8RpsTelData.NA);
 
-    switch (lRpsTlg_p->u8RpsTelData.STATE)
-    {
+    switch (lRpsTlg_p->u8RpsTelData.STATE) {
     case 0b1111: // Hebel unten
       KoENO_GO_BASE__2.value(false, Dpt(1, 1));
       KoENO_GO_BASE__3.value(false, Dpt(1, 1));
@@ -1116,8 +1053,7 @@ inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
 
     lRpsTlg2_p = (RPS_F6_10_01_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
 
-    switch (lRpsTlg2_p->u8RpsTelData.STATE)
-    {
+    switch (lRpsTlg2_p->u8RpsTelData.STATE) {
     case 0b11: // Hebel unten
       KoENO_GO_BASE__3.value(false, Dpt(1, 1));
       KoENO_GO_BASE__4.value(false, Dpt(1, 1));
@@ -1167,4 +1103,92 @@ inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex)
     logDebug("RPS", "Profil: ERROR");
     break;
   }
+}
+
+inline void handle_F6_10_00(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  RPS_F6_10_00_TYPE *lRpsTlg_p;
+  bool bvalue;
+
+  logDebug("RPS", "Profil: F6-10-00");
+
+  lRpsTlg_p = (RPS_F6_10_00_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+
+  logDebug("RPS", "STATE: %u, NA: %u", lRpsTlg_p->u8RpsTelData.STATE, lRpsTlg_p->u8RpsTelData.NA);
+
+  switch (lRpsTlg_p->u8RpsTelData.STATE) {
+  case 0xF0: // geschlossen
+    if (ParamENO_CHWindowcloseValue)
+      bvalue = true;
+    else
+      bvalue = false;
+    KoENO_GO_BASE__2.value(bvalue, Dpt(1, 1));
+    logDebug("RPS", "geschlossen");
+    break;
+  case 0xE0: // 0ffen
+    if (ParamENO_CHWindowcloseValue)
+      bvalue = true;
+    else
+      bvalue = false;
+    KoENO_GO_BASE__2.value(bvalue, Dpt(1, 1));
+    logDebug("RPS", "offen");
+  default:
+    logDebug("RPS", "RPS ERROR");
+    break;
+  }
+
+
+
+
+    logDebug("RPS", "Profil: F6-10-00");
+
+    lRpsTlg_p = (RPS_F6_10_00_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+
+    logDebug("RPS", "STATE: %u, NA: %u", lRpsTlg_p->u8RpsTelData.STATE, lRpsTlg_p->u8RpsTelData.NA);
+    
+    
+    switch (lRpsTlg_p->u8RpsTelData.STATE) {
+    case 0b1111: // Hebel unten
+      KoENO_GO_BASE__2.value(false, Dpt(1, 1));
+      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
+      if (ParamENO_CHWindowcloseValue)
+        bvalue = true;
+      else
+        bvalue = false;
+      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
+      logDebug("RPS", "Hebel unten");
+      break;
+    case 0b1101: // Hebel Oben
+      KoENO_GO_BASE__2.value(false, Dpt(1, 1));
+      KoENO_GO_BASE__3.value(true, Dpt(1, 1));
+      if (ParamENO_CHWindowcloseValue)
+        bvalue = false;
+      else
+        bvalue = true;
+      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
+      logDebug("RPS", "Hebel oben");
+      break;
+    case 0b1100: // Hebel Mitte
+      KoENO_GO_BASE__2.value(true, Dpt(1, 1));
+      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
+      if (ParamENO_CHWindowcloseValue)
+        bvalue = false;
+      else
+        bvalue = true;
+      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
+      logDebug("RPS", "Hebel mitte");
+      break;
+    case 0b1110: // Hebel Mitte
+      KoENO_GO_BASE__2.value(true, Dpt(1, 1));
+      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
+      if (ParamENO_CHWindowcloseValue)
+        bvalue = false;
+      else
+        bvalue = true;
+      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
+      logDebug("RPS", "Hebel mitte");
+      break;
+    default:
+      logDebug("RPS", "RPS ERROR");
+      break;
+    }
 }

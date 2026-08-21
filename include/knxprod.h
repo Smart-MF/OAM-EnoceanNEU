@@ -371,9 +371,12 @@
 #define ENO_CHProductselTypeUmw                 32      // 8 Bits, Bit 7-0
 #define ENO_CHProductselTypeHell                33      // 8 Bits, Bit 7-0
 #define ENO_CHProductselTypeBew                 34      // 8 Bits, Bit 7-0
-#define ENO_CHProductselTypeRau                 35      // 8 Bits, Bit 7-0
+#define ENO_CHProductselTypeMel                 35      // 8 Bits, Bit 7-0
 #define ENO_CHProductselTypeHei                 36      // 8 Bits, Bit 7-0
 #define ENO_CHProductselTypeWas                 37      // 8 Bits, Bit 7-0
+#define ENO_CHSelectionFFG7B                    26      // 1 Bit, Bit 7
+#define     ENO_CHSelectionFFG7BMask 0x80
+#define     ENO_CHSelectionFFG7BShift 7
 
 // Wähle EEP Profil
 #define ParamENO_CHProfilSelection                   (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProfilSelection)))
@@ -546,11 +549,13 @@
 // Produkt:
 #define ParamENO_CHProductselTypeBew                 (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProductselTypeBew)))
 // Produkt:
-#define ParamENO_CHProductselTypeRau                 (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProductselTypeRau)))
+#define ParamENO_CHProductselTypeMel                 (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProductselTypeMel)))
 // Produkt:
 #define ParamENO_CHProductselTypeHei                 (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProductselTypeHei)))
 // Produkt:
 #define ParamENO_CHProductselTypeWas                 (knx.paramByte(ENO_ParamCalcIndex(ENO_CHProductselTypeWas)))
+// delta Value:
+#define ParamENO_CHSelectionFFG7B                    ((bool)(knx.paramByte(ENO_ParamCalcIndex(ENO_CHSelectionFFG7B)) & ENO_CHSelectionFFG7BMask))
 
 // deprecated
 #define ENO_KoOffset 50

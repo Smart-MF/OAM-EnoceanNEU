@@ -13,7 +13,7 @@ EEP: A5-14-09 (Default) Zyklisch: 15min
 EEP: F6-10-00 (Option1) Zyklisch: NEIN 
 EEP: F6-10-00 (Option2) Zyklisch: 15min 
 
-In der linken oberen Ecke des Gehäuses
+In der linken oberen Ecke des GehäusesS
 befi ndet sich eine Öffnung, über die ein
 Mikro taster zugänglich ist. Dieser dient zur
 Navigation durch die im Folgenden
@@ -24,7 +24,7 @@ Aufrufen: Taste ca. 1 Sekunde gedrückt halten, dann loslassen LED-Bestätigung:
 *Untermenü 1: Verschlüsselung*
 Aufrufen: Taste 1× kurz drücken Ɓ 1 × blinken
 Optionen:
-1 × drücken Ɓ Verschlüsselung aus (voreingestellt) Ɓ LED: 1 × kurz + 1 × lang
+1 × drücken Ɓ Verschlüsselung aus (voreingestellt) Ɓ LED: 1 × kurz + 1 × langS
 2 × drücken Ɓ Verschlüsselung ein Ɓ
 LED: 2 × kurz + 1× lang
 
@@ -52,8 +52,8 @@ Telegramme nach EEP: F6-10-00
 'Lerntelegramm': 0xF0
 ORG = 0x05
 Data_byte3 = 0xF0 = Fenster geschlossen
-0xE0 = Fenster offen
-0xD0 = Fenster gekippt
+             0xE0 = Fenster offen
+             0xD0 = Fenster gekippt
 
 **FFKB - Tür/Fensterkontakt**
 Sensor-Telegramme (EEP: D5-00-01)

@@ -114,13 +114,12 @@
                 <TypeRestriction Base="Value" SizeInBit="8">
                   <Enumeration Text="auswählen"                                    Value="0" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-0" />
                   <Enumeration Text="FFT60SB - Temperatur Feuchtesensor (Außen)"   Value="1" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-1" />
-                  <Enumeration Text="FFT60SB - Temperatur Feuchtesensor (Außen)"   Value="2" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-2" />
-                  <Enumeration Text="FTFB - Temperatur-Feuchtesensor"              Value="3" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-3" />
-                  <Enumeration Text="FTFSB - Temperatur-Feuchtesensor(Solarzelle)" Value="4" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-4" />
-                  <Enumeration Text="FFT55EB - Temperatur-Feuchtesensor"           Value="5" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-5" />
-                  <Enumeration Text="FLGTF55E - Temperatur-Feuchte-Luftgütesensor" Value="6" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-6" />                  
-                  <Enumeration Text="FCO2TF65 - Temperatur-Feuchte-CO2-Sensor"     Value="7" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-7" />                  
-                  <Enumeration Text="FLT58 - Luftgüte-Tischsensor + Temperatur und Feuchtigkeit"  Value="8" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-8" />                  
+                  <Enumeration Text="FTFB - Temperatur-Feuchtesensor"              Value="2" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-2" />
+                  <Enumeration Text="FTFSB - Temperatur-Feuchtesensor(Solarzelle)" Value="3" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-3" />
+                  <Enumeration Text="FFT55EB - Temperatur-Feuchtesensor"           Value="4" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-4" />
+                  <Enumeration Text="FLGTF55E - Temperatur-Feuchte-Luftgütesensor" Value="5" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-5" />                  
+                  <Enumeration Text="FCO2TF65 - Temperatur-Feuchte-CO2-Sensor"     Value="6" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-6" />                  
+                  <Enumeration Text="FLT58 - Luftgüte-Tischsensor + Temperatur und Feuchtigkeit"  Value="7" Id="%AID%_PT-ProductSelectionTypeUmwelt_EN-7" />                  
                 </TypeRestriction>
               </ParameterType>
               <!-- Parameter type for  Product selection Helligkeit/Dämmerung-->
@@ -151,8 +150,6 @@
                 <TypeRestriction Base="Value" SizeInBit="8">
                   <Enumeration Text="FKS-SV - Klein-Stellantrieb Smart Valve"  Value="1" Id="%AID%_PT-ProductSelectionTypeHeizung_EN-1" />  
                   <Enumeration Text="FKS-B - Funk-Klein-Stellantrieb mit Batterie"  Value="2" Id="%AID%_PT-ProductSelectionTypeHeizung_EN-2" />  
-                
-               
                 </TypeRestriction>
               </ParameterType>
                <!-- Parameter type for  Product selection Wassersensoren -->
@@ -170,6 +167,12 @@
                   <Enumeration Text="1BS - D5"       Value="213" Id="%AID%_PT-ProfilSelection_EN-213" />
                   <Enumeration Text="RPS - F6"       Value="246" Id="%AID%_PT-ProfilSelection_EN-246" />
                   <Enumeration Text="RPS - Schalter" Value="250" Id="%AID%_PT-ProfilSelection_EN-250" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="%AID%_PT-ProfilSelectionFFG7B" Name="ProfilSelectionFFG7B">
+                <TypeRestriction Base="Value" SizeInBit="1">
+                  <Enumeration Text="A5-14-09"   Value="0" Id="%AID%_PT-ProfilSelectionFFG7B_EN-0" />
+                  <Enumeration Text="F6-10-00"   Value="1" Id="%AID%_PT-ProfilSelectionFFG7B_EN-1" />              
                 </TypeRestriction>
               </ParameterType>
               <ParameterType Id="%AID%_PT-ProfilSelectionRPS" Name="ProfilSelectionRPS">

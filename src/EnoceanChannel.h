@@ -1,6 +1,14 @@
 #pragma once
 #include "OpenKNX.h"
 
+
+#define CH_inaktive        0
+#define EEP_Profil         1
+#define Hersteller_Eltako  2
+
+
+
+
 // Full definition lives in EnoceanModule.h; only a pointer is needed here,
 // so a forward declaration avoids a circular include (EnoceanModule.h
 // already includes EnoceanChannel.h).
