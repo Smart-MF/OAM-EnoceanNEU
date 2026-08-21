@@ -156,7 +156,12 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
       break;
 
     case Eltako_Helligkeit_FHD60SB:
-      /* code */
+      /* EEP A5-06-01 */
+      /*Data_byte3 = Helligkeit 0-100 lux, linear n = 0x00-0x64 (nur gültig wenn DB2 = 0x00)
+        Data_byte2 = Helligkeit 300-30.000 lux, linear n = 0x00-0xFF
+        Data_byte1 = -
+        Data_byte0 = 0x09*/
+        handle4BS_A5_06_01_V2(f_Pkt_st, _channelIndex);
       break;
 
     default:
@@ -198,11 +203,8 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
       break;
 
     case Eltako_Melder_FRWB:
-      /* code */
-      break;
-
     case Eltako_Melder_FHMB:
-      /* code */
+      handle4BS_A5_30_03(f_Pkt_st, _channelIndex);
       break;
 
     default:

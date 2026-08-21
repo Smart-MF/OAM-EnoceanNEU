@@ -163,7 +163,13 @@ struct FOURBS_A5_20_04_DATA_TYPE
   uint8_t MSTLRNtype : 1;   // (DB_BIT 7)     MST & Teachin
 };
 
-
+struct FOURBS_A5_30_03_DATA_TYPE
+{
+  uint8_t NA2 : 1; // (DB_BIT 0)     not used
+  uint8_t NA1 : 2;  // (DB_BIT 1 -2) not used
+  uint8_t LR : 1;  // (DB_BIT 3)     LR
+  uint8_t NA : 4;  // (DB_BIT 4-7)   not used
+};
 /*
 struct 
 {
@@ -688,6 +694,17 @@ struct FOURBS_A5_20_06_TYPE
   uint8_t u8SenderId_p[4];
   uint8_t u8Status;
 };
+
+struct FOURBS_A5_30_03_TYPE
+{
+  uint8_t u8Free;
+  uint8_t u8Temp;
+  uint8_t u8Alarm;
+  FOURBS_A5_30_03_DATA_TYPE u84BsTelData;  //Byte0
+  uint8_t u8SenderId_p[4];
+  uint8_t u8Status;
+};
+
 
 struct ONEBS_TELEGRAM_TYPE
 {

@@ -1274,6 +1274,8 @@
                                 <when test="0">  <!-- FHD60SB - Helligkeits-Dämmerungs-Sensor -->
                                   <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
                                   <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-06-01" /> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00106" /> <!-- LUX -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00203" /> <!-- Bat -->
                                 </when>
                               </choose> 
                           </when>
@@ -1288,6 +1290,18 @@
                             <ParameterRefRef RefId="%AID%_UP-%TT%%CC%091_R-%TT%%CC%09101" IndentLevel="3"  />
                               <choose ParamRefId="%AID%_UP-%TT%%CC%091_R-%TT%%CC%09101">
                                 <when test="0">  
+                                </when>
+                                 <when test="1">  <!-- FRWB - Rauchmelder --> 
+                                  <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-30-03" /> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00108" /> <!-- Temp -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00307" /> <!-- Alarm -->
+                                </when>
+                                <when test="2">  <!-- FHMB - Hitzemelder --> 
+                                  <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-30-03" /> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00108" /> <!-- Temp -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00307" /> <!-- Alarm -->
                                 </when>
                               </choose> 
                           </when>

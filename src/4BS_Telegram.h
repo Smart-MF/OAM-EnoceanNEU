@@ -5,8 +5,11 @@
 #include "EnoceanStructs.h"
 #include "knxprod.h"
 
-// Vorwärtsdeklaration: Definition steht weiter unten in dieser Datei, wird aber schon innerhalb von handle_4BS aufgerufen.
+// Vorwärtsdeklaration: Definition steht weiter unten in dieser Datei, wird aber schon innerhalb von handle_4BS
+// aufgerufen.
 inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_06_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_30_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 
 inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   union intParts {
@@ -358,24 +361,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
     // ----------------- Profil: A5-06-01 Version 2 ----------------
     //**************************************************************
     case A5_06_01_V2:
-      logDebug("4BS", "01*");
-      fourBsA5_06_01_V2_Tlg_p = (FOURBS_A5_06_01_V2_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-
-      if (fourBsA5_06_01_V2_Tlg_p->u8byte0 == 0x09) {
-        if (fourBsA5_06_01_V2_Tlg_p->u8Illumbyte2 == 0) // Helligkeit 0..100LUX
-        {
-          // Range 0 ... 50 lux
-          luxfloat = (float)(fourBsA5_06_01_V2_Tlg_p->u8Illumbyte3);
-        } else {
-          // Range 300 ... 30000 lux
-          luxfloat = (float)(fourBsA5_06_01_V2_Tlg_p->u8Illumbyte2 * 116.470588) + 300.0;
-        }
-      } else {
-        luxfloat = 0;
-      }
-      KoENO_GO_BASE__2.value(luxfloat, Dpt(9, 1));
-
-      logDebug("4BS", "LUX: %.1f", luxfloat);
+      handle4BS_A5_06_01_V2(f_Pkt_st, _channelIndex);
       break;
     //**************************************************************
     // ----------------- Profil: A5-06-02 --------------------------
@@ -1083,11 +1069,35 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
   return 0;
 }
 
+inline void handle4BS_A5_06_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  float luxfloat;
+  FOURBS_A5_06_01_V2_TYPE *fourBsA5_06_01_V2_Tlg_p;
+
+  logDebug("4BS", "01*");
+  fourBsA5_06_01_V2_Tlg_p = (FOURBS_A5_06_01_V2_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+
+  if (fourBsA5_06_01_V2_Tlg_p->u8byte0 == 0x09) {
+    if (fourBsA5_06_01_V2_Tlg_p->u8Illumbyte2 == 0) // Helligkeit 0..100LUX
+    {
+      // Range 0 ... 50 lux
+      luxfloat = (float)(fourBsA5_06_01_V2_Tlg_p->u8Illumbyte3);
+    } else {
+      // Range 300 ... 30000 lux
+      luxfloat = (float)(fourBsA5_06_01_V2_Tlg_p->u8Illumbyte2 * 116.470588) + 300.0;
+    }
+  } else {
+    luxfloat = 0;
+  }
+  KoENO_GO_BASE__2.value(luxfloat, Dpt(9, 1));
+
+  logDebug("4BS", "LUX: %.1f", luxfloat);
+}
+
 inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   FOURBS_A5_14_09_0A_TYPE *fourBsA5_14_09_0A_Tlg_p;
-  bool bvalue;    
+  bool bvalue;
   fourBsA5_14_09_0A_Tlg_p = (FOURBS_A5_14_09_0A_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-   logDebug("4BS", "A5-14-09 ");
+  logDebug("4BS", "A5-14-09 ");
   //  ...................  Supply Voltage .......................
   KoENO_GO_BASE__5.value(fourBsA5_14_09_0A_Tlg_p->u8SupplyVoltage * 20.0, Dpt(9, 1));
   logDebug("4BS", "Supply Voltage: %.1f", fourBsA5_14_09_0A_Tlg_p->u8SupplyVoltage / 50.0);
@@ -1129,4 +1139,27 @@ inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIn
   default:
     break;
   }
+}
+
+inline void handle4BS_A5_30_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  bool bvalue;
+  FOURBS_A5_30_03_TYPE *fourBsA5_30_39_Tlg_p;
+  fourBsA5_30_39_Tlg_p = (FOURBS_A5_30_03_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+  logDebug("4BS", "A5-30-03 ");
+  //******************** Temperatur **************************************************/
+  float temp = (float)(fourBsA5_30_39_Tlg_p->u8Temp * 0.156862745);
+  KoENO_GO_BASE__2.value(temp, Dpt(9, 1));
+  //******************** Alarm *******************************************************/
+  if (fourBsA5_30_39_Tlg_p->u8Alarm == 0x0F)
+    bvalue = true;
+  else if (fourBsA5_30_39_Tlg_p->u8Alarm == 0x1F)
+    bvalue = false;
+  else
+    bvalue = false;
+  KoENO_GO_BASE__4.value(bvalue, Dpt(1, 5));
+
+    logDebug("4BS", "Temp: %.1f", temp);
+    logDebug("4BS", "Alarm: %.1f", bvalue);
+
+
 }
