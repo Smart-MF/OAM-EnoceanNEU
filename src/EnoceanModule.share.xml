@@ -198,7 +198,7 @@
                   <Enumeration Text="A5-06  Light Sensor"                             Value="6" Id="%AID%_PT-ProfilSelection4BS_EN-6" />
                   <Enumeration Text="A5-07  Occupancy Sensor"                         Value="7" Id="%AID%_PT-ProfilSelection4BS_EN-7" />
                   <Enumeration Text="A5-08  Light, Temp, Occupancy Sensor"            Value="8" Id="%AID%_PT-ProfilSelection4BS_EN-8" />
-                  <Enumeration Text="A5-09  N.A."                                     Value="9" Id="%AID%_PT-ProfilSelection4BS_EN-9" />
+                  <Enumeration Text="A5-09  Gas Sensor"                               Value="9" Id="%AID%_PT-ProfilSelection4BS_EN-9" />
                   <Enumeration Text="A5-10  N.A."                                     Value="16" Id="%AID%_PT-ProfilSelection4BS_EN-16" />
                   <Enumeration Text="A5-11  N.A."                                     Value="17" Id="%AID%_PT-ProfilSelection4BS_EN-17" />
                   <Enumeration Text="A5-12  Automated Meter Reading (AMR)"            Value="18" Id="%AID%_PT-ProfilSelection4BS_EN-18" />
@@ -311,15 +311,15 @@
               <ParameterType Id="%AID%_PT-Profil4BS09" Name="Profil4BS09">
                 <TypeRestriction Base="Value" SizeInBit="16">
                   <Enumeration Text="A5-09-02   N.A." Value="42" Id="%AID%_PT-Profil4BS09_EN-42" />
-                  <Enumeration Text="A5-09-04   N.A." Value="43" Id="%AID%_PT-Profil4BS09_EN-43" />
-                  <Enumeration Text="A5-09-05   N.A." Value="44" Id="%AID%_PT-Profil4BS09_EN-44" />
+                  <Enumeration Text="A5-09-04   CO2 Sensor" Value="43" Id="%AID%_PT-Profil4BS09_EN-43" />
+                  <Enumeration Text="A5-09-05   VOC Sensor" Value="44" Id="%AID%_PT-Profil4BS09_EN-44" />
                   <Enumeration Text="A5-09-06   N.A." Value="45" Id="%AID%_PT-Profil4BS09_EN-45" />
                   <Enumeration Text="A5-09-07   N.A." Value="46" Id="%AID%_PT-Profil4BS09_EN-46" />
                   <Enumeration Text="A5-09-08   N.A." Value="47" Id="%AID%_PT-Profil4BS09_EN-47" />
                   <Enumeration Text="A5-09-09   N.A." Value="48" Id="%AID%_PT-Profil4BS09_EN-48" />
                   <Enumeration Text="A5-09-0A   N.A." Value="49" Id="%AID%_PT-Profil4BS09_EN-49" />
                   <Enumeration Text="A5-09-0B   N.A." Value="50" Id="%AID%_PT-Profil4BS09_EN-50" />
-                  <Enumeration Text="A5-09-0C   N.A." Value="51" Id="%AID%_PT-Profil4BS09_EN-51" />
+                  <Enumeration Text="A5-09-0C   VOC Sensor" Value="51" Id="%AID%_PT-Profil4BS09_EN-51" />
                 </TypeRestriction>
               </ParameterType> 
               <ParameterType Id="%AID%_PT-Profil4BS10" Name="Profil4BS10">

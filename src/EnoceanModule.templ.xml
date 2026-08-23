@@ -385,6 +385,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%007_R-%TT%%CC%00705" RefId="%AID%_O-%TT%%CC%007" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Hum" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-7" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%007_R-%TT%%CC%00706" RefId="%AID%_O-%TT%%CC%007" Name="OUT_CH_1_DPT_14" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Messwert (W)" Priority="Low" ObjectSize="4 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-14-56" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%007_R-%TT%%CC%00707" RefId="%AID%_O-%TT%%CC%007" Name="OUT_CH_1_DPT_14" Text="Output    Kanal %C%: {{0:-}}" FunctionText="ACC_Y (g)" Priority="Low" ObjectSize="4 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-14-0" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%007_R-%TT%%CC%00708" RefId="%AID%_O-%TT%%CC%007" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="VOC_Identifiacation" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <!-- Base  8 -->
               <ComObjectRef Id="%AID%_O-%TT%%CC%008_R-%TT%%CC%00801" RefId="%AID%_O-%TT%%CC%008" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Temp Offset" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%008_R-%TT%%CC%00802" RefId="%AID%_O-%TT%%CC%008" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Long press" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
@@ -399,6 +400,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%009_R-%TT%%CC%00903" RefId="%AID%_O-%TT%%CC%009" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Taster 2" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-11" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%009_R-%TT%%CC%00904" RefId="%AID%_O-%TT%%CC%009" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Tarif" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%009_R-%TT%%CC%00905" RefId="%AID%_O-%TT%%CC%009" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Sensor-Status" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%009_R-%TT%%CC%00906" RefId="%AID%_O-%TT%%CC%009" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Werte µg/m3" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-30" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
             </ComObjectRefs>
           </Static>
           <!-- Here statrs the UI definition -->
@@ -584,6 +586,24 @@
                                   </when>
                                 </choose>
                               </when>
+                              <!-- A5-09 -->
+                              <when test="9">
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%016_R-%TT%%CC%01601" IndentLevel="1" />
+                                <choose ParamRefId="%AID%_UP-%TT%%CC%016_R-%TT%%CC%01601">
+                                  <when test="52"> <!-- A5-09-04 -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00008" /> <!--  CO2 -->
+                                  </when> 
+                                  <when test="53"> <!-- A5-09-05 -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00008" /> <!--  VOC -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00708" /> <!--  VOC ID-->
+                                  </when> 
+                                  <when test="402"> <!-- A5-09-0C -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00008" /> <!--  VOC ppm -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00708" /> <!--  VOC ID-->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00906" /> <!--  VOC µg/m2 -->
+                                  </when> 
+                                </choose>  
+                              </when> 
                               <!-- A5-12 -->
                               <when test="18">  <!-- 0x12 = 18dez-->
                                 <ParameterRefRef RefId="%AID%_UP-%TT%%CC%019_R-%TT%%CC%01901" IndentLevel="1"  />
@@ -1266,7 +1286,29 @@
                               <choose ParamRefId="%AID%_UP-%TT%%CC%088_R-%TT%%CC%08801">
                                 <when test="0">  
                                 </when>
-                              </choose> 
+                                <when test="1 2 3 4"> <!-- FFT60SB & FTFB & FTFSB & FFT55EB A5-04-02 oder A5-04-03--> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00108" /> <!-- Temp -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00205" /> <!--  Hum -->
+                                </when>
+                                <when test="5">  <!-- FLGTF55E A5-09-0C & A5-04-02--> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00108" /> <!-- Temp -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00205" /> <!--  Hum -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00008" /> <!--  VOC ppm -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00708" /> <!--  VOC ID-->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00906" /> <!--  VOC µg/m2 -->
+                                </when>
+                                <when test="6">  <!-- FCO2TF65 A5-09-04--> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00108" /> <!-- Temp -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00205" /> <!--  Hum -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00008" /> <!--  CO2 -->
+                                </when>
+                                <when test="7">  <!-- FLT58 A5-09-05 & A5-04-02--> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00108" /> <!-- Temp -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00205" /> <!--  Hum -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00008" /> <!--  VOC -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00708" /> <!--  VOC ID-->
+                                </when>
+                               </choose> 
                           </when>
                           <when test="4">  <!-- AUSWAHL Helligekeitsensoren -->
                             <ParameterRefRef RefId="%AID%_UP-%TT%%CC%089_R-%TT%%CC%08901" IndentLevel="3"  />

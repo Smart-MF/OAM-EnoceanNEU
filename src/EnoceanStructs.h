@@ -104,6 +104,32 @@ struct FOURBS_A5_08_DATA_TYPE
   uint8_t NA2 : 4;  // (DB_BIT 4-7) Not used
 };
 
+struct FOURBS_A5_09_04_DATA_TYPE
+{
+  uint8_t NA : 1;              // (DB_BIT 0)   Not used
+  uint8_t TEMP_available : 1;  // (DB_BIT 1)   Temp_available
+  uint8_t HUM_available : 1;   // (DB_BIT 2)   Hum_available
+  uint8_t LRNB : 1;            // (DB_BIT 3)   Teach-In Bit
+  uint8_t NA2 : 4;             // (DB_BIT 4-7) Not used
+};
+
+struct FOURBS_A5_09_05_DATA_TYPE
+{
+  uint8_t SCALE: 2; // (DB_BIT 0 & 1)   Scale multiplier
+  uint8_t NA : 1;   // (DB_BIT 2)   Not used
+  uint8_t LRNB : 1; // (DB_BIT 3)   Teach-In Bit
+  uint8_t NA2 : 4;  // (DB_BIT 4-7) Not used
+};
+
+struct FOURBS_A5_09_0C_DATA_TYPE
+{
+  uint8_t SCALE: 2; // (DB_BIT 0 & 1)   Scale multiplier
+  uint8_t UNIT : 1; // (DB_BIT 2)   UNIT VOC
+  uint8_t LRNB : 1; // (DB_BIT 3)   Teach-In Bit
+  uint8_t NA2 : 4;  // (DB_BIT 4-7) Not used
+};
+
+
 struct FOURBS_A5_12_01_DATA_TYPE
 {
   uint8_t DIV : 2;  // (DB_BIT 0-1) Divisor
@@ -621,6 +647,36 @@ struct FOURBS_A5_08_TYPE
   uint8_t Ill;
   uint8_t TMP;
   FOURBS_A5_08_DATA_TYPE u84BsTelData;
+  uint8_t u8SenderId_p[4];
+  uint8_t u8Status;
+};
+
+struct FOURBS_A5_09_04_TYPE
+{
+  uint8_t Hum;
+  uint8_t CO2;
+  uint8_t TMP;
+  FOURBS_A5_09_04_DATA_TYPE u84BsTelData;
+  uint8_t u8SenderId_p[4];
+  uint8_t u8Status;
+};
+
+struct FOURBS_A5_09_05_TYPE
+{
+  uint8_t VOC_LSB;
+  uint8_t VOC_MSB;
+  uint8_t VOC_ID;
+  FOURBS_A5_09_05_DATA_TYPE u84BsTelData;
+  uint8_t u8SenderId_p[4];
+  uint8_t u8Status;
+};
+
+struct FOURBS_A5_09_0C_TYPE
+{
+  uint8_t VOC_LSB;
+  uint8_t VOC_MSB;
+  uint8_t VOC_ID;
+  FOURBS_A5_09_0C_DATA_TYPE u84BsTelData;
   uint8_t u8SenderId_p[4];
   uint8_t u8Status;
 };

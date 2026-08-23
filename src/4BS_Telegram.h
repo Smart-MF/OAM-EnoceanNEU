@@ -7,9 +7,15 @@
 
 // Vorwärtsdeklaration: Definition steht weiter unten in dieser Datei, wird aber schon innerhalb von handle_4BS
 // aufgerufen.
-inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_04_02(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_04_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_06_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_09_04(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_09_05(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_09_0C(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_30_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+
 
 inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   union intParts {
@@ -308,23 +314,13 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
     // ----------------- Profil: A5-04-02 --------------------------
     //**************************************************************
     case A5_04_02:
-      fourBsA5_04_Tlg_p = (FOURBS_A5_04_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-      temp = (float)(fourBsA5_04_Tlg_p->Temp / 3.125) - 20.0;
-      hum = (float)(fourBsA5_04_Tlg_p->Hum / 2.5);
-      KoENO_GO_BASE__2.value(temp, Dpt(9, 1));
-      KoENO_GO_BASE__3.value(hum, Dpt(9, 1));
-      logDebug("4BS", "02 Temp: %.1f Hum: %.1f", temp, hum);
+      handle4BS_A5_04_02(f_Pkt_st, _channelIndex);
       break;
     //**************************************************************
     // ----------------- Profil: A5-04-03 --------------------------
     //**************************************************************
     case A5_04_03:
-      fourBsA5_04_03_Tlg_p = (FOURBS_A5_04_03_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-      temp = (float)(((uint16_t)fourBsA5_04_03_Tlg_p->TempMSB << 8 | fourBsA5_04_03_Tlg_p->TempLSB) / 12.7875) - 20.0;
-      hum = (float)(fourBsA5_04_03_Tlg_p->Hum / 2.55);
-      KoENO_GO_BASE__2.value(temp, Dpt(9, 1));
-      KoENO_GO_BASE__3.value(hum, Dpt(9, 1));
-      logDebug("4BS", "03 Temp: %.1f Hum: %.1f", temp, hum);
+      handle4BS_A5_04_03(f_Pkt_st, _channelIndex);
       break;
     default:
       break;
@@ -541,6 +537,24 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
       break; // ENDE A5-08-03
     }
     break; // ENDE A5-08-XX
+  case A5_09:
+    logDebug("4BS", "A5-09-");
+    // switch (knx.paramWord(firstParameter + ENO_CHProfil4BS12))
+    switch (ParamENO_CHProfil4BS09) {
+    //**************************************************************
+    // ----------------- Profil: A5-09-04 --------------------------
+    //**************************************************************
+    case A5_09_04:
+    handle4BS_A5_09_04(f_Pkt_st, _channelIndex);
+    break;
+    case A5_09_05:
+    handle4BS_A5_09_05(f_Pkt_st, _channelIndex);
+    break;
+    case A5_09_0C:
+    handle4BS_A5_09_0C(f_Pkt_st, _channelIndex);
+    break;
+    }//ENDE Switch A5_09
+    break; 
   case A5_12:
     logDebug("4BS", "A5-12-");
     // switch (knx.paramWord(firstParameter + ENO_CHProfil4BS12))
@@ -1069,6 +1083,36 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
   return 0;
 }
 
+/*************************************************************************************
+ *
+ *  Inline funktions
+ *
+ ***************************************************************************************/
+
+inline void handle4BS_A5_04_02(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  FOURBS_A5_04_TYPE *fourBsA5_04_Tlg_p;
+  float temp;
+  float hum;
+  fourBsA5_04_Tlg_p = (FOURBS_A5_04_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+  temp = (float)(fourBsA5_04_Tlg_p->Temp / 3.125) - 20.0;
+  hum = (float)(fourBsA5_04_Tlg_p->Hum / 2.5);
+  KoENO_GO_BASE__2.value(temp, Dpt(9, 1));
+  KoENO_GO_BASE__3.value(hum, Dpt(9, 1));
+  logDebug("4BS", "02 Temp: %.1f Hum: %.1f", temp, hum);
+}
+
+inline void handle4BS_A5_04_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  FOURBS_A5_04_03_TYPE *fourBsA5_04_03_Tlg_p;
+  float temp;
+  float hum;
+  fourBsA5_04_03_Tlg_p = (FOURBS_A5_04_03_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+  temp = (float)(((uint16_t)fourBsA5_04_03_Tlg_p->TempMSB << 8 | fourBsA5_04_03_Tlg_p->TempLSB) / 12.7875) - 20.0;
+  hum = (float)(fourBsA5_04_03_Tlg_p->Hum / 2.55);
+  KoENO_GO_BASE__2.value(temp, Dpt(9, 1));
+  KoENO_GO_BASE__3.value(hum, Dpt(9, 1));
+  logDebug("4BS", "03 Temp: %.1f Hum: %.1f", temp, hum);
+}
+
 inline void handle4BS_A5_06_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   float luxfloat;
   FOURBS_A5_06_01_V2_TYPE *fourBsA5_06_01_V2_Tlg_p;
@@ -1091,6 +1135,105 @@ inline void handle4BS_A5_06_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channe
   KoENO_GO_BASE__2.value(luxfloat, Dpt(9, 1));
 
   logDebug("4BS", "LUX: %.1f", luxfloat);
+}
+
+inline void handle4BS_A5_09_04(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  FOURBS_A5_09_04_TYPE *fourBsA5_09_04_Tlg_p;
+  float temp, hum;
+  uint16_t CO2;
+  fourBsA5_09_04_Tlg_p = (FOURBS_A5_09_04_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+  temp = (float)(fourBsA5_09_04_Tlg_p->TMP / 5.0);
+  hum = (float)(fourBsA5_09_04_Tlg_p->Hum / 2.0);
+  CO2 = fourBsA5_09_04_Tlg_p->CO2 * 10;
+  KoENO_GO_BASE__1.value(CO2, Dpt(9, 8));
+  KoENO_GO_BASE__2.value(temp, Dpt(9, 1));
+  KoENO_GO_BASE__3.value(hum, Dpt(9, 1));
+  logDebug("4BS", "Temp: %.1f Hum: %.1f  CO2: %d", temp, hum, CO2);
+}
+
+inline void handle4BS_A5_09_05(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  FOURBS_A5_09_05_TYPE *fourBsA5_09_05_Tlg_p;
+  uint16_t voc;
+  uint8_t voc_id;
+  uint8_t scale;
+  fourBsA5_09_05_Tlg_p = (FOURBS_A5_09_05_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+  scale = fourBsA5_09_05_Tlg_p->u84BsTelData.SCALE;
+  voc = (uint16_t)(fourBsA5_09_05_Tlg_p->VOC_MSB << 8) | fourBsA5_09_05_Tlg_p->VOC_LSB; // ppb
+  // Umrechnung auf ppm
+  voc = voc / 1000;
+
+  voc_id = fourBsA5_09_05_Tlg_p->VOC_ID;
+
+  switch (scale) {
+  case 0: // * 0,01
+    voc = voc * 0.01;
+    break;
+  case 1: // * 0,1
+    voc = voc * 0.1;
+    break;
+  case 2: // * 1.0
+    voc = voc * 1.0;
+    break;
+  case 3: // * 10.0
+    voc = voc * 10;
+    break;
+  }
+  KoENO_GO_BASE__1.value(voc, Dpt(9, 8));
+  KoENO_GO_BASE__8.value(voc_id, Dpt(5, 10));
+  logDebug("4BS", "VOC: %d  VOC_ID: %d", voc, voc_id);
+}
+
+inline void handle4BS_A5_09_0C(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  FOURBS_A5_09_0C_TYPE *fourBsA5_09_0C_Tlg_p;
+  uint16_t voc;
+  uint8_t voc_id;
+  uint8_t scale;
+  bool voc_unit;
+  fourBsA5_09_0C_Tlg_p = (FOURBS_A5_09_0C_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+  scale = fourBsA5_09_0C_Tlg_p->u84BsTelData.SCALE;
+  voc_unit = fourBsA5_09_0C_Tlg_p->u84BsTelData.UNIT;
+  voc_id = fourBsA5_09_0C_Tlg_p->VOC_ID;
+  voc = (uint16_t)(fourBsA5_09_0C_Tlg_p->VOC_MSB << 8) | fourBsA5_09_0C_Tlg_p->VOC_LSB; // ppb
+
+  if (voc_unit == 0) // ppb
+  {
+    // Umrechnung auf ppm
+    voc = voc / 1000;
+    switch (scale) {
+    case 0: // * 0,01
+      voc = voc * 0.01;
+      break;
+    case 1: // * 0,1
+      voc = voc * 0.1;
+      break;
+    case 2: // * 1.0
+      voc = voc * 1.0;
+      break;
+    case 3: // * 10.0
+      voc = voc * 10;
+      break;
+    }
+    KoENO_GO_BASE__1.value(voc, Dpt(9, 8));
+  } else {
+    switch (scale) {
+    case 0: // * 0,01
+      voc = voc * 0.01;
+      break;
+    case 1: // * 0,1
+      voc = voc * 0.1;
+      break;
+    case 2: // * 1.0
+      voc = voc * 1.0;
+      break;
+    case 3: // * 10.0
+      voc = voc * 10;
+      break;
+    }
+    KoENO_GO_BASE__10.value(voc, Dpt(9, 30));
+  }
+
+  KoENO_GO_BASE__8.value(voc_id, Dpt(5, 10));
+  logDebug("4BS", "VOC: %d  VOC_ID: %d", voc, voc_id);
 }
 
 inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
@@ -1158,8 +1301,6 @@ inline void handle4BS_A5_30_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIn
     bvalue = false;
   KoENO_GO_BASE__4.value(bvalue, Dpt(1, 5));
 
-    logDebug("4BS", "Temp: %.1f", temp);
-    logDebug("4BS", "Alarm: %.1f", bvalue);
-
-
+  logDebug("4BS", "Temp: %.1f", temp);
+  logDebug("4BS", "Alarm: %.1f", bvalue);
 }

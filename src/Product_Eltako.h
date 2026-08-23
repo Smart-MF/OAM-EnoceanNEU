@@ -4,9 +4,8 @@
 #include "knxprod.h"
 
 #include "1BS_Telegram.h"
-#include "RPS_Telegram.h"
 #include "4BS_Telegram.h"
-
+#include "RPS_Telegram.h"
 
 #define Eltako_inaktive 0
 #define Eltako_Taster 1
@@ -116,32 +115,25 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
       logDebug("Eltako Umweltsensoren", "Profil: inaktive");
       break;
 
-    case Eltako_Umwelt_FFT60SB:
-      /* code */
+    case Eltako_Umwelt_FFT60SB: // A5-04-02 oder A5-04-03
+    case Eltako_Umwelt_FTFB:    // A5-04-02 oder A5-04-03
+    case Eltako_Umwelt_FTFSB:   // A5-04-02 oder A5-04-03
+    case Eltako_Umwelt_FFT55EB: // A5-04-02 oder A5-04-03
+      handle4BS_A5_04_02(f_Pkt_st, _channelIndex);
       break;
 
-    case Eltako_Umwelt_FTFB:
-      /* code */
+    case Eltako_Umwelt_FLGTF55E: // A5-09-0C & A5-04-02
+      handle4BS_A5_04_02(f_Pkt_st, _channelIndex);
+      handle4BS_A5_09_0C(f_Pkt_st, _channelIndex);
       break;
 
-    case Eltako_Umwelt_FTFSB:
-      /* code */
+    case Eltako_Umwelt_FCO2TF65: // A5-09-04
+      handle4BS_A5_09_04(f_Pkt_st, _channelIndex);
       break;
 
-    case Eltako_Umwelt_FFT55EB:
-      /* code */
-      break;
-
-    case Eltako_Umwelt_FLGTF55E:
-      /* code */
-      break;
-
-    case Eltako_Umwelt_FCO2TF65:
-      /* code */
-      break;
-
-    case Eltako_Umwelt_FLT58:
-      /* code */
+    case Eltako_Umwelt_FLT58: // A5-09-05 & A5-04-02
+      handle4BS_A5_04_02(f_Pkt_st, _channelIndex);
+      handle4BS_A5_09_05(f_Pkt_st, _channelIndex);
       break;
 
     default:
@@ -161,7 +153,7 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
         Data_byte2 = Helligkeit 300-30.000 lux, linear n = 0x00-0xFF
         Data_byte1 = -
         Data_byte0 = 0x09*/
-        handle4BS_A5_06_01_V2(f_Pkt_st, _channelIndex);
+      handle4BS_A5_06_01_V2(f_Pkt_st, _channelIndex);
       break;
 
     default:
