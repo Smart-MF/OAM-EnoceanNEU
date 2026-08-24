@@ -167,19 +167,19 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
       logDebug("Eltako BWM", "Profil: inaktive");
       break;
 
-    case Eltako_Bewegung_FB55EB:
-      /* code */
+    case Eltako_Bewegung_FB55EB: //EEP A5-07-01
+      handle4BS_A5_07_01(f_Pkt_st, _channelIndex);
       break;
 
-    case Eltako_Bewegung_FBHT55ESB:
-      /* code */
+    case Eltako_Bewegung_FBHT55ESB:  // EEP: A5-08-01 oder  A5-07-01
+      handle4BS_A5_08_01(f_Pkt_st, _channelIndex);
       break;
 
-    case Eltako_Bewegung_FABH65S:
-      /* code */
+    case Eltako_Bewegung_FABH65S: // EEP A5-08-01  mit Eltako Anpassung 
+      handle4BS_A5_08_01(f_Pkt_st, _channelIndex);
       break;
 
-    case Eltako_Bewegung_FABH130:
+    case Eltako_Bewegung_FABH130: // EEP F6-02-01 (Rocker Taster)
       /* code */
       break;
 

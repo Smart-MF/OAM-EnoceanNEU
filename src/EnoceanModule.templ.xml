@@ -1326,6 +1326,30 @@
                               <choose ParamRefId="%AID%_UP-%TT%%CC%090_R-%TT%%CC%09001">
                                 <when test="0">  
                                 </when>
+                                <when test="1">  <!-- FB55EB: //EEP A5-07-01-->
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-07-01" /> 
+                                 <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00007" /> <!-- PIR -->
+                                </when>
+                                <when test="2">  <!-- FBHT55ESB:  // EEP: A5-08-01 oder  A5-07-01-->
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-08-01" /> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00007" /> <!-- PIR -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00106" /> <!-- LUX -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00203" /> <!-- Bat -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%005_R-%TT%%CC%00502" /> <!-- OCC -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" /> <!-- Tmp -->
+                                </when>
+                                <when test="3">  <!-- FABH65S: // EEP A5-08-01  mit Eltako Anpassung -->
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-08-01" /> 
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00007" /> <!-- PIR -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00106" /> <!-- LUX -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00203" /> <!-- Bat -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%005_R-%TT%%CC%00502" /> <!-- OCC -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" /> <!-- Tmp -->
+                                </when>
+                                <when test="4">  <!-- FABH130: // EEP F6-02-01-->
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP F6-02-01" />   
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00007" /> <!-- PIR -->
+                                </when>
                               </choose> 
                           </when>
                           <when test="6">  <!-- AUSWAHL Melder -->

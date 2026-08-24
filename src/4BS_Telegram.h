@@ -10,6 +10,8 @@
 inline void handle4BS_A5_04_02(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_04_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_06_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_07_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_A5_08_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_09_04(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_09_05(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_09_0C(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
@@ -409,13 +411,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
     // ----------------- Profil: A5-07-01 --------------------------
     //**************************************************************
     case A5_07_01:
-      fourBsTlg2_p = (FOURBS_A5_07_01_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-      // .......PIR Status.........................................
-      if (fourBsTlg2_p->PIR < 128)
-        KoENO_GO_BASE__1.value(false, Dpt(1, 1));
-      else
-        KoENO_GO_BASE__1.value(true, Dpt(1, 1));
-      logDebug("4BS", "01 PIR: %u", fourBsTlg2_p->PIR);
+      handle4BS_A5_07_01(f_Pkt_st, _channelIndex);
       break; // ENDE A5-07-01
     //**************************************************************
     // ----------------- Profil: A5-07-02 --------------------------
@@ -463,26 +459,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
     // ----------------- Profil: A5-08-01 --------------------------
     //**************************************************************
     case A5_08_01:
-      fourBsA5_08_Tlg_p = (FOURBS_A5_08_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-      logDebug("4BS", "01");
-      // ...................  Supply Voltage .......................
-      KoENO_GO_BASE__3.value(fourBsA5_08_Tlg_p->u8SupplyVoltage * 20.0, Dpt(9, 1));
-      logDebug("4BS", "Supply Voltage: %.1f", fourBsA5_08_Tlg_p->u8SupplyVoltage / 50.0);
-      // ........Illumination..............................................
-      lux = (uint16_t)fourBsA5_08_Tlg_p->Ill * 2;
-      luxfloat = (float)lux * 1.0;
-      KoENO_GO_BASE__2.value(luxfloat, Dpt(9, 1));
-      logDebug("4BS", "LUX: %u", lux);
-      // ........Temperature..............................................
-      KoENO_GO_BASE__7.value(fourBsA5_08_Tlg_p->TMP / 5.0, Dpt(9, 1));
-      logDebug("4BS", "Temp: %.1f", fourBsA5_08_Tlg_p->TMP / 5.0);
-      // .......PIR Status.........................................
-      KoENO_GO_BASE__1.value(fourBsA5_08_Tlg_p->u84BsTelData.PIR, Dpt(1, 1));
-      logDebug("4BS", "PIR:%u", fourBsA5_08_Tlg_p->u84BsTelData.PIR);
-      // .......Occupancy Button .........................................
-      KoENO_GO_BASE__6.value(fourBsA5_08_Tlg_p->u84BsTelData.OCC, Dpt(1, 1));
-      logDebug("4BS", "OCC:%u", fourBsA5_08_Tlg_p->u84BsTelData.OCC);
-
+      handle4BS_A5_08_01(f_Pkt_st, _channelIndex);
       break; // ENDE A5-08-01
     //**************************************************************
     // ----------------- Profil: A5-08-02 --------------------------
@@ -1135,6 +1112,44 @@ inline void handle4BS_A5_06_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channe
   KoENO_GO_BASE__2.value(luxfloat, Dpt(9, 1));
 
   logDebug("4BS", "LUX: %.1f", luxfloat);
+}
+
+
+inline void handle4BS_A5_07_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex){
+      FOURBS_A5_07_01_TYPE *fourBsTlg2_p;
+      fourBsTlg2_p = (FOURBS_A5_07_01_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+      // .......PIR Status.........................................
+      if (fourBsTlg2_p->PIR < 128)
+        KoENO_GO_BASE__1.value(false, Dpt(1, 1));
+      else
+        KoENO_GO_BASE__1.value(true, Dpt(1, 1));
+      logDebug("4BS", "01 PIR: %u", fourBsTlg2_p->PIR);
+}
+
+
+inline void  handle4BS_A5_08_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex){
+      FOURBS_A5_08_TYPE *fourBsA5_08_Tlg_p;
+      uint16_t lux;
+      float luxfloat;
+      fourBsA5_08_Tlg_p = (FOURBS_A5_08_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
+      logDebug("4BS", "01");
+      // ...................  Supply Voltage .......................
+      KoENO_GO_BASE__3.value(fourBsA5_08_Tlg_p->u8SupplyVoltage * 20.0, Dpt(9, 1));
+      logDebug("4BS", "Supply Voltage: %.1f", fourBsA5_08_Tlg_p->u8SupplyVoltage / 50.0);
+      // ........Illumination..............................................
+      lux = (uint16_t)fourBsA5_08_Tlg_p->Ill * 2;
+      luxfloat = (float)lux * 1.0;
+      KoENO_GO_BASE__2.value(luxfloat, Dpt(9, 1));
+      logDebug("4BS", "LUX: %u", lux);
+      // ........Temperature..............................................
+      KoENO_GO_BASE__7.value(fourBsA5_08_Tlg_p->TMP / 5.0, Dpt(9, 1));
+      logDebug("4BS", "Temp: %.1f", fourBsA5_08_Tlg_p->TMP / 5.0);
+      // .......PIR Status.........................................
+      KoENO_GO_BASE__1.value(fourBsA5_08_Tlg_p->u84BsTelData.PIR, Dpt(1, 1));
+      logDebug("4BS", "PIR:%u", fourBsA5_08_Tlg_p->u84BsTelData.PIR);
+      // .......Occupancy Button .........................................
+      KoENO_GO_BASE__6.value(fourBsA5_08_Tlg_p->u84BsTelData.OCC, Dpt(1, 1));
+      logDebug("4BS", "OCC:%u", fourBsA5_08_Tlg_p->u84BsTelData.OCC);
 }
 
 inline void handle4BS_A5_09_04(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
