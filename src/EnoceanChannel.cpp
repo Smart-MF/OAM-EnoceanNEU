@@ -3,11 +3,10 @@
 #include "4BS_Telegram.h"
 #include "Arduino.h"
 #include "EnoceanModule.h"
+#include "Product_Eltako.h"
 #include "RPS_Telegram.h"
 #include "VLD_Telegram.h"
 #include "knxprod.h"
-#include "Product_Eltako.h"
-
 
 EnoceanHandle unionMSG;
 
@@ -44,25 +43,35 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   // init parameter
   unionMSG.msg_sent_after_receive = 0;
 
+  // Get rid of messages we can't handle
+  if (0 == ParamENO_CHProductsel) {
+    return false;
+  }
+
   // Read Parameter: ENOCEAN-ID
   deviceId_Arr[0] = (ParamENO_CHId0 << 4) | ParamENO_CHId1;
   deviceId_Arr[1] = (ParamENO_CHId2 << 4) | ParamENO_CHId3;
   deviceId_Arr[2] = (ParamENO_CHId4 << 4) | ParamENO_CHId5;
   deviceId_Arr[3] = (ParamENO_CHId6 << 4) | ParamENO_CHId7;
 
-  logHexDebugP(&pPacket->u8DataBuffer[2], 4);
-
-  // Get rid of messages we can't handle
-  if (pPacket->u8DataBuffer[0] != ParamENO_CHProfilSelection && ParamENO_CHProfilSelection != u8RORG_Rocker)
-    return false;
+  logDebugP("ENO-ID:");
+  logHexDebugP(deviceId_Arr, 4);
+  // logHexDebugP(&pPacket->u8DataBuffer[2], 4);
 
   // Prüft wie der CH konfiguriert ist. Über EEP-Profil oder über Hersteller
   switch (ParamENO_CHProductsel) {
   case CH_inaktive: // Kein Profil oder Hersteller gewählt
-    /* code */
+    return false;
     break;
 
   case EEP_Profil: // EEP Profile
+
+    // Get rid of messages we can't handle
+    if (pPacket->u8DataBuffer[0] != ParamENO_CHProfilSelection && ParamENO_CHProfilSelection != u8RORG_Rocker) {
+      logDebugP("wrong Profil");
+      return false;
+    }
+
     switch (ParamENO_CHProfilSelection) {
     case u8RORG_1BS:
       // Get rid of messages not intended for us
@@ -80,6 +89,7 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
       // Verarbeitet ein empfangenes 1BS-EnOcean-Telegramm (D5-00-01 Kontakt) und schreibt den Open/Close-Zustand auf
       // das KNX-Objekt
       handle_1BS(pPacket, _channelIndex);
+      return true;
       break;
 
     case u8RORG_RPS:
@@ -96,7 +106,7 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
       logHexDebugP(&pPacket->u8DataBuffer[2], 4);
 
       handle_RPS(pPacket, _channelIndex);
-
+      return true;
       break;
 
     case u8RORG_4BS:
@@ -114,6 +124,8 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
       logHexDebugP(&pPacket->u8DataBuffer[5], 4);
 
       unionMSG.msg_sent_after_receive = handle_4BS(pPacket, _channelIndex);
+      return true;
+
       break;
 
     case u8RORG_VLD:
@@ -131,9 +143,9 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
       logHexDebugP(&pPacket->u8DataBuffer[pPacket->u16DataLength - 5], 4);
 
       handle_VLD(pPacket, _channelIndex);
-
+      return true;
       break;
-      //
+
       //    case u8RORG_Rocker:
       //      // Get rid of messages not intended for us
       //      if (pPacket->u8DataBuffer[2] != deviceId_Arr[0])
@@ -211,16 +223,17 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
       //        break;
       //      }
       //      break;
-    }// ENDE switch (ParamENO_CHProfilSelection)
-    break; //ENDE EEP-Profil
+    } // ENDE switch (ParamENO_CHProfilSelection)
+    break; // ENDE EEP-Profil
 
   case Hersteller_Eltako: // Hersteller Eltako
     handleProductEltako(pPacket, _channelIndex);
-    break; //ENDE Hersteller ELTAKO
+    return true;
+    break; // ENDE Hersteller ELTAKO
 
   default:
     break;
-  }// ENDE SWITCH(ParamENO_CHProductsel)
+  } // ENDE SWITCH(ParamENO_CHProductsel)
 
   return false;
 }

@@ -166,7 +166,7 @@
                 <Parameter Id="%AID%_UP-%TT%%CC%093" Name="CH%C%ProductselTypeWas" Offset="9" BitOffset="0" ParameterType="%AID%_PT-ProductSelectionTypeWasser"    Text="Produkt:" Value="1" />
               </Union> <!-- Union 7 -->
               <Union SizeInBit="8">
-                <Memory CodeSegment="%AID%_RS-04-00000" Offset="26" BitOffset="0" />
+                <Memory CodeSegment="%AID%_RS-04-00000" Offset="38" BitOffset="0" />
                 <Parameter Id="%AID%_UP-%TT%%CC%094" Name="CH%C%SelectionFFG7B"  Offset="0" BitOffset="0" ParameterType="%AID%_PT-ProfilSelectionFFG7B"  Text="delta Value:"  Value="0" />  <!-- 1 Bit -->
                
               </Union> <!-- Union 8 -->

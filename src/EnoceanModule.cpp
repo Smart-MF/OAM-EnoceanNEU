@@ -100,7 +100,7 @@ void EnoceanModule::setupChannels() {
 
 // Zyklischer Aufruf: loggt periodisch den Status und verarbeitet Round-Robin ein Telegramm pro konfiguriertem Kanal.
 void EnoceanModule::loop(bool configured) {
-  if (delayCheck(_timer1, 5000)) {
+  if (delayCheck(_timer1, 30000)) {
     logInfoP("Loop0");
     logInfoP("CH %u", ParamENO_VisibleChannels);
 
@@ -140,7 +140,7 @@ void EnoceanModule::loop1(bool configured) {
 // Empfängt und verarbeitet ein einzelnes EnOcean-Telegramm vom UART und protokolliert periodisch ein Lebenszeichen.
 void EnoceanModule::task() {
   static uint32_t lastTime = 0;
-  if (millis() - lastTime > 5000) {
+  if (millis() - lastTime > 30000) {
     logInfoP("Alive, runtime: %u", lastTime);
     lastTime = millis();
   }
@@ -371,15 +371,15 @@ void EnoceanModule::processInputKo(GroupObject &iKo) {
   uint8_t _channelIndex = (uint8_t)channel;
   int koIndex = ENO_KoCalcIndex(iKo.asap());
 
-  logDebugP("processInputKo: Kanal %u, KO-Index %d", _channelIndex, koIndex);
+  // logDebugP("processInputKo: Kanal %u, KO-Index %d", _channelIndex+1, koIndex);
   handleKnxEvent(_channelIndex, koIndex, iKo);
 }
 
 // Wird aufgerufen, wenn ein Gruppenobjekt eines EnOcean-Kanals von der KNX-Seite beschrieben wurde; _channelIndex ist der betroffene Kanal, koIndex die lokale
 // Position (0-basiert) innerhalb des Kanal-Blocks, ko der Wert.
 void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &iKo) {
-  logDebugP("handleKnxEvent: KO-Index %d, Value:", koIndex);
-  logHexDebugP(iKo.valueRef(), iKo.valueSize());
+  //logDebugP("handleKnxEvent: KO-Index %d, Value: %he", koIndex);
+  //logHexDebugP(iKo.valueRef(), iKo.valueSize());
   // TODO: je nach konfiguriertem EEP-Profil und koIndex das passende EnOcean-Funktelegramm senden.
 
   uint8_t teachinCH = 0;
@@ -1036,90 +1036,33 @@ uint8_t EnoceanModule::uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket) {
 // Wertet ein empfangenes ERP1-Funktelegramm aus und reicht es an alle konfigurierten Kanäle zur ID-Prüfung/Verarbeitung weiter.
 void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st) {
   if (u8RetVal == ENOCEAN_OK) {
-#ifdef KDEBUG_Received
-    Serial.print(F("Received Data: "));
-    for (int i = 0; i < f_Pkt_st->u16DataLength + (uint16_t)f_Pkt_st->u8OptionLength; i++) {
-      // Serial.print(F("%X"), f_Pkt_st->u8DataBuffer[i]);
-      Serial.print(f_Pkt_st->u8DataBuffer[i], HEX);
-      Serial.print(F(" "));
-    }
-    Serial.println(F(""));
-#endif
+    
+    logDebugP("Received Data:");
+    logHexDebugP(f_Pkt_st->u8DataBuffer, f_Pkt_st->u16DataLength + (uint16_t)f_Pkt_st->u8OptionLength);
 
     if (f_Pkt_st->u8Type == u8RADIO_ERP1) {
 
-#ifdef KDEBUG_min
+      /*
       if (f_Pkt_st->u8DataBuffer[0] == u8RORG_RPS) {
-        logDebugP("RPS: Data:%u ID:%u", f_Pkt_st->u8DataBuffer[1], f_Pkt_st->u8DataBuffer[2], f_Pkt_st->u8DataBuffer[3],
-                  f_Pkt_st->u8DataBuffer[4], f_Pkt_st->u8DataBuffer[5], HEX, HEX, HEX, HEX, HEX)
-        // Serial.println(F("-----"));
-        // Serial.println(F("Typ:    RPS"));
-        // Serial.print(F("Eno-ID: "));
-        // Serial.print(f_Pkt_st->u8DataBuffer[2], HEX);
-        // Serial.print("-");
-        // Serial.print(f_Pkt_st->u8DataBuffer[3], HEX);
-        // Serial.print("-");
-        // Serial.print(f_Pkt_st->u8DataBuffer[4], HEX);
-        // Serial.print("-");
-        // Serial.println(f_Pkt_st->u8DataBuffer[5], HEX);
-        // Serial.print(F("Data:   "));
-        // Serial.println(f_Pkt_st->u8DataBuffer[1], HEX);
-        // Serial.println(F("-----"));
+        logDebugP("Typ: RPS, Eno-ID: %02X-%02X-%02X-%02X, Data: %02X", f_Pkt_st->u8DataBuffer[2],
+                  f_Pkt_st->u8DataBuffer[3], f_Pkt_st->u8DataBuffer[4], f_Pkt_st->u8DataBuffer[5],
+                  f_Pkt_st->u8DataBuffer[1]);
       } else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_VLD) {
-        Serial.println(F("-----"));
-        Serial.println(F("Typ:    VLD"));
-        Serial.print(F("Eno-ID: "));
-        Serial.print(f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 5], HEX);
-        Serial.print("-");
-        Serial.print(f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 4], HEX);
-        Serial.print("-");
-        Serial.print(f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 3], HEX);
-        Serial.print("-");
-        Serial.println(f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 2], HEX);
-        Serial.print(F("Data:  "));
-        for (int i = 0; i < f_Pkt_st->u16DataLength - 6; i++) {
-          Serial.print(" ");
-          Serial.print(f_Pkt_st->u8DataBuffer[i + 1], HEX);
-        }
-        Serial.println(F(" "));
-        Serial.println(F("-----"));
+        logDebugP("Typ: VLD, Eno-ID: %02X-%02X-%02X-%02X", f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 5],
+                  f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 4], f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 3],
+                  f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 2]);
+        logHexDebugP(&f_Pkt_st->u8DataBuffer[1], f_Pkt_st->u16DataLength - 6);
       } else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_4BS) {
-        Serial.println(F("-----"));
-        Serial.println(F("Typ:    4BS"));
-        Serial.print(F("Eno-ID: "));
-        Serial.print(f_Pkt_st->u8DataBuffer[5], HEX);
-        Serial.print("-");
-        Serial.print(f_Pkt_st->u8DataBuffer[6], HEX);
-        Serial.print("-");
-        Serial.print(f_Pkt_st->u8DataBuffer[7], HEX);
-        Serial.print("-");
-        Serial.println(f_Pkt_st->u8DataBuffer[8], HEX);
-        Serial.print(F("Data:   "));
-        Serial.print(f_Pkt_st->u8DataBuffer[1], HEX);
-        Serial.print(" ");
-        Serial.print(f_Pkt_st->u8DataBuffer[2], HEX);
-        Serial.print(" ");
-        Serial.print(f_Pkt_st->u8DataBuffer[3], HEX);
-        Serial.print(" ");
-        Serial.println(f_Pkt_st->u8DataBuffer[4], HEX);
-        Serial.println(F("-----"));
+        logDebugP("Typ: 4BS, Eno-ID: %02X-%02X-%02X-%02X, Data: %02X %02X %02X %02X", f_Pkt_st->u8DataBuffer[5],
+                  f_Pkt_st->u8DataBuffer[6], f_Pkt_st->u8DataBuffer[7], f_Pkt_st->u8DataBuffer[8],
+                  f_Pkt_st->u8DataBuffer[1], f_Pkt_st->u8DataBuffer[2], f_Pkt_st->u8DataBuffer[3],
+                  f_Pkt_st->u8DataBuffer[4]);
       } else if (f_Pkt_st->u8DataBuffer[0] == u8RORG_1BS) {
-        Serial.println(F("-----"));
-        Serial.println(F("Typ:    1BS"));
-        Serial.print(F("Eno-ID: "));
-        Serial.print(f_Pkt_st->u8DataBuffer[2], HEX);
-        Serial.print("-");
-        Serial.print(f_Pkt_st->u8DataBuffer[3], HEX);
-        Serial.print("-");
-        Serial.print(f_Pkt_st->u8DataBuffer[4], HEX);
-        Serial.print("-");
-        Serial.println(f_Pkt_st->u8DataBuffer[5], HEX);
-        Serial.print(F("Data:   "));
-        Serial.println(f_Pkt_st->u8DataBuffer[1], HEX);
-        Serial.println(F("-----"));
+        logDebugP("Typ: 1BS, Eno-ID: %02X-%02X-%02X-%02X, Data: %02X", f_Pkt_st->u8DataBuffer[2],
+                  f_Pkt_st->u8DataBuffer[3], f_Pkt_st->u8DataBuffer[4], f_Pkt_st->u8DataBuffer[5],
+                  f_Pkt_st->u8DataBuffer[1]);
       }
-#endif
-
+      */
       bool packetWasHandled = false;
       for (uint8_t i = 0; i < ParamENO_VisibleChannels; i++) {
         if (_channels[i]->check_Eno_ID(f_Pkt_st)) {
@@ -1127,13 +1070,7 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
         }
       }
 
-#ifdef KDEBUG_handled
-      if (!packetWasHandled) {
-        Serial.println(F("Data not handled!"));
-      } else {
-        Serial.println(F("Data handled :-)"));
-      }
-#endif
+      logDebugP(packetWasHandled ? "Data handled :-)" : "Data not handled!");
     }
   }
 }
