@@ -16,7 +16,7 @@
 #define MAIN_FirmwareName "ENO_TestApp"
 #define MAIN_OpenKnxId 0xAF
 #define MAIN_ApplicationNumber 255
-#define MAIN_ApplicationVersion 7
+#define MAIN_ApplicationVersion 8
 #define MAIN_ApplicationEncoding iso-8859-15
 #define MAIN_ParameterSize 5300
 #define MAIN_MaxKoNumber 399

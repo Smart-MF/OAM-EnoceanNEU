@@ -143,6 +143,8 @@ private:
     void readRepeaterFunc();
     void setRepeaterFunc();
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
+    bool extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);
+    void checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &ko);
     void send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH);
     void send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boolean pressed, uint8_t baseID_CH);

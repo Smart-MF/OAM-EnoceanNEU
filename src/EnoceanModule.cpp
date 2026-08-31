@@ -1071,8 +1071,61 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
       }
 
       logDebugP(packetWasHandled ? "Data handled :-)" : "Data not handled!");
+
+      checkAndReportUnknownId(f_Pkt_st);
     }
   }
+}
+
+// Ermittelt anhand des RORG-Typs die Position der 4-Byte Sender-ID im empfangenen Telegramm.
+// Liefert false, wenn der RORG-Typ nicht unterstützt wird bzw. das Telegramm dafür zu kurz ist.
+bool EnoceanModule::extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]) {
+  switch (f_Pkt_st->u8DataBuffer[0]) {
+  case u8RORG_RPS:
+  case u8RORG_1BS:
+    out8SenderId[0] = f_Pkt_st->u8DataBuffer[2];
+    out8SenderId[1] = f_Pkt_st->u8DataBuffer[3];
+    out8SenderId[2] = f_Pkt_st->u8DataBuffer[4];
+    out8SenderId[3] = f_Pkt_st->u8DataBuffer[5];
+    return true;
+
+  case u8RORG_4BS:
+    out8SenderId[0] = f_Pkt_st->u8DataBuffer[5];
+    out8SenderId[1] = f_Pkt_st->u8DataBuffer[6];
+    out8SenderId[2] = f_Pkt_st->u8DataBuffer[7];
+    out8SenderId[3] = f_Pkt_st->u8DataBuffer[8];
+    return true;
+
+  case u8RORG_VLD:
+    if (f_Pkt_st->u16DataLength < 5)
+      return false;
+    out8SenderId[0] = f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 5];
+    out8SenderId[1] = f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 4];
+    out8SenderId[2] = f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 3];
+    out8SenderId[3] = f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 2];
+    return true;
+
+  default:
+    return false;
+  }
+}
+
+// Prüft kanalübergreifend, ob die Sender-ID des empfangenen Telegramms an einem Kanal parametriert ist.
+// Ist sie an keinem Kanal bekannt, wird sie sofort über das KO "NewId" auf den KNX-Bus gemeldet.
+void EnoceanModule::checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
+  uint8_t senderId[4];
+  if (!extractSenderId(f_Pkt_st, senderId))
+    return;
+
+  for (uint8_t i = 0; i < ParamENO_VisibleChannels; i++) {
+    if (_channels[i]->matchesDeviceId(senderId))
+      return; // ID ist an einem Kanal bekannt
+  }
+
+  char idStr[15];
+  snprintf(idStr, sizeof(idStr), "%02X%02X%02X%02X", senderId[0], senderId[1], senderId[2], senderId[3]);
+  logInfoP("Unknown Enocean-ID: %s", idStr);
+  KoENO_NewId.value(idStr, Dpt(16, 1));
 }
 
 
