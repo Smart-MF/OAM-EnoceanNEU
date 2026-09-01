@@ -1068,11 +1068,15 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
         if (_channels[i]->check_Eno_ID(f_Pkt_st)) {
           packetWasHandled = true;
         }
+      } 
+
+      // Senden Unknown ID 
+      if(packetWasHandled == false && ParamENO_NewID_OnOff == true)
+      {
+        checkAndReportUnknownId(f_Pkt_st);
       }
 
       logDebugP(packetWasHandled ? "Data handled :-)" : "Data not handled!");
-
-      checkAndReportUnknownId(f_Pkt_st);
     }
   }
 }
@@ -1117,10 +1121,12 @@ void EnoceanModule::checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
   if (!extractSenderId(f_Pkt_st, senderId))
     return;
 
+  /*/  
   for (uint8_t i = 0; i < ParamENO_VisibleChannels; i++) {
     if (_channels[i]->matchesDeviceId(senderId))
       return; // ID ist an einem Kanal bekannt
   }
+  */    
 
   char idStr[15];
   snprintf(idStr, sizeof(idStr), "%02X%02X%02X%02X", senderId[0], senderId[1], senderId[2], senderId[3]);
