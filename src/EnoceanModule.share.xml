@@ -883,10 +883,12 @@
             <ComObjectTable>
               <ComObject Id="%AID%_O-%TT%00000" Name="NewId" Text="IDs unbekannter Geräte" Number="8" FunctionText="ENO: Geräte-Id" ObjectSize="14 Bytes" ReadFlag="Disabled" WriteFlag="Disabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" UpdateFlag="Disabled" ReadOnInitFlag="Disabled" DatapointType="DPST-16-1" />
               <ComObject Id="%AID%_O-%TT%00001" Name="SetTeachChannel" Text="aktiviert Kanal zum Einlernen" Number="9" FunctionText="Eingang" ObjectSize="1 Byte" ReadFlag="Disabled" WriteFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Disabled" UpdateFlag="Enabled" ReadOnInitFlag="Disabled" DatapointType="DPST-5-10" />
+              <ComObject Id="%AID%_O-%TT%00002" Name="IsTeachChannel" Text="Channel bereit zum Einlernen" Number="10" FunctionText="Ausgang" ObjectSize="1 Byte" ReadFlag="Disabled" WriteFlag="Disabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" UpdateFlag="Disabled" ReadOnInitFlag="Disabled" DatapointType="DPST-5-10" />
             </ComObjectTable>
             <ComObjectRefs>
               <ComObjectRef Id="%AID%_O-%TT%00000_R-%TT%0000001" RefId="%AID%_O-%TT%00000" />
               <ComObjectRef Id="%AID%_O-%TT%00001_R-%TT%0000101" RefId="%AID%_O-%TT%00001" />
+              <ComObjectRef Id="%AID%_O-%TT%00002_R-%TT%0000201" RefId="%AID%_O-%TT%00002" />
             </ComObjectRefs>
           </Static>
           <Dynamic>
@@ -902,16 +904,17 @@
                 <ParameterSeparator Id="%AID%_PS-nnn" Text="" UIHint="HorizontalRuler" />
 
                 <!-- Set TeachIN Channel-->
-                <ParameterRefRef RefId="%AID%_UP-%TT%00012_R-%TT%0001201" HelpContext="ENO-SendUnkownID" IndentLevel="1" /> <!--Senr Unkown ID ON/OFF -->
-                <choose ParamRefId="%AID%_P-%TT%00000_R-%TT%0000001">
+                <ComObjectRefRef RefId="%AID%_O-%TT%00001_R-%TT%0000101" /> <!-- Set TeachIN -->
+                <ComObjectRefRef RefId="%AID%_O-%TT%00002_R-%TT%0000201" /> <!-- Read TeachIN -->
+
+                <!--Senden  Unkown ID ON/OFF -->
+                <ParameterRefRef RefId="%AID%_UP-%TT%00012_R-%TT%0001201" HelpContext="ENO-SendUnkownID" IndentLevel="1" /> 
+                <choose ParamRefId="%AID%_UP-%TT%00012_R-%TT%0001201">
                   <when test="1">
-                    <ComObjectRefRef RefId="%AID%_O-%TT%00001_R-%TT%0000101" /> <!-- KO Unkown ID -->
+                    <ComObjectRefRef RefId="%AID%_O-%TT%00000_R-%TT%0000001" />
                   </when>
                 </choose>
-                <ParameterSeparator Id="%AID%_PS-nnn" Text="" UIHint="HorizontalRuler" />
-
-                <!-- Unkown ID send-->
-                <ComObjectRefRef RefId="%AID%_O-%TT%00000_R-%TT%0000001" />
+                <ParameterSeparator Id="%AID%_PS-nnn" Text="" UIHint="HorizontalRuler" />               
 
                 <!-- Repeater Settings-->
                 <ParameterRefRef RefId="%AID%_P-%TT%00000_R-%TT%0000001" HelpContext="ENO-Repeater" IndentLevel="1" /> <!-- Repeater ON/OFF -->

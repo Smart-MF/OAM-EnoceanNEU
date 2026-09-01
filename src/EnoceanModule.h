@@ -42,6 +42,8 @@
 #define u8CO_RD_IDBASE 0x08
 #define u8CO_WR_REPEATER 0x09
 #define u8CO_RD_REPEATER 0x0A // 10
+#define u8CO_WR_LEARNMODE 0x17 // 23
+#define u8CO_RD_LEARNMODE 0x18 // 24
 
 #define RPS_BUTTON_CHANNEL_AI 0
 #define RPS_BUTTON_CHANNEL_AO 1
@@ -140,6 +142,12 @@ private:
     void readBaseId(uint8_t *fui8_BaseID_p);
     void setBaseId(uint8_t *fui8_BaseID_p);
     bool checkBaseID();
+    void activateLearnMode(uint8_t channel, uint8_t enable);
+    void readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p);
+    void startDisableAllChannels();
+    void disableAllChannelsStep();
+    void startReportTeachChannel();
+    void reportTeachChannelStep();
     void readRepeaterFunc();
     void setRepeaterFunc();
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
@@ -175,6 +183,14 @@ private:
     uint8_t lui8_BaseID_p[BASEID_BYTES];
 
     uint32_t _lastPollingTime = 0;
+
+    // 0 = kein "alle Kanäle deaktivieren" in Bearbeitung, sonst der als nächstes zu deaktivierende Kanal (1..30).
+    uint8_t _disableAllChannelsNext = 0;
+
+    // true, solange zyklisch Kanal für Kanal auf aktiven Lernmodus geprüft und ggf. per KO IsTeachChannel gemeldet wird.
+    bool _reportTeachChannel = false;
+    uint32_t _reportTeachChannelTimer = 0;
+    uint8_t _reportTeachChannelNext = 0; // zuletzt abgefragter Kanal (0 = noch keiner, dann 1..30 zyklisch)
 
 public:
     EnoceanModule();

@@ -250,11 +250,14 @@
 
 #define ENO_KoNewId 8
 #define ENO_KoSetTeachChannel 9
+#define ENO_KoIsTeachChannel 10
 
 // IDs unbekannter Geräte
 #define KoENO_NewId                               (knx.getGroupObject(ENO_KoNewId))
 // aktiviert Kanal zum Einlernen
 #define KoENO_SetTeachChannel                     (knx.getGroupObject(ENO_KoSetTeachChannel))
+// Channel bereit zum Einlernen
+#define KoENO_IsTeachChannel                      (knx.getGroupObject(ENO_KoIsTeachChannel))
 
 #define ENO_ChannelCount 10
 

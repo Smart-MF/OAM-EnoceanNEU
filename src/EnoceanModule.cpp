@@ -107,6 +107,9 @@ void EnoceanModule::loop(bool configured) {
     _timer1 = millis();
   }
 
+  disableAllChannelsStep();
+  reportTeachChannelStep();
+
   if (configured) {
     if (ParamENO_VisibleChannels == 0)
       return;
@@ -310,6 +313,164 @@ void EnoceanModule::setBaseId(uint8_t *fui8_BaseID_p)
   }
 }
 
+// Aktiviert den Lernmodus des Transceivers für den angegebenen Kanal (CO_WR_LEARNMODE, ESP3-Spec Kap. 1.10.25) und
+// wartet blockierend (max. 100 ms) auf die Antwort.
+void EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable) {
+  PACKET_SERIAL_TYPE_ lLearnModePkt_st;
+
+  // Data: COMMAND Code (1) + Enable (1) + Timeout (4, big-endian) = 6 Bytes
+  // Optional Data: Channel (1 Byte)
+  uint8_t lu8SndBuf[7];
+  lu8SndBuf[0] = u8CO_WR_LEARNMODE;
+  lu8SndBuf[1] = enable; // Start Learn mode = 1, End Learn mode = 0
+  lu8SndBuf[2] = 0; // Timeout: 0 = Default-Periode (60 000 ms)
+  lu8SndBuf[3] = 0;
+  lu8SndBuf[4] = 0;
+  lu8SndBuf[5] = 0;
+  lu8SndBuf[6] = channel; // 0..0xFD = Kanal absolut, 0xFE = vorheriger, 0xFF = nächster Kanal (relativ)
+
+  lLearnModePkt_st.u16DataLength = 6;
+  lLearnModePkt_st.u8OptionLength = 1;
+  lLearnModePkt_st.u8Type = u8RORG_COMMON_COMMAND;
+  lLearnModePkt_st.u8DataBuffer = &lu8SndBuf[0];
+
+  logDebugP("Sending telegram (learn mode %s), Channel: %u", enable ? "on" : "off", channel);
+
+  if (ENOCEAN_OK == uart_sendPacket(&lLearnModePkt_st)) {
+    u8RetVal = ENOCEAN_NO_RX_TEL;
+    logDebugP("Receiving telegram (learn mode on).");
+    uint32_t lStartTime = millis();
+    while (u8RetVal == ENOCEAN_NO_RX_TEL && (millis() - lStartTime) < 100) {
+      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
+    }
+
+    switch (u8RetVal) {
+    case ENOCEAN_OK:
+      switch (m_Pkt_st.u8Type) {
+      case u8RESPONSE:
+        logDebugP("Learn mode Return Code: %u", m_Pkt_st.u8DataBuffer[0]);
+        break;
+      default:
+        logDebugP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
+      }
+      break;
+    case ENOCEAN_NO_RX_TEL:
+      logDebugP("ERROR Receiving telegram (learn mode on).");
+      break;
+    default:
+      logDebugP("Error receiving learn mode response");
+    }
+  }
+}
+
+// Startet den nicht-blockierenden Ablauf, um den Lernmodus für alle 30 Kanäle nacheinander zu deaktivieren
+// (siehe disableAllChannelsStep(), wird pro loop()-Durchlauf einen Kanal weiter geschaltet).
+void EnoceanModule::startDisableAllChannels() {
+  logDebugP("Disabling learn mode for all channels (1..30).");
+  _disableAllChannelsNext = 1;
+}
+
+// Deaktiviert - falls ein Durchlauf mit startDisableAllChannels() gestartet wurde - pro Aufruf den Lernmodus für
+// genau einen weiteren Kanal, damit activateLearnMode()s Wartezeit (max. 100 ms) den restlichen Ablauf nicht
+// blockiert.
+void EnoceanModule::disableAllChannelsStep() {
+  if (_disableAllChannelsNext == 0)
+    return;
+
+  activateLearnMode(_disableAllChannelsNext, false);
+
+  if (_disableAllChannelsNext >= 30)
+    _disableAllChannelsNext = 0; // fertig
+  else
+    _disableAllChannelsNext++;
+}
+
+// Fragt beim Transceiver den aktuellen Lernmodus-Status ab (CO_RD_LEARNMODE, ESP3-Spec Kap. 1.10.26) und wartet
+// blockierend auf die Antwort. fu8_Enable_p: Lernmodus aktiv (0/1). fu8_Channel_p: Kanal, für den der Lernmodus aktiv
+// ist (0..0xFD).
+void EnoceanModule::readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p) {
+  PACKET_SERIAL_TYPE_ lRdLearnModePkt_st;
+
+  uint8_t lu8SndBuf = u8CO_RD_LEARNMODE;
+
+  lRdLearnModePkt_st.u16DataLength = 0x0001;
+  lRdLearnModePkt_st.u8OptionLength = 0x00;
+  lRdLearnModePkt_st.u8Type = u8RORG_COMMON_COMMAND;
+  lRdLearnModePkt_st.u8DataBuffer = &lu8SndBuf;
+
+  logDebugP("Sending telegram (read learn mode).");
+
+  if (ENOCEAN_OK == uart_sendPacket(&lRdLearnModePkt_st)) {
+    u8RetVal = ENOCEAN_NO_RX_TEL;
+    logDebugP("Receiving telegram (read learn mode).");
+    while (u8RetVal == ENOCEAN_NO_RX_TEL) {
+      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
+    }
+
+    switch (u8RetVal) {
+    case ENOCEAN_OK:
+      switch (m_Pkt_st.u8Type) {
+      case u8RESPONSE:
+        if (m_Pkt_st.u8DataBuffer[0] == 0x00) { // RET_OK
+          *fu8_Enable_p = m_Pkt_st.u8DataBuffer[1];
+          *fu8_Channel_p = m_Pkt_st.u8DataBuffer[2]; // Optional Data: Channel
+          logDebugP("Learn mode Enable: %u, Channel: %u", *fu8_Enable_p, *fu8_Channel_p);
+        } else {
+          logDebugP("Read learn mode Return Code: %u", m_Pkt_st.u8DataBuffer[0]);
+        }
+        break;
+      default:
+        logDebugP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
+      }
+      break;
+    case ENOCEAN_NO_RX_TEL:
+      logDebugP("ERROR Receiving telegram (read learn mode).");
+      break;
+    default:
+      logDebugP("Error receiving read learn mode response");
+    }
+  }
+}
+
+// Startet die nicht-blockierende, zyklische Kanal-für-Kanal-Abfrage auf aktiven Lernmodus
+// (siehe reportTeachChannelStep(), ausgelöst über SetTeachChannel = 100).
+void EnoceanModule::startReportTeachChannel() {
+  logDebugP("Start scanning channels for active learn mode.");
+  _reportTeachChannel = true;
+  _reportTeachChannelTimer = millis();
+  _reportTeachChannelNext = 0;
+}
+
+// Fragt - falls mit startReportTeachChannel() gestartet - alle 100 ms per readLearnMode() ab, ob der jeweils
+// nächste Kanal (1..30) im Lernmodus ist, und sendet dessen Nummer dann über das KO IsTeachChannel auf den
+// KNX-Bus. Nach Kanal 30 stoppt der Durchlauf von selbst.
+void EnoceanModule::reportTeachChannelStep() {
+  if (!_reportTeachChannel)
+    return;
+
+  if (!delayCheck(_reportTeachChannelTimer, 100))
+    return;
+  _reportTeachChannelTimer = millis();
+
+  _reportTeachChannelNext++;
+
+  uint8_t enable = 0;
+  uint8_t activeChannel = 0;
+  readLearnMode(&enable, &activeChannel);
+
+  logDebugP("Scanning channel %u (active: %u, enable: %u)", _reportTeachChannelNext, activeChannel, enable);
+
+  if (enable && activeChannel == _reportTeachChannelNext) {
+    logDebugP("Reporting teach channel: %u", _reportTeachChannelNext);
+    KoENO_IsTeachChannel.value(_reportTeachChannelNext, Dpt(5, 10));
+  }
+
+  if (_reportTeachChannelNext >= 30) {
+    logDebugP("Channel scan finished.");
+    _reportTeachChannel = false;
+  }
+}
+
 // Fragt beim Transceiver die Basis-ID per ESP3-Common-Command an und wartet blockierend auf die Antwort.
 void EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
   PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
@@ -362,8 +523,25 @@ void EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
   }
 }
 
+
+
+
+
 // Rückweg KNX→EnOcean: ermittelt Kanal und lokalen KO-Index des beschriebenen Gruppenobjekts über die ENO_KoCalc*-Makros.
 void EnoceanModule::processInputKo(GroupObject &iKo) {
+  if (iKo.asap() == ENO_KoSetTeachChannel) {
+    uint8_t teachChannel = iKo.value(Dpt(5, 10));
+    logDebugP("processInputKo: SetTeachChannel = %u", teachChannel);
+    if (teachChannel > 0 && teachChannel <= 30) {
+      activateLearnMode(teachChannel, true);
+    } else if (teachChannel == 255) {
+      startDisableAllChannels();
+    } else if (teachChannel == 100) {
+      startReportTeachChannel();
+    }
+    return;
+  }
+
   int channel = ENO_KoCalcChannel(iKo.asap());
   if (channel < 0 || channel >= ParamENO_VisibleChannels)
     return; // Gruppenobjekt gehört zu keinem aktiven EnOcean-Kanal
@@ -374,6 +552,12 @@ void EnoceanModule::processInputKo(GroupObject &iKo) {
   // logDebugP("processInputKo: Kanal %u, KO-Index %d", _channelIndex+1, koIndex);
   handleKnxEvent(_channelIndex, koIndex, iKo);
 }
+
+
+
+
+
+
 
 // Wird aufgerufen, wenn ein Gruppenobjekt eines EnOcean-Kanals von der KNX-Seite beschrieben wurde; _channelIndex ist der betroffene Kanal, koIndex die lokale
 // Position (0-basiert) innerhalb des Kanal-Blocks, ko der Wert.
