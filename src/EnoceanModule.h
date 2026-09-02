@@ -1,4 +1,6 @@
 #pragma once
+#include "EnOceanESP3.h"
+#include "EnOceanTeachIn.h"
 #include "EnoceanChannel.h"
 #include "OpenKNX.h"
 #ifdef ARDUINO_ARCH_RP2040
@@ -6,12 +8,6 @@
 #include "UsbExchangeModule.h"
 #endif
 #endif
-
-#define ENOCEAN_OK 0
-#define ENOCEAN_OUT_OF_RANGE 21
-#define ENOCEAN_NOT_VALID_CHKSUM 7
-#define ENOCEAN_NO_RX_TEL 6
-#define ENOCEAN_NEW_RX_BYTE 3
 
 /*
     EEP type
@@ -25,25 +21,20 @@
 #define u8RORG_Rocker 0xFA // 250
 
 // Send
-#define u8RORG_COMMON_COMMAND 0x05
 #define u8KNX_RORG_Rocker 1
 #define u8KNX_RORG_VLD 2
 #define u8KNX_RORG_4BS 3
 
-/*
-    Packet type
-*/
+// ENOCEAN_*, u8RADIO_ERP1/u8RESPONSE, u8RORG_COMMON_COMMAND, u8CO_*,
+// PACKET_SERIAL_TYPE_, STATES_GET_PACKET_, BASEID_BYTES, DATBUF_SZ,
+// SER_SYNCH_CODE/SER_HEADER_NR_BYTES kommen jetzt aus EnOceanESP3.h.
 
-#define u8RADIO_ERP1 0x01
-#define u8RESPONSE 0x02
-
-// COMANDS
-#define u8CO_WR_IDBASE 0x07
-#define u8CO_RD_IDBASE 0x08
-#define u8CO_WR_REPEATER 0x09
-#define u8CO_RD_REPEATER 0x0A // 10
-#define u8CO_WR_LEARNMODE 0x17 // 23
-#define u8CO_RD_LEARNMODE 0x18 // 24
+// Sonderwerte des KO IsTeachChannel (DPT 5.010), neben 1..30 = aktuell aktiver Lern-Kanal.
+// Explizit als uint8_t: ein nackter int-Literal waere sonst beim Aufruf von GroupObject::value() zwischen
+// KNXValue(int32_t) und KNXValue(uint32_t) mehrdeutig (conversion from 'int' to 'const KNXValue' is ambiguous).
+#define ENO_TEACHCHANNEL_CLOSED ((uint8_t)255)            // Lernmodus geschlossen / kein Kanal aktiv
+#define ENO_TEACHCHANNEL_ERROR_NO_RESPONSE ((uint8_t)254) // Transceiver hat nicht (rechtzeitig) geantwortet
+#define ENO_TEACHCHANNEL_ERROR_REJECTED ((uint8_t)253)    // Transceiver hat den Befehl abgelehnt (Return-Code != RET_OK)
 
 #define RPS_BUTTON_CHANNEL_AI 0
 #define RPS_BUTTON_CHANNEL_AO 1
@@ -61,12 +52,6 @@
 #define VLD_CMD_ID_06 0x06
 
 #define RPS_Func_10 0xA
-
-#define BASEID_BYTES 4
-#define DATBUF_SZ 100
-
-#define SER_SYNCH_CODE 0x55
-#define SER_HEADER_NR_BYTES 4
 
 //Rocker States
 #define ButtonStateO 0
@@ -96,41 +81,16 @@
 #define ROCKER_CI 0x05
 #define ROCKER_CO 0x06
 
-//! uart_getPacket state machine states.
-enum STATES_GET_PACKET_
-{
-    //! Waiting for the synchronisation byte 0x55
-    GET_SYNC_STATE = 0,
-    //! Copying the 4 after sync byte: raw data length (2 bytes), optional data length (1), type (1).
-    GET_HEADER_STATE,
-    //! Checking the header CRC8 checksum. Resynchronisation test is also done here
-    CHECK_CRC8H_STATE,
-    //! Copying the data and optional data bytes to the paquet buffer
-    GET_DATA_STATE,
-    //! Checking the info CRC8 checksum.
-    CHECK_CRC8D_STATE,
-};
-
-//! Packet structure (ESP3)
-struct PACKET_SERIAL_TYPE_
-{
-    // Amount of raw data bytes to be received. The most significant byte is sent/received first
-    uint16_t u16DataLength;
-    // Amount of optional data bytes to be received
-    uint8_t u8OptionLength;
-    // Packetype code
-    uint8_t u8Type;
-    // Data buffer: raw data + optional bytes
-    uint8_t *u8DataBuffer;
-};
-
 class EnoceanModule : public OpenKNX::Module
 {
 private:
     uint32_t _timer1 = 0;
     uint32_t _timer2 = 0;
     uint8_t _currentChannel = 0;
-    Stream *_serial;
+    EnOceanESP3 _esp3;
+    // Secure-Teach-In-Komfortschicht ueber _esp3 (CO_RD_SECUREDEVICES-Diff, Kanal-Zuordnung); aktuell noch ohne
+    // eigenes KO/ETS-Parameter angebunden, siehe EnOceanTeachIn.h.
+    EnOceanTeachIn _teachIn;
     EnoceanChannel *_channels[ENO_ChannelCount];
     OpenKNX::Flash::Driver *_dummyStorage = nullptr;
 
@@ -139,17 +99,10 @@ private:
     void setupChannels();
     void initSerial(Stream &serial);
     void task();
-    void readBaseId(uint8_t *fui8_BaseID_p);
-    void setBaseId(uint8_t *fui8_BaseID_p);
     bool checkBaseID();
-    void activateLearnMode(uint8_t channel, uint8_t enable);
-    void readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p);
     void startDisableAllChannels();
-    void disableAllChannelsStep();
+    uint8_t teachChannelErrorCode() const;
     void startReportTeachChannel();
-    void reportTeachChannelStep();
-    void readRepeaterFunc();
-    void setRepeaterFunc();
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
     bool extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);
     void checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st);
@@ -160,8 +113,6 @@ private:
     void getStatusActors(uint8_t *mySenderId, uint8_t idExtra);
     void setActorsMeasurment(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs);
     void getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs, bool unit);
-    uint8_t uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket, uint16_t u16BufferLength);
-    uint8_t uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket);
 #ifdef ARDUINO_ARCH_RP2040
 #ifndef OPENKNX_USB_EXCHANGE_IGNORE
     void registerUsbExchangeCallbacks();
@@ -170,27 +121,11 @@ private:
 
     bool isInited = false;
 
-    uint8_t u8datBuf[DATBUF_SZ];
-    uint8_t u8CRC;
-    uint8_t u8RxByte;
-    uint8_t u8RetVal;
-
-    STATES_GET_PACKET_ u8State;
-    PACKET_SERIAL_TYPE_ m_Pkt_st;
-
-    static uint8_t u8CRC8Table[256];
-
-    uint8_t lui8_BaseID_p[BASEID_BYTES];
+    // Mit 0 vorbelegt, damit ein fehlgeschlagenes initiales readBaseId() in begin() keine
+    // undefinierten Werte hinterlaesst (z.B. fuer nachfolgende send_RPS_Taster()-Aufrufe).
+    uint8_t lui8_BaseID_p[BASEID_BYTES] = {0};
 
     uint32_t _lastPollingTime = 0;
-
-    // 0 = kein "alle Kanäle deaktivieren" in Bearbeitung, sonst der als nächstes zu deaktivierende Kanal (1..30).
-    uint8_t _disableAllChannelsNext = 0;
-
-    // true, solange zyklisch Kanal für Kanal auf aktiven Lernmodus geprüft und ggf. per KO IsTeachChannel gemeldet wird.
-    bool _reportTeachChannel = false;
-    uint32_t _reportTeachChannelTimer = 0;
-    uint8_t _reportTeachChannelNext = 0; // zuletzt abgefragter Kanal (0 = noch keiner, dann 1..30 zyklisch)
 
 public:
     EnoceanModule();

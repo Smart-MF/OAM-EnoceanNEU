@@ -36,5 +36,4 @@ public:
   void setup() override;
   void loop() override;
   bool check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket);
-  bool matchesDeviceId(const uint8_t id[4]) const;
 };

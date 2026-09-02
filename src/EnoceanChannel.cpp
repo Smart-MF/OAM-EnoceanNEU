@@ -130,6 +130,11 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
 
     case u8RORG_VLD:
 
+      // Zu kurze Telegramme abweisen, bevor u16DataLength - 5 als uint16_t unterlaufen und weit ausserhalb
+      // des Empfangspuffers lesen wuerde.
+      if (pPacket->u16DataLength < 5)
+        return false;
+
       // Get rid of messages not intended for us
       if (pPacket->u8DataBuffer[pPacket->u16DataLength - 5] != deviceId_Arr[0])
         return false;
@@ -236,19 +241,4 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   } // ENDE SWITCH(ParamENO_CHProductsel)
 
   return false;
-}
-
-// Vergleicht die für diesen Kanal parametrierte EnOcean-ID mit der übergebenen ID (unabhängig vom gewählten Profil),
-// um kanalübergreifend feststellen zu können, ob eine empfangene EnOcean-ID bereits bekannt ist.
-bool EnoceanChannel::matchesDeviceId(const uint8_t id[4]) const {
-  if (ParamENO_CHProductsel == CH_inaktive)
-    return false;
-
-  uint8_t configuredId[4];
-  configuredId[0] = (ParamENO_CHId0 << 4) | ParamENO_CHId1;
-  configuredId[1] = (ParamENO_CHId2 << 4) | ParamENO_CHId3;
-  configuredId[2] = (ParamENO_CHId4 << 4) | ParamENO_CHId5;
-  configuredId[3] = (ParamENO_CHId6 << 4) | ParamENO_CHId7;
-
-  return configuredId[0] == id[0] && configuredId[1] == id[1] && configuredId[2] == id[2] && configuredId[3] == id[3];
 }
