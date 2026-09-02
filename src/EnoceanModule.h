@@ -102,6 +102,13 @@ private:
     bool checkBaseID();
     void startDisableAllChannels();
     uint8_t teachChannelErrorCode() const;
+    // An EnOceanTeachIn::onLearnModeChanged() registriert (siehe Konstruktor), damit auch ein ueber
+    // EnOceanTeachIn::teachInOnChannel() (Secure-Teach-in) gesteuerter Lernmodus auf KoENO_IsTeachChannel
+    // sichtbar wird, genau wie der Weg ueber processInputKo()/startDisableAllChannels(). Reiner Trampolin-Aufruf
+    // auf reportTeachInLearnModeChanged(), da der als EnOceanLearnModeCallback registrierte Funktionszeiger
+    // statisch sein muss (logDebugP/logInfoP/KoENO_* brauchen dagegen ein 'this', siehe dort).
+    static void onTeachInLearnModeChanged(uint8_t channel, EnOceanLearnModeEvent event);
+    void reportTeachInLearnModeChanged(uint8_t channel, EnOceanLearnModeEvent event);
     void startReportTeachChannel();
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
     bool extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);

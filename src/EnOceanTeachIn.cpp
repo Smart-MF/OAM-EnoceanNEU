@@ -65,12 +65,18 @@ bool EnOceanTeachIn::teachInOnChannel(uint8_t channel, uint32_t windowMs, uint32
     beforeN = 0;
 
   if (!_esp3.activateLearnMode(channel, true, windowMs)) {
+    if (_learnModeCb)
+      _learnModeCb(channel, LEARNMODE_EVENT_ACTIVATE_FAILED);
     return false;
   }
+  if (_learnModeCb)
+    _learnModeCb(channel, LEARNMODE_EVENT_OPENED);
 
   pumpEventsDuringWindow(windowMs);
 
   _esp3.activateLearnMode(channel, false);
+  if (_learnModeCb)
+    _learnModeCb(channel, LEARNMODE_EVENT_CLOSED);
 
   EnOceanSecureDevice after[MAX_MAPPED_DEVICES];
   int afterN = readSecureDevices(after, MAX_MAPPED_DEVICES);

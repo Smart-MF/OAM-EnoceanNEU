@@ -8,8 +8,9 @@
 
 // CRC8-Tabelle sowie die ESP3-Paket-Statemachine (Senden/Empfangen) leben jetzt in EnOceanESP3.
 
-// Konstruktor: verdrahtet _teachIn mit dem eigenen ESP3-Treiber, Rest übernimmt die Basisklasse.
-EnoceanModule::EnoceanModule() : _teachIn(_esp3) {}
+// Konstruktor: verdrahtet _teachIn mit dem eigenen ESP3-Treiber und registriert die KO-Rückmeldung für dessen
+// Lernmodus-Änderungen, Rest übernimmt die Basisklasse.
+EnoceanModule::EnoceanModule() : _teachIn(_esp3) { _teachIn.onLearnModeChanged(&EnoceanModule::onTeachInLearnModeChanged); }
 
 // Liefert den Modulnamen "Enocean" für Log-/Konsolenausgaben.
 const std::string EnoceanModule::name() { return "Enocean"; }
@@ -200,6 +201,35 @@ bool EnoceanModule::checkBaseID()
 uint8_t EnoceanModule::teachChannelErrorCode() const {
   return (_esp3.lastLearnModeResult() == LEARNMODE_RESULT_REJECTED) ? ENO_TEACHCHANNEL_ERROR_REJECTED
                                                                       : ENO_TEACHCHANNEL_ERROR_NO_RESPONSE;
+}
+
+// Statischer Trampolin-Aufruf (siehe Deklaration in EnoceanModule.h) auf die eigentliche, nicht-statische
+// Implementierung, da logDebugP/logInfoP/KoENO_* ein gueltiges 'this' (logPrefix()) brauchen.
+void EnoceanModule::onTeachInLearnModeChanged(uint8_t channel, EnOceanLearnModeEvent event) {
+  openknxEnoceanModule.reportTeachInLearnModeChanged(channel, event);
+}
+
+// Von EnOceanTeachIn::teachInOnChannel() (Secure-Teach-in) bei jeder Lernmodus-Statusaenderung aufgerufen (siehe
+// Registrierung im Konstruktor), damit dieser Weg genauso auf KoENO_IsTeachChannel sichtbar wird wie der Weg
+// ueber processInputKo()/startDisableAllChannels().
+void EnoceanModule::reportTeachInLearnModeChanged(uint8_t channel, EnOceanLearnModeEvent event) {
+  switch (event) {
+  case LEARNMODE_EVENT_OPENED:
+    logDebugP("Reporting teach channel opened (via TeachIn): %u", channel);
+    KoENO_IsTeachChannel.value(channel, Dpt(5, 10));
+    break;
+  case LEARNMODE_EVENT_CLOSED:
+    logDebugP("Reporting teach channel closed (via TeachIn).");
+    KoENO_IsTeachChannel.value(ENO_TEACHCHANNEL_CLOSED, Dpt(5, 10));
+    break;
+  case LEARNMODE_EVENT_ACTIVATE_FAILED: {
+    uint8_t errorCode = teachChannelErrorCode();
+    logInfoP("TeachIn: activating learn mode for channel %u FAILED (result=%u).", channel,
+             _esp3.lastLearnModeResult());
+    KoENO_IsTeachChannel.value(errorCode, Dpt(5, 10));
+    break;
+  }
+  }
 }
 
 // Schliesst den Lernmodus, egal auf welchem Kanal er gerade offen ist: fragt per CO_RD_LEARNMODE den

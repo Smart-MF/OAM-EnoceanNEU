@@ -40,11 +40,24 @@ struct EnOceanDeviceChannelMap {
 // Speicherplatz mehr frei). cause: Spec Tab. 18.
 typedef void (*EnOceanSecureDeviceEventCallback)(uint32_t deviceId, uint8_t cause);
 
+// Vom Lernmodus-Callback (siehe onLearnModeChanged()) gemeldete Ereignisse. Damit kann der Aufrufer (z.B.
+// EnoceanModule) den Lernmodus-Status von EnOceanTeachIn nach aussen sichtbar machen (z.B. per KO), ohne dass
+// diese Klasse selbst etwas ueber KNX/KOs wissen muss.
+enum EnOceanLearnModeEvent : uint8_t {
+    LEARNMODE_EVENT_OPENED = 0,          // Lernmodus fuer 'channel' erfolgreich geoeffnet
+    LEARNMODE_EVENT_CLOSED = 1,          // Lernmodus (fuer 'channel') wieder geschlossen
+    LEARNMODE_EVENT_ACTIVATE_FAILED = 2, // Oeffnen fuer 'channel' fehlgeschlagen; Grund via EnOceanESP3::lastLearnModeResult()
+};
+typedef void (*EnOceanLearnModeCallback)(uint8_t channel, EnOceanLearnModeEvent event);
+
 class EnOceanTeachIn {
 public:
     explicit EnOceanTeachIn(EnOceanESP3 &esp3) : _esp3(esp3) {}
 
     void onSecureDeviceEvent(EnOceanSecureDeviceEventCallback cb) { _eventCb = cb; }
+
+    // Wird von teachInOnChannel() bei jeder Lernmodus-Statusaenderung aufgerufen (siehe EnOceanLearnModeEvent).
+    void onLearnModeChanged(EnOceanLearnModeCallback cb) { _learnModeCb = cb; }
 
     // CO_RD_SECUREDEVICES: alle beim TCM515 bekannten sicheren Geraete.
     int readSecureDevices(EnOceanSecureDevice *out, int maxDevices);
@@ -64,6 +77,7 @@ private:
 
     EnOceanESP3 &_esp3;
     EnOceanSecureDeviceEventCallback _eventCb = nullptr;
+    EnOceanLearnModeCallback _learnModeCb = nullptr;
     EnOceanDeviceChannelMap _map[MAX_MAPPED_DEVICES];
     int _mapCount = 0;
 
