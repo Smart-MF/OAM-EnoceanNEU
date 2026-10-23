@@ -36,9 +36,17 @@
 
 #define u8RADIO_ERP1 0x01
 #define u8RESPONSE 0x02
+#define u8EVENT 0x04
 #define u8COMMAND_ACCEPTED 0x0C
 
+// EVENT Codes
+#define u8CO_READY 0x04
+#define u8CO_DUTYCYCLE_LIMIT 0x06
+#define u8CO_TRANSMIT_FAILED 0x07
+#define u8CO_LRN_MODE_DISABLED 0x09
+
 // COMANDS
+#define u8CO_RD_VERSION 0x03
 #define u8CO_WR_IDBASE 0x07
 #define u8CO_RD_IDBASE 0x08
 #define u8CO_WR_REPEATER 0x09
@@ -150,14 +158,18 @@ private:
     void getConfiguredBaseId(uint8_t out8BaseId[BASEID_BYTES]);
     bool checkBaseID();
     uint8_t waitForResponse(uint32_t timeoutMs);
-    void activateLearnMode(uint8_t channel, uint8_t enable);
-    void readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p);
-    void startDisableAllChannels();
-    void disableAllChannelsStep();
-    void startReportTeachChannel();
-    void reportTeachChannelStep();
+    static bool isValidBaseId(const uint8_t baseId[BASEID_BYTES]);
+    bool activateLearnMode(uint8_t channel, uint8_t enable);
+    bool readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p);
+    void handleTeachCommand(uint8_t value);
+    void setIsTeachChannel(uint8_t channel);
+    void disableLearnMode();
+    void reportTeachChannel();
+    void handleEvent(PACKET_SERIAL_TYPE_ *f_Pkt_st);
+    void readVersion();
+    void logReceivedTelegram(PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void readRepeaterFunc();
-    void setRepeaterFunc();
+    void setRepeaterFunc(uint8_t mode, uint8_t level);
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &ko);
@@ -190,16 +202,10 @@ private:
     static uint8_t u8CRC8Table[256];
 
     uint8_t lui8_BaseID_p[BASEID_BYTES];
+    // verbleibende Base-ID-Schreibzyklen laut Transceiver (0xFF = unbegrenzt)
+    uint8_t _baseIdRemainingWrites = 0xFF;
 
     uint32_t _lastPollingTime = 0;
-
-    // 0 = kein "alle Kanäle deaktivieren" in Bearbeitung, sonst der als nächstes zu deaktivierende Kanal (1..30).
-    uint8_t _disableAllChannelsNext = 0;
-
-    // true, solange zyklisch Kanal für Kanal auf aktiven Lernmodus geprüft und ggf. per KO IsTeachChannel gemeldet wird.
-    bool _reportTeachChannel = false;
-    uint32_t _reportTeachChannelTimer = 0;
-    uint8_t _reportTeachChannelNext = 0; // zuletzt abgefragter Kanal (0 = noch keiner, dann 1..30 zyklisch)
 
 public:
     EnoceanModule();
@@ -217,4 +223,4 @@ public:
     static bool extractSenderId(const PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);
 };
 
-extern EnoceanModule openknxEnoceanModule;
+extern EnoceanModule openknxEnoceanModule;

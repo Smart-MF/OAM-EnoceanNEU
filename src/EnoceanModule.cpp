@@ -99,7 +99,9 @@ void EnoceanModule::setupChannels() {
 //   logIndentDown();
 // }
 
-// Zyklischer Aufruf: loggt periodisch den Status und verarbeitet Round-Robin ein Telegramm pro konfiguriertem Kanal.
+// Zyklischer Aufruf: verarbeitet empfangene Telegramme und ruft Round-Robin die Kanal-Loops auf.
+// Der Empfang läuft auch ohne ETS-Konfiguration (Testbetrieb: Telegramme werden nur geloggt, Bedienung über die
+// Konsole, siehe processCommand()).
 void EnoceanModule::loop(bool configured) {
   if (delayCheck(_timer1, 30000)) {
     logInfoP("Loop0");
@@ -108,20 +110,15 @@ void EnoceanModule::loop(bool configured) {
     _timer1 = millis();
   }
 
-  disableAllChannelsStep();
-  reportTeachChannelStep();
+  task();
 
-  if (configured) {
-    if (ParamENO_VisibleChannels == 0)
-      return;
+  if (!configured || ParamENO_VisibleChannels == 0)
+    return;
 
-    uint8_t processed = 0;
-    do {
-      task();
-
-      _channels[_currentChannel]->loop();
-    } while (openknx.freeLoopIterate(ParamENO_VisibleChannels, _currentChannel, processed));
-  }
+  uint8_t processed = 0;
+  do {
+    _channels[_currentChannel]->loop();
+  } while (openknx.freeLoopIterate(ParamENO_VisibleChannels, _currentChannel, processed));
 }
 
 #ifdef OPENKNX_DUALCORE
@@ -178,7 +175,10 @@ void EnoceanModule::begin() {
       logInfoP("Base-ID: OLD != NEW -> change! ");
       uint8_t newBaseId[BASEID_BYTES];
       getConfiguredBaseId(newBaseId);
-      setBaseId(newBaseId);
+      if (isValidBaseId(newBaseId))
+        setBaseId(newBaseId);
+      else
+        logErrorP("Configured Base-ID %02X%02X%02X%02X out of range", newBaseId[0], newBaseId[1], newBaseId[2], newBaseId[3]);
       // 3.) read Base-ID again and print it out
       baseIdValid = readBaseId(&lui8_BaseID_p[0]);
     }
@@ -194,18 +194,14 @@ void EnoceanModule::begin() {
     logErrorP("Base-ID could not be read from transceiver");
 
   //****************** Repeater Function ************************************
-  
-  #ifdef KDEBUG
-    logDebugP("----------------------");
-  #endif
-    setRepeaterFunc();
-    // prüft ob Änderungen umgesetzt wurden
-    readRepeaterFunc();
+  // Ohne ETS-Konfiguration (alle Parameter 0) wird die Einstellung des Transceivers nicht verändert.
+  if (knx.configured())
+    setRepeaterFunc(ParamENO_RepeaterFunc, ParamENO_RepeaterLevel);
+  // prüft ob Änderungen umgesetzt wurden
+  readRepeaterFunc();
 
-  #ifdef KDEBUG
-    logDebugP("----------------------");
-  #endif
-  
+  if (!knx.configured())
+    logInfoP("Not configured: test mode (receive + log only, use console command 'eno')");
 
   isInited = true;
 }
@@ -217,6 +213,13 @@ void EnoceanModule::getConfiguredBaseId(uint8_t out8BaseId[BASEID_BYTES])
   out8BaseId[1] = (ParamENO_Id2 << 4) | ParamENO_Id3;
   out8BaseId[2] = (ParamENO_Id4 << 4) | ParamENO_Id5;
   out8BaseId[3] = (ParamENO_Id6 << 4) | ParamENO_Id7;
+}
+
+// Prüft, ob die Base-ID im erlaubten Bereich 0xFF800000 … 0xFFFFFF80 liegt und die unteren 7 Bit 0 sind
+// (128 Sende-IDs ab Base-ID), ESP3-Spec Kap. 2.5.9.
+bool EnoceanModule::isValidBaseId(const uint8_t baseId[BASEID_BYTES])
+{
+  return baseId[0] == 0xFF && baseId[1] >= 0x80 && (baseId[3] & 0x7F) == 0;
 }
 
 // Liefert true, wenn die vom Transceiver gelesene Base-ID von der in der ETS parametrierten abweicht.
@@ -314,9 +317,9 @@ void EnoceanModule::setBaseId(const uint8_t *fui8_BaseID_p)
   }
 }
 
-// Aktiviert den Lernmodus des Transceivers für den angegebenen Kanal (CO_WR_LEARNMODE, ESP3-Spec Kap. 1.10.25) und
-// wartet blockierend (max. 100 ms) auf die Antwort.
-void EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable) {
+// Aktiviert/deaktiviert den Lernmodus des Transceivers für den angegebenen Kanal (CO_WR_LEARNMODE, ESP3-Spec
+// Kap. 2.5.25) und wartet auf die Antwort. Liefert true bei RET_OK.
+bool EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable) {
   PACKET_SERIAL_TYPE_ lLearnModePkt_st;
 
   // Data: COMMAND Code (1) + Enable (1) + Timeout (4, big-endian) = 6 Bytes
@@ -337,55 +340,23 @@ void EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable) {
 
   logDebugP("Sending telegram (learn mode %s), Channel: %u", enable ? "on" : "off", channel);
 
-  if (ENOCEAN_OK == uart_sendPacket(&lLearnModePkt_st)) {
-    logDebugP("Receiving telegram (learn mode on).");
-    u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
+  if (ENOCEAN_OK != uart_sendPacket(&lLearnModePkt_st))
+    return false;
 
-    switch (u8RetVal) {
-    case ENOCEAN_OK:
-      switch (m_Pkt_st.u8Type) {
-      case u8RESPONSE:
-        logDebugP("Learn mode Return Code: %u", m_Pkt_st.u8DataBuffer[0]);
-        break;
-      default:
-        logDebugP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
-      }
-      break;
-    case ENOCEAN_NO_RX_TEL:
-      logDebugP("ERROR Receiving telegram (learn mode on).");
-      break;
-    default:
-      logDebugP("Error receiving learn mode response");
-    }
+  u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
+  if (u8RetVal != ENOCEAN_OK) {
+    logDebugP("ERROR Receiving telegram (learn mode).");
+    return false;
   }
+
+  logDebugP("Learn mode Return Code: %u", m_Pkt_st.u8DataBuffer[0]);
+  return m_Pkt_st.u8DataBuffer[0] == 0x00; // RET_OK
 }
 
-// Startet den nicht-blockierenden Ablauf, um den Lernmodus für alle 30 Kanäle nacheinander zu deaktivieren
-// (siehe disableAllChannelsStep(), wird pro loop()-Durchlauf einen Kanal weiter geschaltet).
-void EnoceanModule::startDisableAllChannels() {
-  logDebugP("Disabling learn mode for all channels (1..30).");
-  _disableAllChannelsNext = 1;
-}
-
-// Deaktiviert - falls ein Durchlauf mit startDisableAllChannels() gestartet wurde - pro Aufruf den Lernmodus für
-// genau einen weiteren Kanal, damit activateLearnMode()s Wartezeit (max. 100 ms) den restlichen Ablauf nicht
-// blockiert.
-void EnoceanModule::disableAllChannelsStep() {
-  if (_disableAllChannelsNext == 0)
-    return;
-
-  activateLearnMode(_disableAllChannelsNext, false);
-
-  if (_disableAllChannelsNext >= 30)
-    _disableAllChannelsNext = 0; // fertig
-  else
-    _disableAllChannelsNext++;
-}
-
-// Fragt beim Transceiver den aktuellen Lernmodus-Status ab (CO_RD_LEARNMODE, ESP3-Spec Kap. 1.10.26) und wartet
-// blockierend auf die Antwort. fu8_Enable_p: Lernmodus aktiv (0/1). fu8_Channel_p: Kanal, für den der Lernmodus aktiv
-// ist (0..0xFD).
-void EnoceanModule::readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p) {
+// Fragt beim Transceiver den aktuellen Lernmodus-Status ab (CO_RD_LEARNMODE, ESP3-Spec Kap. 2.5.26) und wartet auf
+// die Antwort. fu8_Enable_p: Lernmodus aktiv (0/1). fu8_Channel_p: Kanal, für den der Lernmodus aktiv ist (0..0xFD).
+// Liefert true, wenn der Status gelesen werden konnte.
+bool EnoceanModule::readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p) {
   PACKET_SERIAL_TYPE_ lRdLearnModePkt_st;
 
   uint8_t lu8SndBuf = u8CO_RD_LEARNMODE;
@@ -397,71 +368,103 @@ void EnoceanModule::readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p)
 
   logDebugP("Sending telegram (read learn mode).");
 
-  if (ENOCEAN_OK == uart_sendPacket(&lRdLearnModePkt_st)) {
-    logDebugP("Receiving telegram (read learn mode).");
-    u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
+  if (ENOCEAN_OK != uart_sendPacket(&lRdLearnModePkt_st))
+    return false;
 
-    switch (u8RetVal) {
-    case ENOCEAN_OK:
-      switch (m_Pkt_st.u8Type) {
-      case u8RESPONSE:
-        if (m_Pkt_st.u8DataBuffer[0] == 0x00) { // RET_OK
-          *fu8_Enable_p = m_Pkt_st.u8DataBuffer[1];
-          *fu8_Channel_p = m_Pkt_st.u8DataBuffer[2]; // Optional Data: Channel
-          logDebugP("Learn mode Enable: %u, Channel: %u", *fu8_Enable_p, *fu8_Channel_p);
-        } else {
-          logDebugP("Read learn mode Return Code: %u", m_Pkt_st.u8DataBuffer[0]);
-        }
-        break;
-      default:
-        logDebugP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
-      }
-      break;
-    case ENOCEAN_NO_RX_TEL:
-      logDebugP("ERROR Receiving telegram (read learn mode).");
-      break;
-    default:
-      logDebugP("Error receiving read learn mode response");
-    }
+  u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
+  if (u8RetVal != ENOCEAN_OK) {
+    logDebugP("ERROR Receiving telegram (read learn mode).");
+    return false;
+  }
+
+  // Response: RET_CODE (1) + Learn Mode Status (1), Optional Data: Channel (1)
+  if (m_Pkt_st.u8DataBuffer[0] != 0x00 || m_Pkt_st.u16DataLength < 2) {
+    logDebugP("Read learn mode Return Code: %u", m_Pkt_st.u8DataBuffer[0]);
+    return false;
+  }
+
+  *fu8_Enable_p = m_Pkt_st.u8DataBuffer[1];
+  *fu8_Channel_p = (m_Pkt_st.u8OptionLength >= 1) ? m_Pkt_st.u8DataBuffer[2] : 0;
+  logDebugP("Learn mode Enable: %u, Channel: %u", *fu8_Enable_p, *fu8_Channel_p);
+  return true;
+}
+
+// Verarbeitet einen Einlern-Befehl (KO SetTeachChannel oder Konsole "eno teach"):
+// 1..30 = Lernmodus für diesen Kanal starten, 255 = Lernmodus beenden, 100 = aktiven Kanal melden.
+void EnoceanModule::handleTeachCommand(uint8_t value) {
+  if (value > 0 && value <= 30) {
+    // Lernmodus läuft 60 s (Default) und endet per Event CO_LRN_MODE_DISABLED, siehe handleEvent()
+    if (activateLearnMode(value, true))
+      setIsTeachChannel(value);
+  } else if (value == 255) {
+    disableLearnMode();
+  } else if (value == 100) {
+    reportTeachChannel();
   }
 }
 
-// Startet die nicht-blockierende, zyklische Kanal-für-Kanal-Abfrage auf aktiven Lernmodus
-// (siehe reportTeachChannelStep(), ausgelöst über SetTeachChannel = 100).
-void EnoceanModule::startReportTeachChannel() {
-  logDebugP("Start scanning channels for active learn mode.");
-  _reportTeachChannel = true;
-  _reportTeachChannelTimer = millis();
-  _reportTeachChannelNext = 0;
+// Meldet den Kanal, der bereit zum Einlernen ist (0 = keiner), im Log und - nur mit ETS-Konfiguration, da die
+// Gruppenobjekte sonst nicht existieren - über das KO IsTeachChannel.
+void EnoceanModule::setIsTeachChannel(uint8_t channel) {
+  logInfoP("Teach channel: %u", channel);
+  if (knx.configured())
+    KoENO_IsTeachChannel.value(channel, Dpt(5, 10));
 }
 
-// Fragt - falls mit startReportTeachChannel() gestartet - alle 100 ms per readLearnMode() ab, ob der jeweils
-// nächste Kanal (1..30) im Lernmodus ist, und sendet dessen Nummer dann über das KO IsTeachChannel auf den
-// KNX-Bus. Nach Kanal 30 stoppt der Durchlauf von selbst.
-void EnoceanModule::reportTeachChannelStep() {
-  if (!_reportTeachChannel)
-    return;
-
-  if (!delayCheck(_reportTeachChannelTimer, 100))
-    return;
-  _reportTeachChannelTimer = millis();
-
-  _reportTeachChannelNext++;
-
+// Fragt den aktuellen Lernmodus ab und meldet über das KO IsTeachChannel den aktiven Kanal bzw. 0, wenn der
+// Lernmodus nicht aktiv ist (ausgelöst über SetTeachChannel = 100).
+void EnoceanModule::reportTeachChannel() {
   uint8_t enable = 0;
   uint8_t activeChannel = 0;
-  readLearnMode(&enable, &activeChannel);
+  if (!readLearnMode(&enable, &activeChannel))
+    return;
 
-  logDebugP("Scanning channel %u (active: %u, enable: %u)", _reportTeachChannelNext, activeChannel, enable);
+  setIsTeachChannel((uint8_t)(enable ? activeChannel : 0));
+}
 
-  if (enable && activeChannel == _reportTeachChannelNext) {
-    logDebugP("Reporting teach channel: %u", _reportTeachChannelNext);
-    KoENO_IsTeachChannel.value(_reportTeachChannelNext, Dpt(5, 10));
+// Beendet den Lernmodus des Transceivers (es ist immer nur ein Kanal im Lernmodus, siehe CO_RD_LEARNMODE) und
+// meldet über IsTeachChannel = 0, dass kein Kanal mehr bereit zum Einlernen ist (SetTeachChannel = 255).
+void EnoceanModule::disableLearnMode() {
+  uint8_t enable = 0;
+  uint8_t activeChannel = 0;
+  if (readLearnMode(&enable, &activeChannel) && !enable) {
+    setIsTeachChannel((uint8_t)0);
+    return;
   }
 
-  if (_reportTeachChannelNext >= 30) {
-    logDebugP("Channel scan finished.");
-    _reportTeachChannel = false;
+  if (activateLearnMode(activeChannel, false))
+    setIsTeachChannel((uint8_t)0);
+}
+
+// Wertet ein EVENT-Paket des Transceivers aus (ESP3-Spec Kap. 2.4).
+void EnoceanModule::handleEvent(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
+  if (f_Pkt_st->u16DataLength < 1)
+    return;
+
+  switch (f_Pkt_st->u8DataBuffer[0]) {
+  case u8CO_READY:
+    // Transceiver wurde (neu) gestartet, Data[1] = Wakeup Cause
+    logInfoP("Transceiver ready, wakeup cause: %u", f_Pkt_st->u16DataLength >= 2 ? f_Pkt_st->u8DataBuffer[1] : 0xFF);
+    break;
+  case u8CO_DUTYCYCLE_LIMIT:
+    // Data[1]: 0 = Senden wieder möglich, 1 = Duty-Cycle-Limit erreicht
+    if (f_Pkt_st->u16DataLength >= 2 && f_Pkt_st->u8DataBuffer[1] == 0x01)
+      logErrorP("Duty cycle limit reached, telegrams can not be sent");
+    else
+      logInfoP("Duty cycle limit released");
+    break;
+  case u8CO_TRANSMIT_FAILED:
+    // Data[1]: 0 = Funkkanal belegt, 1 = kein Acknowledge
+    logErrorP("Transmit failed, cause: %u", f_Pkt_st->u16DataLength >= 2 ? f_Pkt_st->u8DataBuffer[1] : 0xFF);
+    break;
+  case u8CO_LRN_MODE_DISABLED:
+    // Lernmodus-Timeout abgelaufen -> kein Kanal mehr bereit zum Einlernen
+    logInfoP("Learn mode disabled (timeout)");
+    setIsTeachChannel((uint8_t)0);
+    break;
+  default:
+    logDebugP("Event %u ignored", f_Pkt_st->u8DataBuffer[0]);
+    break;
   }
 }
 
@@ -498,6 +501,15 @@ bool EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
   }
 
   memcpy(fui8_BaseID_p, &m_Pkt_st.u8DataBuffer[1], BASEID_BYTES);
+
+  // Optional Data: verbleibende Base-ID-Schreibzyklen (0xFF = unbegrenzt, z.B. TCM 615)
+  if (m_Pkt_st.u8OptionLength >= 1) {
+    _baseIdRemainingWrites = m_Pkt_st.u8DataBuffer[m_Pkt_st.u16DataLength];
+    if (_baseIdRemainingWrites == 0xFF)
+      logInfoP("Base-ID write cycles: unlimited");
+    else
+      logInfoP("Base-ID write cycles remaining: %u", _baseIdRemainingWrites);
+  }
   return true;
 }
 
@@ -514,6 +526,11 @@ uint8_t EnoceanModule::waitForResponse(uint32_t timeoutMs) {
 
     if (m_Pkt_st.u8Type == u8RESPONSE)
       return ENOCEAN_OK;
+
+    if (m_Pkt_st.u8Type == u8EVENT) {
+      handleEvent(&m_Pkt_st);
+      continue;
+    }
 
     if (m_Pkt_st.u8Type == u8COMMAND_ACCEPTED) {
       // Data: Blocking (1) + Estimated Completion Time (2, MSB first, 0 = unbekannt)
@@ -544,13 +561,7 @@ void EnoceanModule::processInputKo(GroupObject &iKo) {
   if (iKo.asap() == ENO_KoSetTeachChannel) {
     uint8_t teachChannel = iKo.value(Dpt(5, 10));
     logDebugP("processInputKo: SetTeachChannel = %u", teachChannel);
-    if (teachChannel > 0 && teachChannel <= 30) {
-      activateLearnMode(teachChannel, true);
-    } else if (teachChannel == 255) {
-      startDisableAllChannels();
-    } else if (teachChannel == 100) {
-      startReportTeachChannel();
-    }
+    handleTeachCommand(teachChannel);
     return;
   }
 
@@ -967,21 +978,83 @@ void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObje
 }
 
 // Registriert den Hilfetext für den Konsolenbefehl "dummy".
-void EnoceanModule::showHelp() { openknx.console.printHelpLine("dummy", "Print a dummy text"); }
+// Registriert den Hilfetext für die Konsolenbefehle "eno ...".
+void EnoceanModule::showHelp() { openknx.console.printHelpLine("eno", "EnOcean transceiver commands (teach, baseid, repeater, version)"); }
 
-// Verarbeitet Konsolenbefehle; derzeit nur ein Debug-Ausgabeblock für den (wegen eines Vergleichsfehlers nie erreichbaren) Befehl "Enocean".
+// Verarbeitet die Konsolenbefehle "eno ...". Sie funktionieren auch ohne ETS-Konfiguration (Testbetrieb).
 bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
-  if (cmd.substr(0, 5) == "Enocean") {
-    logInfoP("Enocean Info");
-    logIndentUp();
-    logInfoP("Info 1");
-    logInfoP("Info 2");
-    logIndentUp();
-    logInfoP("Info 2a");
-    logInfoP("Info 2b");
-    logIndentDown();
-    logInfoP("Info 3");
-    logIndentDown();
+  if (cmd.substr(0, 3) != "eno")
+    return false;
+
+  if (cmd == "eno") {
+    openknx.console.printHelpLine("eno teach N", "Start learn mode for channel N (1..30)");
+    openknx.console.printHelpLine("eno teach off", "Stop learn mode");
+    openknx.console.printHelpLine("eno teach ?", "Show channel in learn mode");
+    openknx.console.printHelpLine("eno baseid", "Read Base-ID and remaining write cycles");
+    openknx.console.printHelpLine("eno baseid FFxxxxxx", "Write Base-ID (FF800000..FFFFFF80)");
+    openknx.console.printHelpLine("eno repeater", "Read repeater mode/level");
+    openknx.console.printHelpLine("eno repeater M L", "Write repeater mode M (0..2) and level L (0..2)");
+    openknx.console.printHelpLine("eno version", "Read transceiver version and EURID");
+    return true;
+  }
+
+  if (cmd.substr(0, 10) == "eno teach ") {
+    std::string arg = cmd.substr(10);
+    if (arg == "off")
+      handleTeachCommand(255);
+    else if (arg == "?")
+      handleTeachCommand(100);
+    else {
+      uint8_t channel = (uint8_t)strtoul(arg.c_str(), nullptr, 10);
+      if (channel < 1 || channel > 30) {
+        logInfoP("Channel must be 1..30");
+        return true;
+      }
+      handleTeachCommand(channel);
+    }
+    return true;
+  }
+
+  if (cmd == "eno baseid") {
+    if (readBaseId(lui8_BaseID_p))
+      logInfoP("Base-ID: %02X%02X%02X%02X", lui8_BaseID_p[0], lui8_BaseID_p[1], lui8_BaseID_p[2], lui8_BaseID_p[3]);
+    else
+      logErrorP("Base-ID could not be read from transceiver");
+    return true;
+  }
+
+  if (cmd.substr(0, 11) == "eno baseid " && cmd.length() == 19) {
+    uint32_t value = strtoul(cmd.substr(11).c_str(), nullptr, 16);
+    uint8_t baseId[BASEID_BYTES] = {(uint8_t)(value >> 24), (uint8_t)(value >> 16), (uint8_t)(value >> 8), (uint8_t)value};
+    if (!isValidBaseId(baseId)) {
+      logErrorP("Base-ID out of range (FF800000..FFFFFF80, lower 7 bits 0)");
+      return true;
+    }
+    setBaseId(baseId);
+    if (readBaseId(lui8_BaseID_p))
+      logInfoP("Base-ID: %02X%02X%02X%02X", lui8_BaseID_p[0], lui8_BaseID_p[1], lui8_BaseID_p[2], lui8_BaseID_p[3]);
+    return true;
+  }
+
+  if (cmd == "eno repeater") {
+    readRepeaterFunc();
+    return true;
+  }
+
+  if (cmd.substr(0, 13) == "eno repeater " && cmd.length() == 16) {
+    uint8_t mode = cmd[13] - '0';
+    uint8_t level = cmd[15] - '0';
+    if (mode > 2 || level > 2 || (mode == 0) != (level == 0)) {
+      logInfoP("Mode 0..2 / level 0..2, level must be 0 exactly when mode is 0");
+      return true;
+    }
+    setRepeaterFunc(mode, level);
+    readRepeaterFunc();
+    return true;
+  }
+
+  if (cmd == "eno version") {
+    readVersion();
     return true;
   }
 
@@ -1269,13 +1342,19 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
         }
       } 
 
-      // Senden Unknown ID 
+      // Testbetrieb ohne ETS-Konfiguration: jedes Telegramm mit Sender-ID und Empfangsstärke loggen
+      if (!knx.configured())
+        logReceivedTelegram(f_Pkt_st);
+
+      // Senden Unknown ID
       if(packetWasHandled == false && ParamENO_NewID_OnOff == true)
       {
         checkAndReportUnknownId(f_Pkt_st);
       }
 
       logDebugP(packetWasHandled ? "Data handled :-)" : "Data not handled!");
+    } else if (f_Pkt_st->u8Type == u8EVENT) {
+      handleEvent(f_Pkt_st);
     }
   }
 }
@@ -1337,7 +1416,68 @@ void EnoceanModule::checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
   char idStr[15];
   snprintf(idStr, sizeof(idStr), "%02X%02X%02X%02X", senderId[0], senderId[1], senderId[2], senderId[3]);
   logInfoP("Unknown Enocean-ID: %s", idStr);
-  KoENO_NewId.value(idStr, Dpt(16, 1));
+  if (knx.configured())
+    KoENO_NewId.value(idStr, Dpt(16, 1));
+}
+
+// Loggt ein empfangenes ERP1-Telegramm mit R-ORG, Sender-ID, Nutzdaten und Empfangsstärke (Testbetrieb).
+void EnoceanModule::logReceivedTelegram(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
+  uint8_t senderId[4];
+  if (!extractSenderId(f_Pkt_st, senderId)) {
+    logInfoP("RX R-ORG %02X (unsupported)", f_Pkt_st->u8DataBuffer[0]);
+    return;
+  }
+
+  // Optional Data: SubTelNum (1), Destination ID (4), dBm (1), Security Level (1)
+  uint8_t dBm = (f_Pkt_st->u8OptionLength >= 6) ? f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength + 5] : 0;
+
+  // Nutzdaten liegen zwischen R-ORG und Sender-ID (Sender-ID + Status = letzte 5 Bytes)
+  std::string data;
+  char hexByte[4];
+  for (uint16_t i = 1; i + 5 < f_Pkt_st->u16DataLength; i++) {
+    snprintf(hexByte, sizeof(hexByte), "%02X ", f_Pkt_st->u8DataBuffer[i]);
+    data += hexByte;
+  }
+
+  logInfoP("RX R-ORG %02X ID %02X%02X%02X%02X -%u dBm Data: %s", f_Pkt_st->u8DataBuffer[0], senderId[0], senderId[1],
+           senderId[2], senderId[3], dBm, data.c_str());
+}
+
+// Liest Versionsinformationen und EURID des Transceivers (CO_RD_VERSION, ESP3-Spec Kap. 2.5.5) und loggt sie.
+void EnoceanModule::readVersion() {
+  PACKET_SERIAL_TYPE_ lRdVersionPkt_st;
+
+  uint8_t lu8SndBuf = u8CO_RD_VERSION;
+
+  lRdVersionPkt_st.u16DataLength = 0x0001;
+  lRdVersionPkt_st.u8OptionLength = 0x00;
+  lRdVersionPkt_st.u8Type = u8RORG_COMMON_COMMAND;
+  lRdVersionPkt_st.u8DataBuffer = &lu8SndBuf;
+
+  if (ENOCEAN_OK != uart_sendPacket(&lRdVersionPkt_st))
+    return;
+
+  if (waitForResponse(ENOCEAN_RESPONSE_TIMEOUT) != ENOCEAN_OK) {
+    logErrorP("Version could not be read from transceiver");
+    return;
+  }
+
+  // Response: RET_CODE (1), App Version (4), API Version (4), EURID (4), Device Version (4), App Description (16)
+  uint8_t *d = m_Pkt_st.u8DataBuffer;
+  if (d[0] != 0x00 || m_Pkt_st.u16DataLength < 33) {
+    logErrorP("Read version Return Code: %u", d[0]);
+    return;
+  }
+
+  char description[17];
+  memcpy(description, &d[17], 16);
+  description[16] = '\0';
+
+  logInfoP("App version: %u.%u.%u.%u", d[1], d[2], d[3], d[4]);
+  logInfoP("API version: %u.%u.%u.%u", d[5], d[6], d[7], d[8]);
+  logInfoP("EURID: %02X%02X%02X%02X", d[9], d[10], d[11], d[12]);
+  logInfoP("Device version: %02X%02X%02X%02X", d[13], d[14], d[15], d[16]);
+  logInfoP("Description: %s", description);
 }
 
 
@@ -1586,17 +1726,17 @@ void EnoceanModule::getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtr
 }
 
 
-void EnoceanModule::setRepeaterFunc()
+// Schreibt Repeater-Mode (0 = aus, 1 = an, 2 = selektiv) und -Level (1/2) in den Transceiver (CO_WR_REPEATER).
+void EnoceanModule::setRepeaterFunc(uint8_t mode, uint8_t level)
 {
   PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
 
   uint8_t lu8SndBuf[3];
-  // uint8_t loopCount = 0;
 
   lu8SndBuf[0] = u8CO_WR_REPEATER;
-  lu8SndBuf[1] = ParamENO_RepeaterFunc; //(knx.paramByte(ENO_RepeaterFunc) >> ENO_RepeaterFuncShift) & 1;
+  lu8SndBuf[1] = mode;
   // ESP3-Spec: bei Repeater Mode OFF muss das Level 0x00 sein (ETS bietet nur Level 1/2 an)
-  lu8SndBuf[2] = ParamENO_RepeaterFunc ? ParamENO_RepeaterLevel : 0x00;
+  lu8SndBuf[2] = mode ? level : 0x00;
 
   lRdBaseIDPkt_st.u16DataLength = 0x0003;
   lRdBaseIDPkt_st.u8OptionLength = 0x00;
