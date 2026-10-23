@@ -13,8 +13,8 @@
   <op:ETS
     OpenKnxId="0xAF"
     ApplicationNumber="255"
-    ApplicationVersion="11"
-    ReplacesVersions="10 1 0"
+    ApplicationVersion="2"
+    ReplacesVersions="1 0"
     ApplicationRevision="0"
     ProductName="ENO_TestApp"
     BusCurrent="10"
