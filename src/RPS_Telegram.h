@@ -920,19 +920,20 @@ inline void handle_F6_02_03(uint8_t value, uint8_t _channelIndex) {
 
 // Verarbeitet die F6-05-xx-Telegramme (Rauch-/Wassermelder bzw. Energiestatus) und schreibt den passenden
 // Alarm-/Statuswert.
+// KO-Belegung laut ETS: KO_3 (GO_BASE__4) = Alarm, KO_4 (GO_BASE__5) = Energy Low.
 inline void handle_F6_05_0x(uint8_t value, uint8_t _channelIndex) {
   switch (value) {
-  case 0x00: // SMOKE/WATER Alarm OFF 3 2
-    KoENO_GO_BASE__3.value(true, DPT_Bool);
+  case 0x00: // SMOKE/WIND Alarm OFF
+    KoENO_GO_BASE__4.value(false, DPT_Bool);
     break;
-  case 0x10: // SMOKE/WATER Alarm ON
-    KoENO_GO_BASE__3.value(false, DPT_Bool);
+  case 0x10: // SMOKE/WIND Alarm ON
+    KoENO_GO_BASE__4.value(true, DPT_Bool);
     break;
   case 0x11: // Water detected
-    KoENO_GO_BASE__3.value(true, DPT_Bool);
+    KoENO_GO_BASE__4.value(true, DPT_Bool);
     break;
   case 0x30: // Energy LOW
-    KoENO_GO_BASE__4.value(true, DPT_Bool);
+    KoENO_GO_BASE__5.value(true, DPT_Bool);
     break;
   default:
     break;
