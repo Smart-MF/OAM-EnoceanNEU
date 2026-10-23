@@ -25,8 +25,14 @@ void EnoceanChannel::setup() {
   logIndentDown();
 }
 
-// Wird zyklisch aufgerufen: erkennt bei gedrücktem Taster den langen Tastendruck (Zeit per ETS-Parameter in 10 ms).
+// Wird zyklisch aufgerufen: sendet bei der Taster-Emulation (KNX -> EnOcean) das ausstehende Loslass-Telegramm und
+// erkennt bei gedrücktem Taster (EnOcean -> KNX) den langen Tastendruck (Zeit per ETS-Parameter in 10 ms).
 void EnoceanChannel::loop() {
+  if (_knxRockerReleaseAt != 0 && (int32_t)(millis() - _knxRockerReleaseAt) >= 0) {
+    _knxRockerReleaseAt = 0;
+    openknxEnoceanModule.sendRockerTelegram(_channelIndex, 0x00);
+  }
+
   if (_rockerWippe == ROCKER_NONE || _rockerLong)
     return;
 
@@ -36,6 +42,52 @@ void EnoceanChannel::loop() {
   if (delayCheck(_rockerPressTime, ParamENO_CHRockerLongPressWaitTime * 10)) {
     _rockerLong = true;
     rockerLongStart(_rockerWippe, _rockerUpper, _channelIndex);
+  }
+}
+
+// Sendet "Taste gedrückt" und plant das Loslass-Telegramm nach releaseAfterMs (0 = Taste bleibt gedrückt, bis ein
+// Loslassen explizit angefordert wird).
+void EnoceanChannel::knxRockerPress(uint8_t db0, uint32_t releaseAfterMs) {
+  _knxRockerLastDb0 = db0;
+  openknxEnoceanModule.sendRockerTelegram(_channelIndex, db0);
+  _knxRockerReleaseAt = millis() + releaseAfterMs;
+  if (_knxRockerReleaseAt == 0)
+    _knxRockerReleaseAt = 1; // 0 ist "kein Loslassen ausstehend"
+}
+
+// Taster-Emulation KNX -> EnOcean für das Eingangs-KO KO_0, Funktion per ETS (ProfilRockerFunktionKNX):
+// 1 = Schalten (DPT 1.001): EIN = Taste oben (AO), AUS = Taste unten (AI), jeweils kurz getippt.
+// 2 = Dimmen (DPT 3.007): Start = Taste halten (heller oben / dunkler unten), Stopp = loslassen.
+// 3 = Jalousie (DPT 3.008): Fahren = kurz tippen (AB unten / AUF oben), Stopp = erneut in letzter Richtung tippen.
+void EnoceanChannel::processKnxRocker(GroupObject &ko) {
+  switch (ParamENO_CHProfilRockerFunktionKNX) {
+  case 1: { // Schalten
+    bool on = ko.value(Dpt(1, 1));
+    logDebugP("KNX -> EnOcean: Schalten %u", on);
+    knxRockerPress(on ? 0x30 : 0x10, ROCKER_TAP_MS);
+    break;
+  }
+  case 2: { // Dimmen
+    bool up = ko.value(Dpt(3, 7, 0));
+    uint8_t step = ko.value(Dpt(3, 7, 1));
+    logDebugP("KNX -> EnOcean: Dimmen %s, Step %u", up ? "heller" : "dunkler", step);
+    if (step == 0)
+      _knxRockerReleaseAt = millis(); // Stopp: sofort loslassen (in loop())
+    else
+      knxRockerPress(up ? 0x30 : 0x10, ROCKER_HOLD_MAX_MS);
+    break;
+  }
+  case 3: { // Jalousie: DPT 3.008 Richtungsbit 1 = AB
+    bool down = ko.value(Dpt(3, 8, 0));
+    uint8_t step = ko.value(Dpt(3, 8, 1));
+    logDebugP("KNX -> EnOcean: Jalousie %s, Step %u", down ? "AB" : "AUF", step);
+    if (step == 0) {
+      if (_knxRockerLastDb0 != 0)
+        knxRockerPress(_knxRockerLastDb0, ROCKER_TAP_MS); // Stopp: in letzter Fahrtrichtung tippen
+    } else
+      knxRockerPress(down ? 0x10 : 0x30, ROCKER_TAP_MS);
+    break;
+  }
   }
 }
 

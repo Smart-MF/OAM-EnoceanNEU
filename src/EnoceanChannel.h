@@ -17,6 +17,10 @@ struct PACKET_SERIAL_TYPE_;
 // Hier definiert (statt in EnoceanModule.h), da diese Datei EnoceanModule.h wegen des zirkulären Includes nicht einbinden kann.
 #define RockerIdle 0x01
 
+// Taster-Emulation KNX -> EnOcean: Dauer eines kurzen Tastendrucks und maximale Haltedauer beim Dimmen (ms)
+#define ROCKER_TAP_MS 150
+#define ROCKER_HOLD_MAX_MS 10000
+
 union EnoceanHandle {
   uint8_t msg_sent_after_receive;           // Für MVA-005  A5-20-06
   uint8_t rockerState_pressed = RockerIdle; // ROCKER
@@ -34,7 +38,13 @@ private:
   bool _rockerLong = false;
   uint32_t _rockerPressTime = 0;
 
+  // Taster-Emulation KNX -> EnOcean: Zeitpunkt für das Loslass-Telegramm (0 = keines ausstehend) und zuletzt
+  // gesendeter Tastencode (für Jalousie-Stopp)
+  uint32_t _knxRockerReleaseAt = 0;
+  uint8_t _knxRockerLastDb0 = 0;
+
   void handleRocker(PACKET_SERIAL_TYPE_ *pPacket);
+  void knxRockerPress(uint8_t db0, uint32_t releaseAfterMs);
 
 public:
   EnoceanChannel(uint8_t index);
@@ -43,4 +53,5 @@ public:
   void loop() override;
   bool check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket);
   bool matchesDeviceId(const uint8_t id[4]) const;
+  void processKnxRocker(GroupObject &ko);
 };

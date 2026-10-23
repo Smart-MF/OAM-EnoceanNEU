@@ -959,16 +959,9 @@ void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObje
     break; // ENDE VLD
 
   case u8RORG_Rocker:
-    switch (ParamENO_CHDirectionKnxEnocean) {
-    case 1:
-      logInfoP("send Rocker MSG");
-      if (iKo.value(Dpt(1, 1))) {
-        send_RPS_Taster(lui8_BaseID_p, false, true, 0); // BaseID_CH = 0
-      } else {
-        send_RPS_Taster(lui8_BaseID_p, true, true, 0); // BaseID_CH = 0
-      }
-      break;
-    }
+    // KNX -> EnOcean: Eingang KO_0 (GO_BASE__1) emuliert einen Taster, siehe EnoceanChannel::processKnxRocker()
+    if (ParamENO_CHDirectionKnxEnocean == 1 && koIndex == ENO_KoGO_BASE__1)
+      _channels[_channelIndex]->processKnxRocker(iKo);
     break;
 
   default:
@@ -1538,7 +1531,9 @@ void EnoceanModule::send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t 
     sendRadioPacket(&l_TestPacket_st, "4BS telegram");
 }
 
-void EnoceanModule::send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boolean pressed, uint8_t baseID_CH)
+// Sendet ein Rocker-Telegramm (RPS, F6-02-01) mit der Sender-ID Base-ID + Kanalindex, damit jeder Kanal eine eigene,
+// in Aktoren einlernbare ID hat. db0: Tastencode (z.B. 0x30 = AO gedrückt, 0x10 = AI gedrückt, 0x00 = losgelassen).
+bool EnoceanModule::sendRockerTelegram(uint8_t channelIndex, uint8_t db0)
 {
     PACKET_SERIAL_TYPE_ l_TestPacket_st;
     uint8_t l_TestBuf_p[7];
@@ -1548,45 +1543,17 @@ void EnoceanModule::send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boole
     l_TestPacket_st.u8DataBuffer = &l_TestBuf_p[0];
 
     l_TestBuf_p[0] = u8RORG_RPS;
-
-    if (state == true)
-    {
-        if (pressed == true)
-        {
-            l_TestBuf_p[1] = 0x10;
-            l_TestBuf_p[6] = 0x30;
-        }
-        else
-        {
-            l_TestBuf_p[1] = 0x00;
-            l_TestBuf_p[6] = 0x20;
-        }
-    }
-    else
-    {
-        if (pressed == true)
-        {
-            l_TestBuf_p[1] = 0x30;
-            l_TestBuf_p[6] = 0x30;
-        }
-        else
-        {
-            l_TestBuf_p[1] = 0x00;
-            l_TestBuf_p[6] = 0x20;
-        }
-    }
-
+    l_TestBuf_p[1] = db0;
     for (int i = 0; i < 4; i++)
-    {
-        l_TestBuf_p[i + 2] = fui8_BaseID_p[i];
-    }
+        l_TestBuf_p[i + 2] = lui8_BaseID_p[i];
+    // Base-ID: untere 7 Bit sind 0 -> 128 Sende-IDs, Kanalindex 0..29 erzeugt keinen Übertrag
+    l_TestBuf_p[5] += channelIndex;
+    // Status: T21 = 1, NU = 1 bei gedrückter Taste, NU = 0 beim Loslassen
+    l_TestBuf_p[6] = (db0 & 0x10) ? 0x30 : 0x20;
 
-    if (baseID_CH <= 4) // anpassen der Sende ID -> baseID_CH max 4 !!!
-        l_TestBuf_p[5] = l_TestBuf_p[5] + baseID_CH;
+    logDebugP("Send rocker %02X, ID %02X%02X%02X%02X", db0, l_TestBuf_p[2], l_TestBuf_p[3], l_TestBuf_p[4], l_TestBuf_p[5]);
 
-    logInfoP("Send-ID: %02X %02X %02X %02X", l_TestBuf_p[2], l_TestBuf_p[3], l_TestBuf_p[4], l_TestBuf_p[5]);
-
-    sendRadioPacket(&l_TestPacket_st, "RPS telegram");
+    return sendRadioPacket(&l_TestPacket_st, "RPS telegram");
 }
 
 void EnoceanModule::setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool state)
