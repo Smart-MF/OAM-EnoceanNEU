@@ -67,6 +67,7 @@ void EnoceanModule::setupChannels() {
     _channels[i] = new EnoceanChannel(i);
     _channels[i]->setup();
   }
+  _channelsReady = true;
 }
 
 // void EnoceanModule::setupCustomFlash() {
@@ -167,29 +168,30 @@ void EnoceanModule::begin() {
   // 1.) read base-ID
   delay(2000);
   logInfoP("read BaseID");
-  readBaseId(&lui8_BaseID_p[0]);
+  bool baseIdValid = readBaseId(&lui8_BaseID_p[0]);
 
-  
-  // 2.) compare old base-ID with the new ID
-  if ((knx.paramByte(ENO_SetBaseIdFunc) >> ENO_SetBaseIdFuncShift) & 1)
+  // 2.) compare old base-ID with the new ID (nur wenn die aktuelle Base-ID auch gelesen werden konnte)
+  if (baseIdValid && ParamENO_SetBaseIdFunc)
   {
     if (checkBaseID())
     { // old != new
       logInfoP("Base-ID: OLD != NEW -> change! ");
-      setBaseId(&lui8_BaseID_p[0]);
+      uint8_t newBaseId[BASEID_BYTES];
+      getConfiguredBaseId(newBaseId);
+      setBaseId(newBaseId);
       // 3.) read Base-ID again and print it out
-      readBaseId(&lui8_BaseID_p[0]);
+      baseIdValid = readBaseId(&lui8_BaseID_p[0]);
     }
     else // old == new
     {
       logDebugP("Base-ID: OLD == NEW -> NO change! ");
     }
   }
- 
 
-  for (int i = 0; i < BASEID_BYTES; i++) {
-    logInfoP("Base-ID: %i", lui8_BaseID_p[i], HEX);
-  }
+  if (baseIdValid)
+    logInfoP("Base-ID: %02X %02X %02X %02X", lui8_BaseID_p[0], lui8_BaseID_p[1], lui8_BaseID_p[2], lui8_BaseID_p[3]);
+  else
+    logErrorP("Base-ID could not be read from transceiver");
 
   //****************** Repeater Function ************************************
   
@@ -208,32 +210,35 @@ void EnoceanModule::begin() {
   isInited = true;
 }
 
-bool EnoceanModule::checkBaseID()
+// Setzt die in der ETS parametrierte Base-ID aus den 8 Nibble-Parametern (Id0..Id7) zu 4 Bytes zusammen.
+void EnoceanModule::getConfiguredBaseId(uint8_t out8BaseId[BASEID_BYTES])
 {
-  if (lui8_BaseID_p[0] != 0xFF)
-    return 1;
-  else if (lui8_BaseID_p[1] != ParamENO_Id2)
-    return 1;
-  else if (lui8_BaseID_p[2] != ParamENO_Id4)
-    return 1;
-  else if (lui8_BaseID_p[3] != ParamENO_Id6)
-    return 1;
-  else
-    return 0;
+  out8BaseId[0] = (ParamENO_Id0 << 4) | ParamENO_Id1;
+  out8BaseId[1] = (ParamENO_Id2 << 4) | ParamENO_Id3;
+  out8BaseId[2] = (ParamENO_Id4 << 4) | ParamENO_Id5;
+  out8BaseId[3] = (ParamENO_Id6 << 4) | ParamENO_Id7;
 }
 
-void EnoceanModule::setBaseId(uint8_t *fui8_BaseID_p)
+// Liefert true, wenn die vom Transceiver gelesene Base-ID von der in der ETS parametrierten abweicht.
+bool EnoceanModule::checkBaseID()
+{
+  uint8_t configuredBaseId[BASEID_BYTES];
+  getConfiguredBaseId(configuredBaseId);
+  return memcmp(lui8_BaseID_p, configuredBaseId, BASEID_BYTES) != 0;
+}
+
+// Schreibt die übergebene Base-ID in den Transceiver (CO_WR_IDBASE) und wartet auf die Antwort.
+void EnoceanModule::setBaseId(const uint8_t *fui8_BaseID_p)
 {
   PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
 
   uint8_t lu8SndBuf[5];
-  // uint8_t loopCount = 0;
 
   lu8SndBuf[0] = u8CO_WR_IDBASE;
-  lu8SndBuf[1] = 0xFF;
-  lu8SndBuf[2] = knx.paramByte(ENO_Id2);
-  lu8SndBuf[3] = knx.paramByte(ENO_Id4);
-  lu8SndBuf[4] = knx.paramByte(ENO_Id6);
+  lu8SndBuf[1] = fui8_BaseID_p[0];
+  lu8SndBuf[2] = fui8_BaseID_p[1];
+  lu8SndBuf[3] = fui8_BaseID_p[2];
+  lu8SndBuf[4] = fui8_BaseID_p[3];
 
   lRdBaseIDPkt_st.u16DataLength = 0x0005;
   lRdBaseIDPkt_st.u8OptionLength = 0x00;
@@ -244,12 +249,8 @@ void EnoceanModule::setBaseId(uint8_t *fui8_BaseID_p)
 
   if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
   {
-    u8RetVal = ENOCEAN_NO_RX_TEL;
     logInfoP("Receiving telegram (set base ID).");
-    while (u8RetVal == ENOCEAN_NO_RX_TEL)
-    {
-      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
-    }
+    u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
 
     switch (u8RetVal)
     {
@@ -337,12 +338,8 @@ void EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable) {
   logDebugP("Sending telegram (learn mode %s), Channel: %u", enable ? "on" : "off", channel);
 
   if (ENOCEAN_OK == uart_sendPacket(&lLearnModePkt_st)) {
-    u8RetVal = ENOCEAN_NO_RX_TEL;
     logDebugP("Receiving telegram (learn mode on).");
-    uint32_t lStartTime = millis();
-    while (u8RetVal == ENOCEAN_NO_RX_TEL && (millis() - lStartTime) < 100) {
-      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
-    }
+    u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
 
     switch (u8RetVal) {
     case ENOCEAN_OK:
@@ -401,11 +398,8 @@ void EnoceanModule::readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p)
   logDebugP("Sending telegram (read learn mode).");
 
   if (ENOCEAN_OK == uart_sendPacket(&lRdLearnModePkt_st)) {
-    u8RetVal = ENOCEAN_NO_RX_TEL;
     logDebugP("Receiving telegram (read learn mode).");
-    while (u8RetVal == ENOCEAN_NO_RX_TEL) {
-      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
-    }
+    u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
 
     switch (u8RetVal) {
     case ENOCEAN_OK:
@@ -471,56 +465,74 @@ void EnoceanModule::reportTeachChannelStep() {
   }
 }
 
-// Fragt beim Transceiver die Basis-ID per ESP3-Common-Command an und wartet blockierend auf die Antwort.
-void EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
+// Fragt beim Transceiver die Basis-ID per ESP3-Common-Command an und wartet (mit Timeout) auf die Antwort.
+// Liefert true, wenn eine gültige Base-ID gelesen wurde.
+bool EnoceanModule ::readBaseId(uint8_t *fui8_BaseID_p) {
   PACKET_SERIAL_TYPE_ lRdBaseIDPkt_st;
 
   uint8_t lu8SndBuf = u8CO_RD_IDBASE;
-  // uint8_t loopCount = 0;
 
   lRdBaseIDPkt_st.u16DataLength = 0x0001;
   lRdBaseIDPkt_st.u8OptionLength = 0x00;
   lRdBaseIDPkt_st.u8Type = u8RORG_COMMON_COMMAND;
   lRdBaseIDPkt_st.u8DataBuffer = &lu8SndBuf;
 
-  // Swap data length bytes to little endian
-  // uint8_t temp;
-  // temp = lRdBaseIDPkt_st.u16DataLength[0];
-  // lRdBaseIDPkt_st.u16DataLength[0] = lRdBaseIDPkt_st.u16DataLength[1];
-  // lRdBaseIDPkt_st.u16DataLength[1] = temp;
-
   logDebugP("Sending telegram (read base ID).");
 
-  if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st)) {
-    u8RetVal = ENOCEAN_NO_RX_TEL;
-    logDebugP("Receiving telegram (read base ID).");
-    while (u8RetVal == ENOCEAN_NO_RX_TEL) {
-      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
+  if (ENOCEAN_OK != uart_sendPacket(&lRdBaseIDPkt_st))
+    return false;
+
+  logDebugP("Receiving telegram (read base ID).");
+  u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
+  if (u8RetVal != ENOCEAN_OK) {
+    logDebugP("ERROR Receiving telegram (read base ID).");
+    return false;
+  }
+
+  logHexDebugP(m_Pkt_st.u8DataBuffer, m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength);
+
+  // Response: RET_CODE (1) + Base-ID (4) [+ Optional: remaining write cycles]
+  if (m_Pkt_st.u8DataBuffer[0] != 0x00 || m_Pkt_st.u16DataLength < 1 + BASEID_BYTES) {
+    logDebugP("Read base ID Return Code: %u", m_Pkt_st.u8DataBuffer[0]);
+    return false;
+  }
+
+  memcpy(fui8_BaseID_p, &m_Pkt_st.u8DataBuffer[1], BASEID_BYTES);
+  return true;
+}
+
+// Wartet maximal timeoutMs auf ein RESPONSE-Paket des Transceivers. In der Zwischenzeit empfangene Funktelegramme
+// werden normal an die Kanäle verteilt, damit sie während der Wartezeit nicht verloren gehen.
+// Meldet der Transceiver per COMMAND_ACCEPTED eine länger dauernde Operation (ESP3-Spec Kap. 2.10), wird die
+// Wartezeit um die gemeldete Dauer (max. ENOCEAN_ACCEPTED_TIMEOUT_MAX) verlängert.
+// Liefert ENOCEAN_OK (Response liegt in m_Pkt_st) oder ENOCEAN_NO_RX_TEL bei Timeout.
+uint8_t EnoceanModule::waitForResponse(uint32_t timeoutMs) {
+  uint32_t lStartTime = millis();
+  while (millis() - lStartTime < timeoutMs) {
+    if (uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ) != ENOCEAN_OK)
+      continue;
+
+    if (m_Pkt_st.u8Type == u8RESPONSE)
+      return ENOCEAN_OK;
+
+    if (m_Pkt_st.u8Type == u8COMMAND_ACCEPTED) {
+      // Data: Blocking (1) + Estimated Completion Time (2, MSB first, 0 = unbekannt)
+      uint32_t estimatedMs = 0;
+      if (m_Pkt_st.u16DataLength >= 3)
+        estimatedMs = ((uint16_t)m_Pkt_st.u8DataBuffer[1] << 8) | m_Pkt_st.u8DataBuffer[2];
+      if (estimatedMs == 0 || estimatedMs > ENOCEAN_ACCEPTED_TIMEOUT_MAX)
+        estimatedMs = ENOCEAN_ACCEPTED_TIMEOUT_MAX;
+      logDebugP("Command accepted, waiting up to %u ms for response", estimatedMs + timeoutMs);
+      lStartTime = millis();
+      timeoutMs += estimatedMs;
+      continue;
     }
 
-    switch (u8RetVal) {
-    case ENOCEAN_OK:
-      for (int i = 0; i < m_Pkt_st.u16DataLength + (uint16_t)m_Pkt_st.u8OptionLength; i++) {
-        logDebugP("Data: %u", m_Pkt_st.u8DataBuffer[i], HEX);
-      }
-      switch (m_Pkt_st.u8Type) {
-      case u8RESPONSE:
-        logDebugP("Received Response.");
-        for (int i = 0; i < BASEID_BYTES; i++) {
-          memcpy((void *)&(fui8_BaseID_p[i]), (void *)&(m_Pkt_st.u8DataBuffer[i + 1]), 1);
-        }
-        break;
-      default:
-        logDebugP("Wrong packet type. Expected response. Received: %u", m_Pkt_st.u8Type);
-      }
-      break;
-    case ENOCEAN_NO_RX_TEL:
-      logDebugP("ERROR Receiving telegram (read base ID).");
-      break;
-    default:
-      logDebugP("Error receiving base ID");
-    }
+    if (_channelsReady)
+      getEnOceanMSG(ENOCEAN_OK, &m_Pkt_st);
   }
+  logInfoP("Timeout waiting for transceiver response (%u ms)", timeoutMs);
+  return ENOCEAN_NO_RX_TEL;
 }
 
 
@@ -1019,8 +1031,11 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket, uint16_t u16
   // u8State = GET_SYNC_STATE;
   //}
   // State machine goes on when a new byte is received
+  // Nur bereits empfangene Bytes verarbeiten: read() blockiert nicht (im Gegensatz zu readBytes(), das bis zum
+  // Stream-Timeout von 1 s auf weitere Bytes wartet).
   if (_serial->available() > 0) {
-    while (_serial->readBytes(&u8RxByte, 1) == 1) {
+    while (_serial->available() > 0) {
+      u8RxByte = (uint8_t)_serial->read();
       // Comment out for debugging
       // Serial.println(u8RxByte, HEX);
 
@@ -1267,10 +1282,13 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
 
 // Ermittelt anhand des RORG-Typs die Position der 4-Byte Sender-ID im empfangenen Telegramm.
 // Liefert false, wenn der RORG-Typ nicht unterstützt wird bzw. das Telegramm dafür zu kurz ist.
-bool EnoceanModule::extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]) {
+bool EnoceanModule::extractSenderId(const PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]) {
   switch (f_Pkt_st->u8DataBuffer[0]) {
   case u8RORG_RPS:
   case u8RORG_1BS:
+    // RORG (1) + Data (1) + Sender-ID (4) + Status (1)
+    if (f_Pkt_st->u16DataLength < 7)
+      return false;
     out8SenderId[0] = f_Pkt_st->u8DataBuffer[2];
     out8SenderId[1] = f_Pkt_st->u8DataBuffer[3];
     out8SenderId[2] = f_Pkt_st->u8DataBuffer[4];
@@ -1278,6 +1296,9 @@ bool EnoceanModule::extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8S
     return true;
 
   case u8RORG_4BS:
+    // RORG (1) + Data (4) + Sender-ID (4) + Status (1)
+    if (f_Pkt_st->u16DataLength < 10)
+      return false;
     out8SenderId[0] = f_Pkt_st->u8DataBuffer[5];
     out8SenderId[1] = f_Pkt_st->u8DataBuffer[6];
     out8SenderId[2] = f_Pkt_st->u8DataBuffer[7];
@@ -1285,7 +1306,8 @@ bool EnoceanModule::extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8S
     return true;
 
   case u8RORG_VLD:
-    if (f_Pkt_st->u16DataLength < 5)
+    // RORG (1) + Data (1..14) + Sender-ID (4) + Status (1)
+    if (f_Pkt_st->u16DataLength < 7)
       return false;
     out8SenderId[0] = f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 5];
     out8SenderId[1] = f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 4];
@@ -1573,7 +1595,8 @@ void EnoceanModule::setRepeaterFunc()
 
   lu8SndBuf[0] = u8CO_WR_REPEATER;
   lu8SndBuf[1] = ParamENO_RepeaterFunc; //(knx.paramByte(ENO_RepeaterFunc) >> ENO_RepeaterFuncShift) & 1;
-  lu8SndBuf[2] = ParamENO_RepeaterLevel; //knx.paramByte(ENO_RepeaterLevel);
+  // ESP3-Spec: bei Repeater Mode OFF muss das Level 0x00 sein (ETS bietet nur Level 1/2 an)
+  lu8SndBuf[2] = ParamENO_RepeaterFunc ? ParamENO_RepeaterLevel : 0x00;
 
   lRdBaseIDPkt_st.u16DataLength = 0x0003;
   lRdBaseIDPkt_st.u8OptionLength = 0x00;
@@ -1584,12 +1607,8 @@ void EnoceanModule::setRepeaterFunc()
 
   if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
   {
-    u8RetVal = ENOCEAN_NO_RX_TEL;
     logInfoP("Receiving telegram (Repeater ON/OFF).");
-    while (u8RetVal == ENOCEAN_NO_RX_TEL)
-    {
-      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
-    }
+    u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
 
     switch (u8RetVal)
     {
@@ -1662,12 +1681,8 @@ void EnoceanModule::readRepeaterFunc()
 
   if (ENOCEAN_OK == uart_sendPacket(&lRdBaseIDPkt_st))
   {
-    u8RetVal = ENOCEAN_NO_RX_TEL;
     logInfoP("Receiving telegram (Repeater ON/OFF).");
-    while (u8RetVal == ENOCEAN_NO_RX_TEL)
-    {
-      u8RetVal = uart_getPacket(&m_Pkt_st, (uint16_t)DATBUF_SZ);
-    }
+    u8RetVal = waitForResponse(ENOCEAN_RESPONSE_TIMEOUT);
 
     switch (u8RetVal)
     {

@@ -34,12 +34,6 @@ void EnoceanChannel::loop() {
 // Prüft anhand der EnOcean-ID und des RORG-Typs, ob ein empfangenes Paket zu diesem Kanal gehört,
 // und leitet es je nach Profil (1BS/RPS/4BS/VLD) an den passenden Telegramm-Handler weiter.
 bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
-  // pPacket->u8DataBuffer holds RORG + data + sender-ID + status.
-  // Position of the 4 sender-ID bytes depends on u8DataBuffer[0] (RORG):
-  //  - RPS/1BS: bytes [2..5]
-  //  - 4BS:     bytes [5..8]
-  //  - VLD:     bytes [u16DataLength-5 .. u16DataLength-2]
-
   // init parameter
   unionMSG.msg_sent_after_receive = 0;
 
@@ -48,15 +42,16 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
     return false;
   }
 
-  // Read Parameter: ENOCEAN-ID
-  deviceId_Arr[0] = (ParamENO_CHId0 << 4) | ParamENO_CHId1;
-  deviceId_Arr[1] = (ParamENO_CHId2 << 4) | ParamENO_CHId3;
-  deviceId_Arr[2] = (ParamENO_CHId4 << 4) | ParamENO_CHId5;
-  deviceId_Arr[3] = (ParamENO_CHId6 << 4) | ParamENO_CHId7;
+  // Get rid of messages not intended for us: die Sender-ID (Position abhängig vom RORG, siehe
+  // EnoceanModule::extractSenderId) muss mit der parametrierten ENOCEAN-ID übereinstimmen - für EEP-Profile
+  // wie für Hersteller-Produkte.
+  uint8_t senderId[4];
+  if (!EnoceanModule::extractSenderId(pPacket, senderId) || !matchesDeviceId(senderId)) {
+    return false;
+  }
 
   logDebugP("ENO-ID:");
-  logHexDebugP(deviceId_Arr, 4);
-  // logHexDebugP(&pPacket->u8DataBuffer[2], 4);
+  logHexDebugP(senderId, 4);
 
   // Prüft wie der CH konfiguriert ist. Über EEP-Profil oder über Hersteller
   switch (ParamENO_CHProductsel) {
@@ -74,18 +69,6 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
 
     switch (ParamENO_CHProfilSelection) {
     case u8RORG_1BS:
-      // Get rid of messages not intended for us
-      if (pPacket->u8DataBuffer[2] != deviceId_Arr[0])
-        return false;
-      if (pPacket->u8DataBuffer[3] != deviceId_Arr[1])
-        return false;
-      if (pPacket->u8DataBuffer[4] != deviceId_Arr[2])
-        return false;
-      if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
-        return false;
-
-      logHexDebugP(&pPacket->u8DataBuffer[2], 4);
-
       // Verarbeitet ein empfangenes 1BS-EnOcean-Telegramm (D5-00-01 Kontakt) und schreibt den Open/Close-Zustand auf
       // das KNX-Objekt
       handle_1BS(pPacket, _channelIndex);
@@ -93,55 +76,17 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
       break;
 
     case u8RORG_RPS:
-      // Get rid of messages not intended for us
-      if (pPacket->u8DataBuffer[2] != deviceId_Arr[0])
-        return false;
-      if (pPacket->u8DataBuffer[3] != deviceId_Arr[1])
-        return false;
-      if (pPacket->u8DataBuffer[4] != deviceId_Arr[2])
-        return false;
-      if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
-        return false;
-
-      logHexDebugP(&pPacket->u8DataBuffer[2], 4);
-
       handle_RPS(pPacket, _channelIndex);
       return true;
       break;
 
     case u8RORG_4BS:
-
-      // Get rid of messages not intended for us
-      if (pPacket->u8DataBuffer[5] != deviceId_Arr[0])
-        return false;
-      if (pPacket->u8DataBuffer[6] != deviceId_Arr[1])
-        return false;
-      if (pPacket->u8DataBuffer[7] != deviceId_Arr[2])
-        return false;
-      if (pPacket->u8DataBuffer[8] != deviceId_Arr[3])
-        return false;
-
-      logHexDebugP(&pPacket->u8DataBuffer[5], 4);
-
       unionMSG.msg_sent_after_receive = handle_4BS(pPacket, _channelIndex);
       return true;
 
       break;
 
     case u8RORG_VLD:
-
-      // Get rid of messages not intended for us
-      if (pPacket->u8DataBuffer[pPacket->u16DataLength - 5] != deviceId_Arr[0])
-        return false;
-      if (pPacket->u8DataBuffer[pPacket->u16DataLength - 4] != deviceId_Arr[1])
-        return false;
-      if (pPacket->u8DataBuffer[pPacket->u16DataLength - 3] != deviceId_Arr[2])
-        return false;
-      if (pPacket->u8DataBuffer[pPacket->u16DataLength - 2] != deviceId_Arr[3])
-        return false;
-
-      logHexDebugP(&pPacket->u8DataBuffer[pPacket->u16DataLength - 5], 4);
-
       handle_VLD(pPacket, _channelIndex);
       return true;
       break;

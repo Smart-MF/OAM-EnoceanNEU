@@ -27,9 +27,6 @@ union EnoceanHandle {
 extern EnoceanHandle unionMSG;
 
 class EnoceanChannel : public OpenKNX::Channel {
-private:
-  uint8_t deviceId_Arr[4] = {0, 0, 0, 0};
-
 public:
   EnoceanChannel(uint8_t index);
   const std::string name() override;

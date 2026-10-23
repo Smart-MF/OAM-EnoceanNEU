@@ -36,6 +36,7 @@
 
 #define u8RADIO_ERP1 0x01
 #define u8RESPONSE 0x02
+#define u8COMMAND_ACCEPTED 0x0C
 
 // COMANDS
 #define u8CO_WR_IDBASE 0x07
@@ -64,6 +65,11 @@
 
 #define BASEID_BYTES 4
 #define DATBUF_SZ 100
+
+// Max. Wartezeit auf eine RESPONSE / COMMAND_ACCEPTED des Transceivers (ms), ESP3-Spec Kap. 1.10
+#define ENOCEAN_RESPONSE_TIMEOUT 500
+// Obergrenze, um die nach einem COMMAND_ACCEPTED zusätzlich auf die RESPONSE gewartet wird (ms)
+#define ENOCEAN_ACCEPTED_TIMEOUT_MAX 2000
 
 #define SER_SYNCH_CODE 0x55
 #define SER_HEADER_NR_BYTES 4
@@ -139,9 +145,11 @@ private:
     void setupChannels();
     void initSerial(Stream &serial);
     void task();
-    void readBaseId(uint8_t *fui8_BaseID_p);
-    void setBaseId(uint8_t *fui8_BaseID_p);
+    bool readBaseId(uint8_t *fui8_BaseID_p);
+    void setBaseId(const uint8_t *fui8_BaseID_p);
+    void getConfiguredBaseId(uint8_t out8BaseId[BASEID_BYTES]);
     bool checkBaseID();
+    uint8_t waitForResponse(uint32_t timeoutMs);
     void activateLearnMode(uint8_t channel, uint8_t enable);
     void readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p);
     void startDisableAllChannels();
@@ -151,7 +159,6 @@ private:
     void readRepeaterFunc();
     void setRepeaterFunc();
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
-    bool extractSenderId(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);
     void checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &ko);
     void send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH);
@@ -169,6 +176,8 @@ private:
 #endif
 
     bool isInited = false;
+    // true, sobald _channels angelegt sind (nur dann dürfen Funktelegramme an die Kanäle verteilt werden)
+    bool _channelsReady = false;
 
     uint8_t u8datBuf[DATBUF_SZ];
     uint8_t u8CRC;
@@ -205,6 +214,7 @@ public:
     void processInputKo(GroupObject &ko) override;
     bool processCommand(const std::string cmd, bool diagnoseKo);
     void showHelp() override;
+    static bool extractSenderId(const PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);
 };
 
 extern EnoceanModule openknxEnoceanModule;

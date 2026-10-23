@@ -1105,9 +1105,12 @@ inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   }
 }
 
+// Verarbeitet ein F6-10-00-Telegramm (Fenstergriff, z.B. Eltako FFG7B, bzw. Fenster-/Tastkontakt FTKE/FFTE).
+// STATE = DB_BIT 7-4: 0b1111 = geschlossen (Griff unten), 0b1101 = gekippt (Griff oben),
+// 0b1100 / 0b1110 = offen (Griff waagerecht). Kontakte senden nur 0xF0 (geschlossen) und 0xE0 (offen).
+// KO-Belegung wie A5-14-09: KO2 = offen, KO3 = gekippt, KO4 = offen/geschlossen (Wert für geschlossen per ETS).
 inline void handle_F6_10_00(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   RPS_F6_10_00_TYPE *lRpsTlg_p;
-  bool bvalue;
 
   logDebug("RPS", "Profil: F6-10-00");
 
@@ -1116,79 +1119,27 @@ inline void handle_F6_10_00(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex
   logDebug("RPS", "STATE: %u, NA: %u", lRpsTlg_p->u8RpsTelData.STATE, lRpsTlg_p->u8RpsTelData.NA);
 
   switch (lRpsTlg_p->u8RpsTelData.STATE) {
-  case 0xF0: // geschlossen
-    if (ParamENO_CHWindowcloseValue)
-      bvalue = true;
-    else
-      bvalue = false;
-    KoENO_GO_BASE__2.value(bvalue, Dpt(1, 1));
+  case 0b1111: // geschlossen (Hebel unten)
+    KoENO_GO_BASE__2.value(false, Dpt(1, 1));
+    KoENO_GO_BASE__3.value(false, Dpt(1, 1));
+    KoENO_GO_BASE__4.value(ParamENO_CHWindowcloseValue, Dpt(1, 1));
     logDebug("RPS", "geschlossen");
     break;
-  case 0xE0: // 0ffen
-    if (ParamENO_CHWindowcloseValue)
-      bvalue = true;
-    else
-      bvalue = false;
-    KoENO_GO_BASE__2.value(bvalue, Dpt(1, 1));
+  case 0b1101: // gekippt (Hebel oben)
+    KoENO_GO_BASE__2.value(false, Dpt(1, 1));
+    KoENO_GO_BASE__3.value(true, Dpt(1, 1));
+    KoENO_GO_BASE__4.value(!ParamENO_CHWindowcloseValue, Dpt(1, 1));
+    logDebug("RPS", "gekippt");
+    break;
+  case 0b1100: // offen (Hebel waagerecht)
+  case 0b1110:
+    KoENO_GO_BASE__2.value(true, Dpt(1, 1));
+    KoENO_GO_BASE__3.value(false, Dpt(1, 1));
+    KoENO_GO_BASE__4.value(!ParamENO_CHWindowcloseValue, Dpt(1, 1));
     logDebug("RPS", "offen");
+    break;
   default:
     logDebug("RPS", "RPS ERROR");
     break;
   }
-
-
-
-
-    logDebug("RPS", "Profil: F6-10-00");
-
-    lRpsTlg_p = (RPS_F6_10_00_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-
-    logDebug("RPS", "STATE: %u, NA: %u", lRpsTlg_p->u8RpsTelData.STATE, lRpsTlg_p->u8RpsTelData.NA);
-    
-    
-    switch (lRpsTlg_p->u8RpsTelData.STATE) {
-    case 0b1111: // Hebel unten
-      KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = true;
-      else
-        bvalue = false;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel unten");
-      break;
-    case 0b1101: // Hebel Oben
-      KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(true, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel oben");
-      break;
-    case 0b1100: // Hebel Mitte
-      KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel mitte");
-      break;
-    case 0b1110: // Hebel Mitte
-      KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel mitte");
-      break;
-    default:
-      logDebug("RPS", "RPS ERROR");
-      break;
-    }
 }
