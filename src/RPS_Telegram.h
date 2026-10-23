@@ -178,6 +178,7 @@ inline void longStop(uint8_t rockerNr, uint16_t firstParameter, uint16_t firstCo
       }
       break;
     }
+    break;
 
   case CI_pressed:
     logDebug("RPS", "CI"); // CI = normal unten
@@ -938,13 +939,21 @@ inline void handle_F6_05_0x(uint8_t value, uint8_t _channelIndex) {
   }
 }
 
+// Schreibt den Fenstergriff-/Kontaktzustand auf die Gruppenobjekte (Belegung wie A5-14-09):
+// KO2 = offen, KO3 = gekippt, KO4 = offen/geschlossen (Wert für "geschlossen" per ETS-Parameter).
+inline void setWindowHandleKOs(bool open, bool tilted, uint8_t _channelIndex) {
+  bool closed = !open && !tilted;
+  KoENO_GO_BASE__2.value(open, Dpt(1, 1));
+  KoENO_GO_BASE__3.value(tilted, Dpt(1, 1));
+  KoENO_GO_BASE__4.value(closed ? ParamENO_CHWindowcloseValue : !ParamENO_CHWindowcloseValue, Dpt(1, 1));
+}
+
+inline void handle_F6_10_00(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+
 // Zentrale Dispatch-Funktion für empfangene RPS-Telegramme dieses Kanals: wertet das konfigurierte EEP-Profil aus und
 // schaltet die zugehörigen Gruppenobjekte bzw. ruft die passende Behandlungsroutine auf.
 inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
-  RPS_F6_10_00_TYPE *lRpsTlg_p;
   RPS_F6_10_01_TYPE *lRpsTlg2_p;
-
-  bool bvalue;
 
 #ifndef EnOceanTEST
   // switch (knx.paramWord(firstParameter + ENO_CHProfilSelectionRPS))
@@ -992,58 +1001,7 @@ inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   // ----------------- Profil: F6-10-00 --------------------------
   //**************************************************************
   case F6_10_00:
-
-    logDebug("RPS", "Profil: F6-10-00");
-
-    lRpsTlg_p = (RPS_F6_10_00_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-
-    logDebug("RPS", "STATE: %u, NA: %u", lRpsTlg_p->u8RpsTelData.STATE, lRpsTlg_p->u8RpsTelData.NA);
-
-    switch (lRpsTlg_p->u8RpsTelData.STATE) {
-    case 0b1111: // Hebel unten
-      KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      if (((ParamENO_CHWindowcloseValue) >> ENO_CHWindowcloseValueShift) & 1)
-        bvalue = true;
-      else
-        bvalue = false;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel unten");
-      break;
-    case 0b1101: // Hebel Oben
-      KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(true, Dpt(1, 1));
-      if (((ParamENO_CHWindowcloseValue) >> ENO_CHWindowcloseValueShift) & 1)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel oben");
-      break;
-    case 0b1100: // Hebel Mitte
-      KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      if (((ParamENO_CHWindowcloseValue) >> ENO_CHWindowcloseValueShift) & 1)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel mitte");
-      break;
-    case 0b1110: // Hebel Mitte
-      KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      if (((ParamENO_CHWindowcloseValue) >> ENO_CHWindowcloseValueShift) & 1)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel mitte");
-      break;
-    default:
-      logDebug("RPS", "RPS ERROR");
-      break;
-    }
+    handle_F6_10_00(f_Pkt_st, _channelIndex);
     break;
   //**************************************************************
   // ----------------- Profil: F6-10-01 --------------------------
@@ -1053,49 +1011,20 @@ inline void handle_RPS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
 
     lRpsTlg2_p = (RPS_F6_10_01_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
 
+    // STATE = DB_BIT 5-4, gleiche Kodierung wie die unteren 2 Bit von F6-10-00
     switch (lRpsTlg2_p->u8RpsTelData.STATE) {
-    case 0b11: // Hebel unten
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      KoENO_GO_BASE__4.value(false, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = true;
-      else
-        bvalue = false;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel unten");
+    case 0b11: // geschlossen (Hebel unten)
+      setWindowHandleKOs(false, false, _channelIndex);
+      logDebug("RPS", "geschlossen");
       break;
-    case 0b01: // Hebel Oben
-      KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-      KoENO_GO_BASE__4.value(true, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel oben");
+    case 0b01: // gekippt (Hebel oben)
+      setWindowHandleKOs(false, true, _channelIndex);
+      logDebug("RPS", "gekippt");
       break;
-    case 0b00: // Hebel Mitte
-      KoENO_GO_BASE__3.value(true, Dpt(1, 1));
-      KoENO_GO_BASE__4.value(false, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel mitte");
-      break;
-    case 0b10: // Hebel Mitte
-      KoENO_GO_BASE__3.value(true, Dpt(1, 1));
-      KoENO_GO_BASE__4.value(false, Dpt(1, 1));
-      if (ParamENO_CHWindowcloseValue)
-        bvalue = false;
-      else
-        bvalue = true;
-      KoENO_GO_BASE__4.value(bvalue, Dpt(1, 1));
-      logDebug("RPS", "Hebel mitte");
-      break;
-    default:
-      // Statement(s)
+    case 0b00: // offen (Hebel waagerecht)
+    case 0b10:
+      setWindowHandleKOs(true, false, _channelIndex);
+      logDebug("RPS", "offen");
       break;
     }
     break;
@@ -1120,22 +1049,16 @@ inline void handle_F6_10_00(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex
 
   switch (lRpsTlg_p->u8RpsTelData.STATE) {
   case 0b1111: // geschlossen (Hebel unten)
-    KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-    KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-    KoENO_GO_BASE__4.value(ParamENO_CHWindowcloseValue, Dpt(1, 1));
+    setWindowHandleKOs(false, false, _channelIndex);
     logDebug("RPS", "geschlossen");
     break;
   case 0b1101: // gekippt (Hebel oben)
-    KoENO_GO_BASE__2.value(false, Dpt(1, 1));
-    KoENO_GO_BASE__3.value(true, Dpt(1, 1));
-    KoENO_GO_BASE__4.value(!ParamENO_CHWindowcloseValue, Dpt(1, 1));
+    setWindowHandleKOs(false, true, _channelIndex);
     logDebug("RPS", "gekippt");
     break;
   case 0b1100: // offen (Hebel waagerecht)
   case 0b1110:
-    KoENO_GO_BASE__2.value(true, Dpt(1, 1));
-    KoENO_GO_BASE__3.value(false, Dpt(1, 1));
-    KoENO_GO_BASE__4.value(!ParamENO_CHWindowcloseValue, Dpt(1, 1));
+    setWindowHandleKOs(true, false, _channelIndex);
     logDebug("RPS", "offen");
     break;
   default:
