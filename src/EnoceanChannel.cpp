@@ -25,10 +25,52 @@ void EnoceanChannel::setup() {
   logIndentDown();
 }
 
-// Wird zyklisch aufgerufen; aktuell ohne Funktion (Platzhalter für spätere Logik).
+// Wird zyklisch aufgerufen: erkennt bei gedrücktem Taster den langen Tastendruck (Zeit per ETS-Parameter in 10 ms).
 void EnoceanChannel::loop() {
-  // Dummy Action
-  // delayMicroseconds(100);
+  if (_rockerWippe == ROCKER_NONE || _rockerLong)
+    return;
+
+  if (!rockerNeedsLongPress(rockerFunction(_rockerWippe, _channelIndex)))
+    return;
+
+  if (delayCheck(_rockerPressTime, ParamENO_CHRockerLongPressWaitTime * 10)) {
+    _rockerLong = true;
+    rockerLongStart(_rockerWippe, _rockerUpper, _channelIndex);
+  }
+}
+
+// Verarbeitet ein Rocker-Telegramm (F6-02-xx) dieses Kanals: Drücken merkt sich Wippe/Seite und löst Schalten/Szene
+// sofort aus, Loslassen wertet kurzen bzw. langen Tastendruck aus (langer Druck wird in loop() erkannt).
+void EnoceanChannel::handleRocker(PACKET_SERIAL_TYPE_ *pPacket) {
+  uint8_t db0 = pPacket->u8DataBuffer[1];
+  bool pressed = db0 & 0x10; // EB: Energy Bow
+
+  if (pressed) {
+    bool upper = false;
+    uint8_t wippe = rockerDecode(db0, &upper, _channelIndex);
+    logDebugP("Rocker pressed: DB0 %02X, Wippe %u, %s", db0, wippe, upper ? "oben" : "unten");
+    if (wippe == ROCKER_NONE)
+      return;
+
+    _rockerWippe = wippe;
+    _rockerUpper = upper;
+    _rockerLong = false;
+    _rockerPressTime = millis();
+    rockerPress(wippe, upper, _channelIndex);
+    return;
+  }
+
+  // losgelassen
+  logDebugP("Rocker released");
+  if (_rockerWippe == ROCKER_NONE)
+    return;
+
+  if (_rockerLong)
+    rockerLongEnd(_rockerWippe, _channelIndex);
+  else
+    rockerShort(_rockerWippe, _rockerUpper, _channelIndex);
+
+  _rockerWippe = ROCKER_NONE;
 }
 
 // Prüft anhand der EnOcean-ID und des RORG-Typs, ob ein empfangenes Paket zu diesem Kanal gehört,
@@ -91,83 +133,12 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
       return true;
       break;
 
-      //    case u8RORG_Rocker:
-      //      // Get rid of messages not intended for us
-      //      if (pPacket->u8DataBuffer[2] != deviceId_Arr[0])
-      //        return false;
-      //      if (pPacket->u8DataBuffer[3] != deviceId_Arr[1])
-      //        return false;
-      //      if (pPacket->u8DataBuffer[4] != deviceId_Arr[2])
-      //        return false;
-      //      if (pPacket->u8DataBuffer[5] != deviceId_Arr[3])
-      //        return false;
-      //
-      // #ifdef KDEBUG_Rocker
-      //      SERIAL_PORT.print(pPacket->u8DataBuffer[2], HEX);
-      //      SERIAL_PORT.print(".");
-      //      SERIAL_PORT.print(pPacket->u8DataBuffer[3], HEX);
-      //      SERIAL_PORT.print(".");
-      //      SERIAL_PORT.print(pPacket->u8DataBuffer[4], HEX);
-      //      SERIAL_PORT.print(".");
-      //      SERIAL_PORT.println(pPacket->u8DataBuffer[5], HEX);
-      // #endif
-      //      // uint8_t stateRocker = handle_RPS_Rocker(pPacket, profil,
-      //      firstComObj, firstParameter, index); uint8_t stateRocker =
-      //      pPacket->u8DataBuffer[1];
-      // #ifdef KDEBUG
-      //      // SERIAL_PORT.println(stateRocker, HEX);
-      // #endif
-      //      switch (stateRocker)
-      //      {
-      //      case AI_pressed:
-      //        unionMSG.rockerState_pressed = stateRocker;
-      //        break;
-      //      case AI_release:
-      //        union2.rockerState_Release = stateRocker;
-      //        break;
-      //      case AO_pressed:
-      //        unionMSG.rockerState_pressed = stateRocker;
-      //        break;
-      //      case AO_release:
-      //        union2.rockerState_Release = stateRocker;
-      //        break;
-      //      case BI_pressed:
-      //        unionMSG.rockerState_pressed = stateRocker;
-      //        break;
-      //      case BI_release:
-      //        union2.rockerState_Release = stateRocker;
-      //        break;
-      //      case BO_pressed:
-      //        unionMSG.rockerState_pressed = stateRocker;
-      //        break;
-      //      case BO_release:
-      //        union2.rockerState_Release = stateRocker;
-      //        break;
-      //      case CI_pressed:
-      //        unionMSG.rockerState_pressed = stateRocker;
-      //        break;
-      //      case CI_release:
-      //        union2.rockerState_Release = stateRocker;
-      //        break;
-      //      case CO_pressed:
-      //        unionMSG.rockerState_pressed = stateRocker;
-      //        break;
-      //      case CO_release:
-      //        union2.rockerState_Release = stateRocker;
-      //        break;
-      //      case Contact_pressed:
-      //        if (knx.paramByte(firstParameter + ENO_CHRockerProfil) == Wippen1)
-      //          handle_RPS_Rocker(pPacket, _channelIndex);
-      //        break;
-      //      case Contact_release:
-      //        if (knx.paramByte(firstParameter + ENO_CHRockerProfil) == Wippen1)
-      //          handle_RPS_Rocker(pPacket, _channelIndex);
-      //        break;
-      //      default:
-      //        union2.rockerState_Release = stateRocker; // Für Wert = 0
-      //        break;
-      //      }
-      //      break;
+    case u8RORG_Rocker:
+      // Taster: nur RPS-Telegramme, nur Richtung EnOcean -> KNX (0); KNX -> EnOcean siehe handleKnxEvent()
+      if (pPacket->u8DataBuffer[0] != u8RORG_RPS || ParamENO_CHDirectionKnxEnocean != 0)
+        return false;
+      handleRocker(pPacket);
+      return true;
     } // ENDE switch (ParamENO_CHProfilSelection)
     break; // ENDE EEP-Profil
 

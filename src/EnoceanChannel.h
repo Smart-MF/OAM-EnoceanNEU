@@ -27,6 +27,15 @@ union EnoceanHandle {
 extern EnoceanHandle unionMSG;
 
 class EnoceanChannel : public OpenKNX::Channel {
+private:
+  // Zustand des Tasters (Kanal-Profil Rocker): gedrückte logische Wippe (0xFF = keine), Seite, Zeitpunkt, langer Druck
+  uint8_t _rockerWippe = 0xFF;
+  bool _rockerUpper = false;
+  bool _rockerLong = false;
+  uint32_t _rockerPressTime = 0;
+
+  void handleRocker(PACKET_SERIAL_TYPE_ *pPacket);
+
 public:
   EnoceanChannel(uint8_t index);
   const std::string name() override;

@@ -1482,6 +1482,33 @@ void EnoceanModule::readVersion() {
 
 
 
+// Sendet ein Funktelegramm (RADIO_ERP1) und wertet die RESPONSE des Transceivers aus (ESP3-Spec Kap. 2.1.2):
+// RET_OK, RET_NOT_SUPPORTED, RET_WRONG_PARAM oder RET_LOCK_SET (Duty-Cycle-Sperre). Liefert true bei RET_OK.
+bool EnoceanModule::sendRadioPacket(PACKET_SERIAL_TYPE_ *pPacket, const char *description)
+{
+    if (uart_sendPacket(pPacket) != ENOCEAN_OK) {
+        logErrorP("Sending %s failed", description);
+        return false;
+    }
+
+    if (waitForResponse(ENOCEAN_RESPONSE_TIMEOUT) != ENOCEAN_OK) {
+        logErrorP("No response for %s", description);
+        return false;
+    }
+
+    switch (m_Pkt_st.u8DataBuffer[0]) {
+    case 0x00: // RET_OK
+        logDebugP("Sent %s", description);
+        return true;
+    case 0x05: // RET_LOCK_SET
+        logErrorP("Sending %s failed: duty cycle lock", description);
+        return false;
+    default:
+        logErrorP("Sending %s failed, return code: %u", description, m_Pkt_st.u8DataBuffer[0]);
+        return false;
+    }
+}
+
 void EnoceanModule::send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH)
 {
     PACKET_SERIAL_TYPE_ l_TestPacket_st;
@@ -1504,10 +1531,11 @@ void EnoceanModule::send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t 
     }
     if (baseID_CH <= 4) // anpassen der Sende ID -> baseID_CH max 4 !!!
         l_TestBuf_p[8] = l_TestBuf_p[8] + baseID_CH;
+    l_TestBuf_p[9] = 0x00; // Status
 
     logInfoP("ID: %u", l_TestBuf_p[8]);
 
-    uart_sendPacket(&l_TestPacket_st);
+    sendRadioPacket(&l_TestPacket_st, "4BS telegram");
 }
 
 void EnoceanModule::send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boolean pressed, uint8_t baseID_CH)
@@ -1558,7 +1586,7 @@ void EnoceanModule::send_RPS_Taster(uint8_t *fui8_BaseID_p, boolean state, boole
 
     logInfoP("Send-ID: %02X %02X %02X %02X", l_TestBuf_p[2], l_TestBuf_p[3], l_TestBuf_p[4], l_TestBuf_p[5]);
 
-    uart_sendPacket(&l_TestPacket_st);
+    sendRadioPacket(&l_TestPacket_st, "RPS telegram");
 }
 
 void EnoceanModule::setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool state)
@@ -1593,14 +1621,7 @@ void EnoceanModule::setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool s
     lu8SndBuf[14] = 0x00;
     lu8SndBuf[15] = 0x00;
 
-    if (!uart_sendPacket(&lRdBaseIDPkt_st))
-    {
-        logInfoP("Sending telegram failed.");
-    }
-    else
-    {
-        logInfoP("Requested status");
-    }
+    sendRadioPacket(&lRdBaseIDPkt_st, "set actor status");
 }
 
 void EnoceanModule::getStatusActors(uint8_t *mySenderId, uint8_t idExtra)
@@ -1632,14 +1653,7 @@ void EnoceanModule::getStatusActors(uint8_t *mySenderId, uint8_t idExtra)
     lu8SndBuf[13] = 0x00;
     lu8SndBuf[14] = 0x00;
 
-    if (!uart_sendPacket(&lRdBaseIDPkt_st))
-    {
-        logInfoP("Sending telegram failed.");
-    }
-    else
-    {
-        logInfoP("Requested status");
-    }
+    sendRadioPacket(&lRdBaseIDPkt_st, "request actor status");
 }
 
 void EnoceanModule::setActorsMeasurment(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs)
@@ -1674,14 +1688,7 @@ void EnoceanModule::setActorsMeasurment(uint8_t *mySenderId, uint8_t idExtra, ui
     lu8SndBuf[17] = 0x00;
     lu8SndBuf[18] = 0x00;
 
-    if (!uart_sendPacket(&lRdBaseIDPkt_st))
-    {
-        logInfoP("Sending telegram failed.");
-    }
-    else
-    {
-        logInfoP("Requested Meas Setup");
-    }
+    sendRadioPacket(&lRdBaseIDPkt_st, "measurement setup");
 }
 
 void EnoceanModule::getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs, bool unit)
@@ -1715,14 +1722,7 @@ void EnoceanModule::getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtr
     lu8SndBuf[13] = 0x00;
     lu8SndBuf[14] = 0x00;
 
-    if (!uart_sendPacket(&lRdBaseIDPkt_st))
-    {
-        logInfoP("Sending telegram failed.");
-    }
-    else
-    {
-        logInfoP("Requested Meas Value");
-    }
+    sendRadioPacket(&lRdBaseIDPkt_st, "request measurement");
 }
 
 

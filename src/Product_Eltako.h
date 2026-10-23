@@ -61,6 +61,15 @@
 #define Eltako_Wasser_inaktive 0
 #define Eltako_Wasser_FWS81 1
 
+// Prüft, ob das empfangene Telegramm den für das Produkt erwarteten Telegrammtyp (R-ORG) hat. Viele Eltako-Geräte
+// senden mehrere Telegrammtypen (z.B. FFKB: 1BS-Kontakt + 4BS-Spannung), die nicht falsch ausgewertet werden dürfen.
+inline bool eltakoExpectRorg(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t rorg) {
+  if (f_Pkt_st->u8DataBuffer[0] == rorg)
+    return true;
+  logDebug("Eltako", "R-ORG %02X ignored (expected %02X)", f_Pkt_st->u8DataBuffer[0], rorg);
+  return false;
+}
+
 inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
 
   switch (ParamENO_CHProductselType) {
@@ -92,7 +101,11 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
     case ELtako_Kontakte_FFKB: //(EEP: D5-00-01)
     case ELtako_Kontakte_FTK:  //(EEP: D5-00-01)
     case ELtako_Kontakte_FTKB: //(EEP: D5-00-01)
-      handle_1BS(f_Pkt_st, _channelIndex);
+      // Kontakt per 1BS (D5-00-01), zusätzlich zyklisch ein 4BS-Spannungstelegramm (Batterie / Energiespeicher)
+      if (f_Pkt_st->u8DataBuffer[0] == u8RORG_1BS)
+        handle_1BS(f_Pkt_st, _channelIndex);
+      else if (eltakoExpectRorg(f_Pkt_st, u8RORG_4BS))
+        handle4BS_D5_00_01_V2(f_Pkt_st, _channelIndex);
       break;
 
     case ELtako_Kontakte_FTKE: // EEP F6-10-00
@@ -101,7 +114,8 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
             ORG = 0x05
             Data_byte3 = 0xF0 = Fenster geschlossen
                          0xE0 = Fenster offen */
-      handle_F6_10_00(f_Pkt_st, _channelIndex);
+      if (eltakoExpectRorg(f_Pkt_st, u8RORG_RPS))
+        handle_F6_10_00(f_Pkt_st, _channelIndex);
       break;
 
     default:
@@ -109,7 +123,9 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
     } // ENDE switch (ParamENO_CHProductselTypeKon)
     break;
 
-  case Eltako_Umwelt:
+  case Eltako_Umwelt: // alle Umweltsensoren senden 4BS
+    if (!eltakoExpectRorg(f_Pkt_st, u8RORG_4BS))
+      break;
     switch (ParamENO_CHProductselTypeUmw) {
     case Eltako_Umwelt_inaktive:
       logDebug("Eltako Umweltsensoren", "Profil: inaktive");
@@ -141,7 +157,9 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
     } // ENDE switch (ParamENO_CHProductselTypeUmw)
     break;
 
-  case Eltako_Helligkeit:
+  case Eltako_Helligkeit: // 4BS
+    if (!eltakoExpectRorg(f_Pkt_st, u8RORG_4BS))
+      break;
     switch (ParamENO_CHProductselTypeHell) {
     case Eltako_Helligkeit_inaktive:
       logDebug("Eltako Helligkeitssensoren", "Profil: inaktive");
@@ -168,15 +186,14 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
       break;
 
     case Eltako_Bewegung_FB55EB: //EEP A5-07-01
-      handle4BS_A5_07_01(f_Pkt_st, _channelIndex);
+      if (eltakoExpectRorg(f_Pkt_st, u8RORG_4BS))
+        handle4BS_A5_07_01(f_Pkt_st, _channelIndex);
       break;
 
     case Eltako_Bewegung_FBHT55ESB:  // EEP: A5-08-01 oder  A5-07-01
-      handle4BS_A5_08_01(f_Pkt_st, _channelIndex);
-      break;
-
-    case Eltako_Bewegung_FABH65S: // EEP A5-08-01  mit Eltako Anpassung 
-      handle4BS_A5_08_01(f_Pkt_st, _channelIndex);
+    case Eltako_Bewegung_FABH65S: // EEP A5-08-01  mit Eltako Anpassung
+      if (eltakoExpectRorg(f_Pkt_st, u8RORG_4BS))
+        handle4BS_A5_08_01(f_Pkt_st, _channelIndex);
       break;
 
     case Eltako_Bewegung_FABH130: // EEP F6-02-01 (Rocker Taster)
@@ -196,7 +213,8 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
 
     case Eltako_Melder_FRWB:
     case Eltako_Melder_FHMB:
-      handle4BS_A5_30_03(f_Pkt_st, _channelIndex);
+      if (eltakoExpectRorg(f_Pkt_st, u8RORG_4BS))
+        handle4BS_A5_30_03(f_Pkt_st, _channelIndex);
       break;
 
     default:

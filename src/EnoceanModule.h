@@ -181,6 +181,7 @@ private:
     void getActorsMeasurmentValue(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs, bool unit);
     uint8_t uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket, uint16_t u16BufferLength);
     uint8_t uart_sendPacket(PACKET_SERIAL_TYPE_ *pPacket);
+    bool sendRadioPacket(PACKET_SERIAL_TYPE_ *pPacket, const char *description);
 #ifdef ARDUINO_ARCH_RP2040
 #ifndef OPENKNX_USB_EXCHANGE_IGNORE
     void registerUsbExchangeCallbacks();

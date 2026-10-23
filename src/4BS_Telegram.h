@@ -17,6 +17,7 @@ inline void handle4BS_A5_09_05(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIn
 inline void handle4BS_A5_09_0C(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_30_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline void handle4BS_D5_00_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 
 
 inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
@@ -53,7 +54,6 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
   FOURBS_A5_20_06_TYPE *fourBsA5_20_06_Tlg_p;
 
   // Special Profil for a 4BS MSG from a 1BS Device
-  ONEBS_TELEGRAM_TYPE_V2 *l1bsV2Tlg_p;
 
   logDebug("4BS", "Profil: 4BS - %u", ParamENO_CHProfilSelection4BS);
 
@@ -1033,15 +1033,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
     // switch (knx.paramWord(firstParameter + ENO_CHProfil4BSAdd))
     switch (ParamENO_CHProfil4BSAdd) {
     case D5_00_01_V2:
-      logDebug("4BS", "D5-00-01 V2");
-      l1bsV2Tlg_p = (ONEBS_TELEGRAM_TYPE_V2 *)&(f_Pkt_st->u8DataBuffer[1]);
-
-      // Energy storage
-      KoENO_GO_BASE__8.value(l1bsV2Tlg_p->u8EnergyVoltage * 19.608, Dpt(9, 1)); // umgerechnet in 5V in 5000mV
-      // Energy storage
-      KoENO_GO_BASE__5.value(l1bsV2Tlg_p->u8BatteryVoltage * 19.608, Dpt(9, 1)); // umgerechnet in 5V in 5000mV
-
-      logDebug("4BS", "Enr: %.1f Bat: %.1f", l1bsV2Tlg_p->u8EnergyVoltage / 51.0, l1bsV2Tlg_p->u8BatteryVoltage / 51.0);
+      handle4BS_D5_00_01_V2(f_Pkt_st, _channelIndex);
       break;
 
     default:
@@ -1065,6 +1057,19 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
  *  Inline funktions
  *
  ***************************************************************************************/
+
+// Spannungstelegramm (4BS) der Eltako-Fensterkontakte FFKB/FTK/FTKB, die ihren Kontaktzustand per 1BS (D5-00-01)
+// senden: DB3 = Energiespeicher, DB2 = Batteriespannung, jeweils 0..255 = 0..5 V.
+// KO_4 (GO_BASE__5) = Batteriespannung, KO_7 (GO_BASE__8) = Energiespeicher, beide in mV (DPT 9.020).
+inline void handle4BS_D5_00_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  ONEBS_TELEGRAM_TYPE_V2 *l1bsV2Tlg_p = (ONEBS_TELEGRAM_TYPE_V2 *)&(f_Pkt_st->u8DataBuffer[1]);
+
+  logDebug("4BS", "D5-00-01 V2");
+  KoENO_GO_BASE__8.value(l1bsV2Tlg_p->u8EnergyVoltage * 19.608, Dpt(9, 20));
+  KoENO_GO_BASE__5.value(l1bsV2Tlg_p->u8BatteryVoltage * 19.608, Dpt(9, 20));
+
+  logDebug("4BS", "Enr: %.1f V Bat: %.1f V", l1bsV2Tlg_p->u8EnergyVoltage / 51.0, l1bsV2Tlg_p->u8BatteryVoltage / 51.0);
+}
 
 inline void handle4BS_A5_04_02(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
   FOURBS_A5_04_TYPE *fourBsA5_04_Tlg_p;
