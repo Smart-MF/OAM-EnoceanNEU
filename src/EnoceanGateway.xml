@@ -13,8 +13,8 @@
   <op:ETS
     OpenKnxId="0xAF"
     ApplicationNumber="255"
-    ApplicationVersion="0.5"
-    ReplacesVersions="0.4 0.3 0.2 0.1 0.0"
+    ApplicationVersion="0.6"
+    ReplacesVersions="0.5 0.4 0.3 0.2 0.1 0.0"
     ApplicationRevision="0"
     ProductName="ENO_TestApp"
     BusCurrent="10"
@@ -37,7 +37,7 @@
     share="EnoceanModule.share.xml"
     template="EnoceanModule.templ.xml"
     NumChannels="30" KoOffset="50">
-    <op:verify File="../library.json" ModuleVersion="0.5" />
+    <op:verify File="../library.json" ModuleVersion="0.6" />
   </op:define>
 
   <op:define prefix="LOG" ModuleType="10"

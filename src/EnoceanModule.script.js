@@ -14,9 +14,9 @@ function ENO_idString(resp, offset) {
 
 function ENO_eepString(rorg, func, type) {
     if (rorg == 0)
-        return "nicht im Lerntelegramm (verschlüsseltes Gerät)";
+        return "verschlüsselt, ohne Profil";
     if (func == 0 && type == 0)
-        return "R-ORG " + ENO_hex2(rorg) + " (Profil nicht im Lerntelegramm)";
+        return "R-ORG " + ENO_hex2(rorg) + ", ohne Profil";
     return ENO_hex2(rorg) + "-" + ENO_hex2(func) + "-" + ENO_hex2(type);
 }
 
@@ -25,7 +25,7 @@ function ENO_causeText(cause) {
         case 0x00: return "Secure-Link-Tabelle im TCM 615 ist voll";
         case 0x04: return "Teach-In-Telegramm fehlerhaft, bitte wiederholen";
         case 0x05:
-        case 0x06: return "Gerät braucht einen Pre-Shared Key (PSK), wird noch nicht unterstützt";
+        case 0x06: return "Gerät braucht PSK (noch nicht unterstützt)";
         default: return "Ursache " + cause;
     }
 }
@@ -44,6 +44,22 @@ function ENO_call(online, data) {
 
 function ENO_param(device, name) {
     return device.getParameterByName(name);
+}
+
+// Schreibt einen Text in ein Textfeld und kürzt ihn auf dessen Größe in Byte (UTF-8, Umlaute zählen doppelt).
+// Die ETS bricht das Script sonst mit "The maximum byte length cannot exceed" ab.
+function ENO_setText(device, name, text, maxBytes) {
+    var bytes = 0;
+    for (var i = 0; i < text.length; i++) {
+        var c = text.charCodeAt(i);
+        var len = c < 0x80 ? 1 : (c < 0x800 ? 2 : 3);
+        if (bytes + len > maxBytes) {
+            text = text.substring(0, i);
+            break;
+        }
+        bytes += len;
+    }
+    ENO_param(device, name).value = text;
 }
 
 // Schreibt eine 4-Byte-ID in die 8 Nibble-Parameter des Kanals (ENO_CHnId0..7).
@@ -69,7 +85,7 @@ function ENO_statusText(resp) {
 // Überträgt den Status eines Kanals (Antwort von ENO_FP_CMD_STATUS) in die ETS: Statustext und, wenn eingelernt,
 // ID und erkanntes Profil. Wird von allen Buttons verwendet, damit ID-Felder und Status immer zusammenpassen.
 function ENO_applyStatus(device, ch, resp) {
-    ENO_param(device, "ENO_CH" + ch + "TeachStatus").value = ENO_statusText(resp);
+    ENO_setText(device, "ENO_CH" + ch + "TeachStatus", ENO_statusText(resp), 80);
     if (resp[1] != 2)
         return;
 
@@ -80,8 +96,8 @@ function ENO_applyStatus(device, ch, resp) {
     var profile = ENO_param(device, "ENO_CH" + ch + "ProfilSelection").value;
     var expected = (profile == 250) ? 0xF6 : profile; // Rocker = RPS
     if (productsel == 1 && resp[6] != 0 && expected != resp[6])
-        eep += ", Kanal steht auf R-ORG " + ENO_hex2(expected);
-    ENO_param(device, "ENO_CH" + ch + "TeachEep").value = eep;
+        eep += ", Kanal: R-ORG " + ENO_hex2(expected);
+    ENO_setText(device, "ENO_CH" + ch + "TeachEep", eep, 40);
 }
 
 function ENO_teachStart(device, online, progress, context) {
@@ -100,7 +116,7 @@ function ENO_teachStart(device, online, progress, context) {
         if (resp[0] != 0)
             throw new Error("Kanal " + ch + ": Teach-In konnte nicht gestartet werden (Code " + resp[0] + ").");
 
-        ENO_param(device, "ENO_CH" + ch + "TeachStatus").value = "Teach-In läuft: Lerntaste am Gerät drücken, dann \"Ergebnis übernehmen\"";
+        ENO_setText(device, "ENO_CH" + ch + "TeachStatus", "Teach-In läuft: Lerntaste am Gerät drücken, dann \"Ergebnis übernehmen\"", 80);
         progress.setText("Kanal " + ch + ": Teach-In läuft. Jetzt die Lerntaste am Gerät drücken, danach \"Ergebnis übernehmen\".");
     } finally {
         online.disconnect();
@@ -135,8 +151,8 @@ function ENO_teachDelete(device, online, progress, context) {
         if (resp[0] != 0)
             throw new Error("Kanal " + ch + ": Einlernung konnte nicht gelöscht werden (Code " + resp[0] + ").");
         ENO_setChannelId(device, ch, null, 0);
-        ENO_param(device, "ENO_CH" + ch + "TeachStatus").value = "Nicht eingelernt";
-        ENO_param(device, "ENO_CH" + ch + "TeachEep").value = "";
+        ENO_setText(device, "ENO_CH" + ch + "TeachStatus", "Nicht eingelernt", 80);
+        ENO_setText(device, "ENO_CH" + ch + "TeachEep", "", 40);
         progress.setText("Kanal " + ch + ": Einlernung gelöscht. Bitte die Applikation herunterladen.");
     } finally {
         online.disconnect();
@@ -181,7 +197,7 @@ function ENO_readTransceiver(device, online, progress, context) {
         var ver = ENO_call(online, [5]);
         if (ver[0] == 0)
             info += ", Firmware " + ver[1] + "." + ver[2] + "." + ver[3] + "." + ver[4];
-        ENO_param(device, "ENO_TransceiverInfo").value = info;
+        ENO_setText(device, "ENO_TransceiverInfo", info, 80);
 
         progress.setText("Base-ID " + ENO_idString(resp, 1) + " übernommen. Bitte die Applikation herunterladen.");
     } finally {
@@ -191,23 +207,30 @@ function ENO_readTransceiver(device, online, progress, context) {
 
 function ENO_readAllChannels(device, online, progress, context) {
     var count = ENO_param(device, "ENO_VisibleChannels").value;
+    var errors = 0;
     online.connect();
     try {
         for (var ch = 1; ch <= count; ch++) {
             progress.setText("Status Kanal " + ch + " von " + count + "...");
             if (ENO_param(device, "ENO_CH" + ch + "Productsel").value == 0) {
-                ENO_param(device, "ENO_CH" + ch + "TeachStatus").value = "Kanal inaktiv";
+                ENO_setText(device, "ENO_CH" + ch + "TeachStatus", "Kanal inaktiv", 80);
             } else if (ENO_param(device, "ENO_CH" + ch + "SetupMode").value == 0) {
                 var id = "";
                 for (var i = 0; i < 8; i++)
                     id += ENO_param(device, "ENO_CH" + ch + "Id" + i).value.toString(16).toUpperCase();
-                ENO_param(device, "ENO_CH" + ch + "TeachStatus").value = "ID manuell: " + id;
+                ENO_setText(device, "ENO_CH" + ch + "TeachStatus", "ID manuell: " + id, 80);
             } else {
-                // Teach-In-Kanal: Status und, wenn eingelernt, auch ID und Profil übernehmen
-                ENO_applyStatus(device, ch, ENO_call(online, [1, ch]));
+                // Teach-In-Kanal: Status und, wenn eingelernt, auch ID und Profil übernehmen. Ein Fehler bei einem
+                // Kanal bricht die Abfrage der übrigen nicht ab.
+                try {
+                    ENO_applyStatus(device, ch, ENO_call(online, [1, ch]));
+                } catch (e) {
+                    errors++;
+                    ENO_setText(device, "ENO_CH" + ch + "TeachStatus", "Abfrage fehlgeschlagen: " + e.message, 80);
+                }
             }
         }
-        progress.setText("Status von " + count + " Kanälen gelesen.");
+        progress.setText("Status von " + count + " Kanälen gelesen" + (errors ? ", " + errors + " mit Fehler." : "."));
     } finally {
         online.disconnect();
     }
