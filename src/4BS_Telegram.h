@@ -19,6 +19,8 @@ inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIn
 inline void handle4BS_A5_30_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_D5_00_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline uint8_t handle4BS_A5_20_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline uint8_t handle4BS_A5_20_04(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline uint8_t handle4BS_A5_20_06(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 
 
 inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
@@ -27,7 +29,6 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
   float luxfloat;
   float temp;
   float hum;
-  int8_t value;
   bool bvalue;
 
   FOURBS_A5_02_TYPE *fourBsA5_02_Tlg_p;
@@ -46,8 +47,6 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
   FOURBS_A5_14_01_06_TYPE *fourBsA5_14_01_06_Tlg_p;
   FOURBS_A5_14_07_08_TYPE *fourBsA5_14_07_08_Tlg_p;
   FOURBS_A5_14_09_0A_TYPE *fourBsA5_14_09_0A_Tlg_p;
-  FOURBS_A5_20_04_TYPE *fourBsA5_20_04_Tlg_p;
-  FOURBS_A5_20_06_TYPE *fourBsA5_20_06_Tlg_p;
 
   // Special Profil for a 4BS MSG from a 1BS Device
 
@@ -835,165 +834,19 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
     }
     break; // ENDE A5-14-XX
   case A5_20:
-    logDebug("4BS", "A5-20-");
-    // #ifndef EnOceanTEST
-    switch (ParamENO_CHProfil4BS20)
-    // #else
-    //             switch (profil2nd)
-    // #endif
-    {
-    //**************************************************************
-    // ----------------- Profil: A5-20-01 --------------------------
-    //**************************************************************
+    // Heizkörper-Stellantriebe (bidirektional): Kanäle mit diesen Profilen werden in EnoceanChannel::handleHvac()
+    // verarbeitet, das auch die Antwort an den Antrieb sendet
+    switch (ParamENO_CHProfil4BS20) {
     case A5_20_01:
-      // Kanäle mit A5-20-01 werden in EnoceanChannel::handleHvac() verarbeitet (Antwort an den Antrieb)
       return handle4BS_A5_20_01(f_Pkt_st, _channelIndex);
-    //**************************************************************
-    // ----------------- Profil: A5-20-04 --------------------------
-    //**************************************************************
     case A5_20_04:
-      fourBsA5_20_04_Tlg_p = (FOURBS_A5_20_04_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-      logDebug("4BS", "04");
-      // check TeachIn-Bit
-      if ((fourBsA5_20_04_Tlg_p->u84BsTelData.LRNstatus) == 0) {
-        logDebug("4BS", "TeachIn: %u", fourBsA5_20_04_Tlg_p->u84BsTelData.LRNstatus);
-        // check LRN TYP Bit (bit8) and  LRN Status (Bit4)
-        if ((fourBsA5_20_04_Tlg_p->u84BsTelData.MSTLRNtype) == 1 &&
-            (fourBsA5_20_04_Tlg_p->u84BsTelData.LRNstatus == 0)) {
-          logDebug("4BS", " OK");
-          return TEACHIN_A52004;
-        } else {
-          logDebug("4BS", " NOK");
-        }
-      } else {
-        // ......Current Position.........................................
-        KoENO_GO_BASE__8.value(fourBsA5_20_04_Tlg_p->u8CurrentPos, Dpt(5, 1)); // 0..100 %
-        logDebug("4BS", "current Pos: %u%%", fourBsA5_20_04_Tlg_p->u8CurrentPos);
-        // ......Temperature SetPoint or FeeD Temp ......................................
-        if (fourBsA5_20_04_Tlg_p->u84BsTelData.TS == 1) {
-          // Temperature Setpoint
-          temp = (float)fourBsA5_20_04_Tlg_p->u8Temp / 12.75 + 10.0;
-          KoENO_GO_BASE__7.value(temp, Dpt(9, 1));
-          logDebug("4BS", "Temp SetPoint: %.1f", temp);
-        } else // FEED Temperature
-        {
-          temp = (float)fourBsA5_20_04_Tlg_p->u8Temp / 4.25 + 20.0;
-          KoENO_GO_BASE__7.value(temp, Dpt(9, 1));
-          logDebug("4BS", "Feed-Temp: %.1f", temp);
-        }
-        // ...... Room Temperature or Failure Code ......................................
-        if (fourBsA5_20_04_Tlg_p->u84BsTelData.FL == 1) {
-          // Failure Code
-          KoENO_GO_BASE__6.value(fourBsA5_20_04_Tlg_p->u8TempError, Dpt(5, 1));
-          logDebug("4BS", "Failure Code: %u", fourBsA5_20_04_Tlg_p->u8TempError);
-        } else // Room Temperature
-        {
-          temp = (float)fourBsA5_20_04_Tlg_p->u8TempError / 12.75 + 10.0;
-          KoENO_GO_BASE__9.value(temp, Dpt(9, 1));
-          logDebug("4BS", "Room-Temp: %.1f", temp);
-        }
-
-        // ......Status Bits.........................................
-        KoENO_GO_BASE__10.value(f_Pkt_st->u8DataBuffer[4], Dpt(5, 10));
-        logDebug("4BS", "Status Bits (MSB-LSB): %u", f_Pkt_st->u8DataBuffer[4]);
-      }
-
-      return msg_A5_20_04;
-      break;
-    //**************************************************************
-    // ----------------- Profil: A5-20-06 --------------------------
-    //**************************************************************
+      return handle4BS_A5_20_04(f_Pkt_st, _channelIndex);
     case A5_20_06:
-      fourBsA5_20_06_Tlg_p = (FOURBS_A5_20_06_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-      logDebug("4BS", "06");
-
-      // check TeachIn-Bit
-      if (((fourBsA5_20_06_Tlg_p->u8StatusBits >> 3) & 1) == 0) {
-        logDebug("4BS", "TeachIn: %u", fourBsA5_20_06_Tlg_p->u8StatusBits);
-        // check LRN TYP Bit (bit8)
-        if (((fourBsA5_20_06_Tlg_p->u8StatusBits >> 7) & 1) == 1 &&
-            ((fourBsA5_20_06_Tlg_p->u8StatusBits >> 4) & 1) == 0) {
-          logDebug("4BS", " OK");
-          return TEACHIN_A52006;
-        } else {
-          logDebug("4BS", " NOK");
-        }
-      } else {
-        // ......Current Position.........................................
-#ifndef EnOceanTEST
-        KoENO_GO_BASE__8.value(fourBsA5_20_06_Tlg_p->u8CurrentPos, Dpt(5, 1)); // 0..100 %
-#endif
-        logDebug("4BS", "current Pos: %u%%", fourBsA5_20_06_Tlg_p->u8CurrentPos);
-
-        // ......Temperature Offset.........................................
-        if (fourBsA5_20_06_Tlg_p->u84BsTelData.LOM == 1) {
-#ifndef EnOceanTEST
-          KoENO_GO_BASE__9.value(fourBsA5_20_06_Tlg_p->u84BsTelData.Offset / 2.0, Dpt(9, 1));
-#endif
-          logDebug("4BS", "LOM = 1 Local offset: %.1f°C", fourBsA5_20_06_Tlg_p->u84BsTelData.Offset / 2.0);
-        } else if (fourBsA5_20_06_Tlg_p->u84BsTelData.LOM == 0) {
-          switch (fourBsA5_20_06_Tlg_p->u84BsTelData.Offset) {
-          case 0x0:
-            value = 0;
-            break;
-          case 0x1:
-            value = 1;
-            break;
-          case 0x2:
-            value = 2;
-            break;
-          case 0x3:
-            value = 3;
-            break;
-          case 0x4:
-            value = 4;
-            break;
-          case 0x5:
-            value = 5;
-            break;
-          case 0x7B:
-            value = -5;
-            break;
-          case 0x7C:
-            value = -4;
-            break;
-          case 0x7D:
-            value = -3;
-            break;
-          case 0x7E:
-            value = -2;
-            break;
-          case 0x7F:
-            value = -1;
-            break;
-
-          default:
-            value = 0;
-            break;
-          }
-#ifndef EnOceanTEST
-          KoENO_GO_BASE__9.value(value, Dpt(9, 1));
-#endif
-          logDebug("4BS", "LOM = 0 Local offset: %d°C", value);
-        }
-#ifndef EnOceanTEST
-        // ......Temperature.........................................
-        KoENO_GO_BASE__7.value(fourBsA5_20_06_Tlg_p->u8Temp / 2.0, Dpt(9, 1));
-        // ......Status Bits.........................................
-        KoENO_GO_BASE__10.value(fourBsA5_20_06_Tlg_p->u8StatusBits, Dpt(5, 10));
-#endif
-
-        logDebug("4BS", "Temperature: %.1f Status Bits (MSB-LSB): %u", fourBsA5_20_06_Tlg_p->u8Temp / 2.0,
-                 fourBsA5_20_06_Tlg_p->u8StatusBits);
-        break; // ENDE A5-20-06
-      default:
-        break;
-        logDebug("4BS", "ERROR");
-        break;
-      }
+      return handle4BS_A5_20_06(f_Pkt_st, _channelIndex);
+    default:
+      logDebug("4BS", "A5-20: profile %u not supported", ParamENO_CHProfil4BS20);
+      return 0;
     }
-    return msg_A5_20_06;
-    break; // ENDE A5-20-XX
 
   case A5_special:
     // switch (knx.paramWord(firstParameter + ENO_CHProfil4BSAdd))
@@ -1073,6 +926,105 @@ inline uint8_t handle4BS_A5_20_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channe
   KoENO_GO_BASE__7.value(temp, Dpt(9, 1));
   logDebug("4BS", "A5-20-01 Pos: %u%% Temp: %.1f Status: %02X", pos, temp, d[2]);
   return msg_A5_20_01;
+}
+
+// A5-20-04 Heizkörper-Stellantrieb mit Vorlauf-/Raumtemperatur, Display und Tasten (bidirektional, z.B. Holter).
+// Antrieb -> Gateway: DB3 Ventilstellung 0..100 %, DB2 Vorlauftemperatur 0..255 = 20..80 °C oder am Gerät
+// eingestellte Solltemperatur 0..255 = 10..30 °C (DB0.1 TS), DB1 Raumtemperatur 0..255 = 10..30 °C oder Fehlercode
+// (DB0.0 FL), DB0: MST Bit 7, STR Bit 6, LRN Bit 3, BLS Bit 2, TS Bit 1, FL Bit 0.
+// Gateway -> Antrieb (adressiert): DB3 Ventilstellung, DB2 Solltemperatur für das Display 0..255 = 10..30 °C,
+// DB1 MC Bit 6 + Aufwachzyklus Bit 5..0, DB0 Displaydrehung Bit 5..4, LRN Bit 3, Tastensperre Bit 2, Service Bit 1..0.
+#define A52004_DB0_BLC 0x04 // Tasten am Gerät sperren
+#define A52004_DB0_SER 0x03 // Service: 1 = Ventil öffnen, 2 = Initialisierung, 3 = Ventil schließen
+
+// KO_5 Fehlercode, KO_6 Vorlauf- bzw. am Gerät eingestellte Solltemperatur, KO_7 Ventilstellung, KO_8 Raumtemperatur,
+// KO_9 Statusbits (DB0). Rückgabe wie handle4BS_A5_20_01.
+inline uint8_t handle4BS_A5_20_04(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  const uint8_t *d = f_Pkt_st->u8DataBuffer; // d[1] = DB3 ... d[4] = DB0
+
+  if (!(d[4] & 0x08)) {
+    if (d[4] & 0x80) {
+      logDebug("4BS", "A5-20-04 teach-in request");
+      return TEACHIN_A52004;
+    }
+    logDebug("4BS", "A5-20-04 teach-in without EEP ignored");
+    return 0;
+  }
+
+  uint8_t pos = d[1] > 100 ? 100 : d[1];
+  KoENO_GO_BASE__8.value(pos, Dpt(5, 1));
+
+  float temp;
+  if (d[4] & 0x02) {
+    temp = 10.0f + d[2] * 20.0f / 255.0f; // am Gerät eingestellte Solltemperatur
+    logDebug("4BS", "A5-20-04 local setpoint: %.1f", temp);
+  } else {
+    temp = 20.0f + d[2] * 60.0f / 255.0f; // Vorlauftemperatur
+    logDebug("4BS", "A5-20-04 feed temperature: %.1f", temp);
+  }
+  KoENO_GO_BASE__7.value(temp, Dpt(9, 1));
+
+  if (d[4] & 0x01) {
+    KoENO_GO_BASE__6.value(d[3], Dpt(5, 10));
+    logDebug("4BS", "A5-20-04 failure code: %u", d[3]);
+  } else {
+    float room = 10.0f + d[3] * 20.0f / 255.0f;
+    KoENO_GO_BASE__9.value(room, Dpt(9, 1));
+    logDebug("4BS", "A5-20-04 room temperature: %.1f", room);
+  }
+
+  KoENO_GO_BASE__10.value(d[4], Dpt(5, 10));
+  logDebug("4BS", "A5-20-04 Pos: %u%% Status: %02X", pos, d[4]);
+  return msg_A5_20_04;
+}
+
+// A5-20-06 Energieautarker Heizkörper-Stellantrieb mit lokaler Verstellung (bidirektional, z.B. Micropelt MVA-005).
+// Antrieb -> Gateway: DB3 Ventilstellung 0..100 %, DB2 Bit 7 LOM / Bit 6..0 LO (LOM = 1: Solltemperatur inkl. Verstellung
+// 0..80 = 0..40 °C, LOM = 0: Verstellung -5..+5 K als 7-Bit-Zweierkomplement), DB1 Temperatur 0,5 °C/Bit (Umgebung
+// oder Vorlauf je nach DB0.7 TSL, 0xFF = Fühlerfehler), DB0: TSL, ENIE, ES, DWO, LRN, RCE, RSS, ACO (Bit 7..0).
+// Gateway -> Antrieb: DB3 Sollwert (0..100 % oder 0..80 = 0..40 °C), DB2 Raumtemperatur 0..160 = 0..40 °C (0 = interner
+// Fühler), DB1 REF Bit 7, RFC Bit 6..4, SB Bit 3, SPS Bit 2, TSL Bit 1, SBY Bit 0, DB0 = 0x08.
+#define A52006_DB1_REF 0x80 // Referenzfahrt
+#define A52006_DB1_SB 0x08  // Sommerbetrieb
+#define A52006_DB1_SPS 0x04 // Sollwert ist eine Temperatur
+#define A52006_DB1_TSL 0x02 // Vorlauftemperatur statt Umgebungstemperatur melden
+#define A52006_DB1_SBY 0x01 // Standby
+
+// KO_6 Temperatur, KO_7 Ventilstellung, KO_8 lokale Verstellung (LOM 1: Solltemperatur in °C, LOM 0: Offset in K),
+// KO_9 Statusbits (DB0). Rückgabe wie handle4BS_A5_20_01.
+inline uint8_t handle4BS_A5_20_06(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  const uint8_t *d = f_Pkt_st->u8DataBuffer; // d[1] = DB3 ... d[4] = DB0
+
+  if (!(d[4] & 0x08)) {
+    if (d[4] & 0x80) {
+      logDebug("4BS", "A5-20-06 teach-in request");
+      return TEACHIN_A52006;
+    }
+    logDebug("4BS", "A5-20-06 teach-in without EEP ignored");
+    return 0;
+  }
+
+  uint8_t pos = d[1] > 100 ? 100 : d[1];
+  KoENO_GO_BASE__8.value(pos, Dpt(5, 1));
+
+  if (d[3] != 0xFF)
+    KoENO_GO_BASE__7.value(d[3] / 2.0f, Dpt(9, 1));
+  else
+    logInfo("4BS", "A5-20-06 temperature sensor failure");
+
+  uint8_t lo = d[2] & 0x7F;
+  float local;
+  if (d[2] & 0x80) {
+    local = lo / 2.0f; // Solltemperatur inkl. lokaler Verstellung
+  } else {
+    local = (lo & 0x40) ? (int)lo - 128 : lo; // Offset in K
+  }
+  KoENO_GO_BASE__9.value(local, Dpt(9, 1));
+
+  KoENO_GO_BASE__10.value(d[4], Dpt(5, 10));
+  logDebug("4BS", "A5-20-06 Pos: %u%% Temp: %.1f %s: %.1f Status: %02X", pos, d[3] / 2.0f,
+           (d[2] & 0x80) ? "Setpoint" : "Offset", local, d[4]);
+  return msg_A5_20_06;
 }
 
 inline void handle4BS_A5_04_02(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {

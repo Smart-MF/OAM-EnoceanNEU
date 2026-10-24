@@ -346,7 +346,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00109" RefId="%AID%_O-%TT%%CC%001" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="CH2 Status" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-11" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00110" RefId="%AID%_O-%TT%%CC%001" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Jalousie Winkel" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-4" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00111" RefId="%AID%_O-%TT%%CC%001" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="schalten Aktor CH2" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
-              <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00112" RefId="%AID%_O-%TT%%CC%001" Name="INP_CH_1_DPT_09" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Set Temperatur" Priority="Low" ObjectSize="2 Bytes" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00112" RefId="%AID%_O-%TT%%CC%001" Name="INP_CH_1_DPT_09" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Solltemperatur Display" Priority="Low" ObjectSize="2 Bytes" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00113" RefId="%AID%_O-%TT%%CC%001" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Fenster Status 1" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-19" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00114" RefId="%AID%_O-%TT%%CC%001" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Fenster Status" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%001_R-%TT%%CC%00115" RefId="%AID%_O-%TT%%CC%001" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Abfrage Messwerte (0=Energy / 1=Power)" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-17" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
@@ -358,7 +358,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00205" RefId="%AID%_O-%TT%%CC%002" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Hum" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-7" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00206" RefId="%AID%_O-%TT%%CC%002" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="CH1 Status" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-11" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00207" RefId="%AID%_O-%TT%%CC%002" Name="INP_CH_1_DPT_05" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Register Bits" Priority="Low" ObjectSize="1 Byte" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
-              <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00208" RefId="%AID%_O-%TT%%CC%002" Name="INP_CH_1_DPT_05" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Kommunikations-Intervall" Priority="Low" ObjectSize="1 Byte" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00208" RefId="%AID%_O-%TT%%CC%002" Name="INP_CH_1_DPT_05" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Aufwachzyklus/Funkintervall" Priority="Low" ObjectSize="1 Byte" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00209" RefId="%AID%_O-%TT%%CC%002" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Reference Run" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00210" RefId="%AID%_O-%TT%%CC%002" Name="OUT_CH_1_DPT_19" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Fenster Status 2" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-19" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%002_R-%TT%%CC%00211" RefId="%AID%_O-%TT%%CC%002" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Abfrage Switch Status" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-17" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
@@ -371,7 +371,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%003_R-%TT%%CC%00306" RefId="%AID%_O-%TT%%CC%003" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="closed/open" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-19" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%003_R-%TT%%CC%00307" RefId="%AID%_O-%TT%%CC%003" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Alarm" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-5" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%003_R-%TT%%CC%00308" RefId="%AID%_O-%TT%%CC%003" Name="INP_CH_1_DPT_09" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Raum Temperatur" Priority="Low" ObjectSize="2 Bytes" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
-              <ComObjectRef Id="%AID%_O-%TT%%CC%003_R-%TT%%CC%00309" RefId="%AID%_O-%TT%%CC%003" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Button Lock" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%003_R-%TT%%CC%00309" RefId="%AID%_O-%TT%%CC%003" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Tastensperre" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <!-- Base 4 -->
               <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00401" RefId="%AID%_O-%TT%%CC%004" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Battery" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00402" RefId="%AID%_O-%TT%%CC%004" Name="OUT_CH_1_DPT_03" Text="Output B  Kanal %C%: {{0:-}}" FunctionText="Dimming" Priority="Low" ObjectSize="4 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-3-7" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
@@ -394,6 +394,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%005_R-%TT%%CC%00507" RefId="%AID%_O-%TT%%CC%005" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="LUX" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-4" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%005_R-%TT%%CC%00508" RefId="%AID%_O-%TT%%CC%005" Name="OUT_CH_1_DPT_12" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Counter State" Priority="Low" ObjectSize="4 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-12-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%005_R-%TT%%CC%00509" RefId="%AID%_O-%TT%%CC%005" Name="OUT_CH_1_DPT_13" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Messwert (Wh)" Priority="Low" ObjectSize="4 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-13-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%005_R-%TT%%CC%00510" RefId="%AID%_O-%TT%%CC%005" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Referenzfahrt" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <!-- Base  6 -->
               <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Temperatur vom Device" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00602" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Comfort Index" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
@@ -401,7 +402,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00604" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_03" Text="Output AB Kanal %C%: {{0:-}}" FunctionText="Dimming" Priority="Low" ObjectSize="4 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-3-7" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00605" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_01" Text="Output AB Kanal %C%: {{0:-}}" FunctionText="Lamelle/Stopp" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-9" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00606" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Info Set Point Temperatur" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
-              <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00607" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Vorlauf-Temperatur" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00607" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Vorlauf-/Solltemperatur" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00608" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_13" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Messwert (KWh)" Priority="Low" ObjectSize="4 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-13-13" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%006_R-%TT%%CC%00609" RefId="%AID%_O-%TT%%CC%006" Name="OUT_CH_1_DPT_14" Text="Output    Kanal %C%: {{0:-}}" FunctionText="ACC_X (g)" Priority="Low" ObjectSize="4 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-14-0" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <!-- Base  7 -->
@@ -829,88 +830,46 @@
                                   <!-- A5-20-04 -->
                                   <when test="119">
                                     <ParameterSeparator Id="%AID%_PS-2" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-3" Text="Heizkörperstellantrieb" />
-                                    <ParameterSeparator Id="%AID%_PS-4" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-5" Text="Definiert welche Werte vom Aktor an das Gateway gesendet werden" />
-                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%071_R-%TT%%CC%07101" IndentLevel="1"  /> <!-- MC -->
-                                    <ParameterSeparator Id="%AID%_PS-6" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-7" Text="Definert die Display Orientierung" />
-                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%072_R-%TT%%CC%07201" IndentLevel="1"  /> <!-- DSO -->
-                                    <ParameterSeparator Id="%AID%_PS-10" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-20" Text="Definiert die Zeit alle wieviel sec/hrs das Stellventil daten an das Gateway schickt (default 10min)"  />
-                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%073_R-%TT%%CC%07301" IndentLevel="1"  /> <!-- WCU -->
-                                    <ParameterSeparator Id="%AID%_PS-21" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-11" Text="KO Status byte:" />
-                                    <ParameterSeparator Id="%AID%_PS-12" Text="Bit1: FL   (Failure) 1 = Fehler erkannt" />
-                                    <ParameterSeparator Id="%AID%_PS-13" Text="Bit2: TS   (Temp Sel) 0 = Feed Temp  /  1 = Temp Set-Point" />
-                                    <ParameterSeparator Id="%AID%_PS-14" Text="Bit3: BLS  (Button Lock Status) 0 = Unlocked  /  1 = Locked" />
-                                    <ParameterSeparator Id="%AID%_PS-15" Text="Bit4: LRN  (TeachIn Bit) 1 = Datenpaket" />
-                                    <ParameterSeparator Id="%AID%_PS-16" Text="Bit5: NA" />
-                                    <ParameterSeparator Id="%AID%_PS-17" Text="Bit6: NA" />
-                                    <ParameterSeparator Id="%AID%_PS-18" Text="Bit7: STR  (Status Request)" />
-                                    <ParameterSeparator Id="%AID%_PS-19" Text="Bit8: MST  (Measurement Status) zeigt ob Temp Messung ist aktiv: 0 = Active" />
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00014" /> <!-- Set Pos 0...100% -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00112" /> <!-- Set Temp -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00208" /> <!-- Com Interval-->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00309" /> <!-- Button Lock -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%004_R-%TT%%CC%00408" /> <!-- Servcie CMD -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00701" /> <!-- Aktuelle Ventil Pos -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00901" /> <!-- Status Bits -->
-                                    <choose ParamRefId="%AID%_UP-%TT%%CC%071_R-%TT%%CC%07101">
-                                      <when test="0">
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00607" /> <!-- Feed Temperatur -->
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%008_R-%TT%%CC%00804" /> <!-- Raum Temp -->
-                                      </when>
-                                      <when test="1">
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%005_R-%TT%%CC%00506" /> <!-- Failure Code -->
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00606" /> <!-- Info SetPoint Temp -->
-                                      </when>
-                                    </choose>  
+                                    <ParameterSeparator Id="%AID%_PS-3" Text="Heizkörper-Stellantrieb mit Display (bidirektional)" UIHint="Headline" />
+                                    <ParameterSeparator Id="%AID%_PS-5" Text="Das Gateway antwortet dem Antrieb nach jedem seiner Telegramme. Werte von KNX werden deshalb erst mit dem nächsten Telegramm des Antriebs übertragen." />
+                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%073_R-%TT%%CC%07301" IndentLevel="1" HelpContext="ENO-A52004" /> <!-- WUC -->
+                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%072_R-%TT%%CC%07201" IndentLevel="1" HelpContext="ENO-A52004" /> <!-- DSO -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00014" /> <!-- Ventilstellung -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00112" /> <!-- Solltemperatur für das Display -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00208" /> <!-- Aufwachzyklus -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00309" /> <!-- Tastensperre -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%004_R-%TT%%CC%00408" /> <!-- Service-Befehl -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%005_R-%TT%%CC%00506" /> <!-- Fehlercode -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00607" /> <!-- Vorlauf- bzw. am Gerät eingestellte Solltemperatur -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00701" /> <!-- Ventilstellung -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%008_R-%TT%%CC%00804" /> <!-- Raumtemperatur -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00901" /> <!-- Statusbits -->
                                   </when>
                                   <!-- A5-20-06 -->
                                   <when test="121">
                                     <ParameterSeparator Id="%AID%_PS-2" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-3" Text="Energieautarker Heizkörperstellantrieb" />
-                                    <ParameterSeparator Id="%AID%_PS-2" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-4" Text="Default Einstellung: kann per KNX KO mit dem Wert KO_val über eine Logik angepasst werden" />
-                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%064_R-%TT%%CC%06401" IndentLevel="1"  /> <!-- RFC -->
-                                    <ParameterSeparator Id="%AID%_PS-5" Text="Ein dauerhaft niedriges Sende-Intervall entlädt den internen Speicher überproportional!" />
-                                    <ParameterSeparator Id="%AID%_PS-2" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-6" Text="Definiert ob das Ventil manuell gesteuert(0.100%), oder geregelt auf eine Soll-Temp(°C) arbeitet" />
-                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%065_R-%TT%%CC%06501" IndentLevel="1"  /> <!-- SPS -->
-                                    <ParameterSeparator Id="%AID%_PS-2" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-7" Text="Definiert welcher Sensor im Ventil seine aktuelle Temperatur liefert:" />
-                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%066_R-%TT%%CC%06601" IndentLevel="1"  /> <!-- TSL -->
-                                    <ParameterSeparator Id="%AID%_PS-10" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-11" Text="KO Status byte:" />
-                                    <ParameterSeparator Id="%AID%_PS-12" Text="Bit1: ACO  (Ventilerkennung) = Der Stellantrieb erkennt im Rahmen der Inbetriebnahme, ob er an einem Ventil montiert ist" />
-                                    <ParameterSeparator Id="%AID%_PS-13" Text="Bit2: RSS  (Radio Signal Strength) = Warnung bei schwachem Radiosignal" />
-                                    <ParameterSeparator Id="%AID%_PS-14" Text="Bit3: RCE  (Radio Comm Errors) = Anzeige bei Übertragungsfehlern" />
-                                    <ParameterSeparator Id="%AID%_PS-15" Text="Bit4: LRNB (Learn Bit) = Teachin Nachricht Bit" />
-                                    <ParameterSeparator Id="%AID%_PS-16" Text="Bit5: DWO  (Fenster-Auf Erkennung) = Die Funktion Fenster-Auf-Erkennung erkennt innerhalb von 2 Minuten einen Temperatur-Abfall am lokalen Umgebungstemperatur Sensor." />
-                                    <ParameterSeparator Id="%AID%_PS-17" Text="Bit6: ES   (Energy Storage) = Der Antrieb zeigt an, dass durch den Betrieb langfristig mehr Energie verbraucht als erzeugt wurde" />
-                                    <ParameterSeparator Id="%AID%_PS-18" Text="Bit7: ENIE (Harvesting Status) = Zeigt an, ob gerade Energie erzeugt wird" />
-                                    <ParameterSeparator Id="%AID%_PS-19" Text="Bit8: TSL  (Temperatur Selection) Welcher interne Temp-Sensor sendet seine Werte. Umgebungssensor oder Vorlauftemperatur" />
-                                    <ParameterSeparator Id="%AID%_PS-20" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-21" Text="SB  (Sommerbit) = Erhält der Stellantrieb vom externen Funkpartner das Signal „Sommerbetrieb Ein (1)“, dann wird das Funkintervall auf 8 Stunden erhöht." />
-                                    <ParameterSeparator Id="%AID%_PS-22" Text="SBY (Standby) = Bei Einsatz in dauerhaft unbeheizten Räumen kann sich der interne Energiespeicher des Stellantriebs nicht nachladen, ein Zustand den es zu vermeiden gilt." />
-                                    <ParameterSeparator Id="%AID%_PS-23" Text="REF (Referenzlauf) = Mit dem Setzen des REF Bits führt der Antrieb einen Referenzlauf aus, wodurch der Motor eine Nullpunktkorrektor erfährt. Anschließend startet der Antrieb neu." />
+                                    <ParameterSeparator Id="%AID%_PS-3" Text="Energieautarker Heizkörper-Stellantrieb (bidirektional)" UIHint="Headline" />
+                                    <ParameterSeparator Id="%AID%_PS-5" Text="Das Gateway antwortet dem Antrieb nach jedem seiner Telegramme. Werte von KNX werden deshalb erst mit dem nächsten Telegramm des Antriebs übertragen." />
+                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%065_R-%TT%%CC%06501" IndentLevel="1" HelpContext="ENO-A52006" /> <!-- SPS -->
+                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%064_R-%TT%%CC%06401" IndentLevel="1" HelpContext="ENO-A52006" /> <!-- RFC -->
+                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%066_R-%TT%%CC%06601" IndentLevel="1" HelpContext="ENO-A52006" /> <!-- TSL -->
                                     <choose ParamRefId="%AID%_UP-%TT%%CC%065_R-%TT%%CC%06501">
                                       <when test="0">
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00014" />  <!-- Set Pos 0...100% -->
+                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00014" />  <!-- Sollwert Ventilstellung 0..100 % -->
                                       </when>
                                       <when test="1">
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00013" />  <!-- Set Temp -->
+                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00013" />  <!-- Solltemperatur -->
                                       </when>
                                     </choose>
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00104" /> <!-- Sommer Umschaltung-->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00208" /> <!-- Refenrence RUN-->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00308" /> <!-- Raum Temperatur -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00104" /> <!-- Sommerbetrieb -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00208" /> <!-- Funkintervall -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00308" /> <!-- Raumtemperatur -->
                                     <ComObjectRefRef RefId="%AID%_O-%TT%%CC%004_R-%TT%%CC%00406" /> <!-- Standby -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" /> <!-- Temperatur am Ventil  -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%008_R-%TT%%CC%00801" /> <!-- ATemp Offset -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00701" /> <!-- Aktuelle Ventil Pos -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00901" /> <!-- Status Bits -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%005_R-%TT%%CC%00510" /> <!-- Referenzfahrt -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" /> <!-- Temperatur am Ventil -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00701" /> <!-- Ventilstellung -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%008_R-%TT%%CC%00801" /> <!-- Lokale Verstellung -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00901" /> <!-- Statusbits -->
                                   </when>
                                 </choose>
                               </when>

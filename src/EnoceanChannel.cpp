@@ -185,8 +185,8 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   logHexDebugP(senderId, 4);
   deviceSeen();
 
-  // Bidirektionale Geräte (EEP A5-20-01 oder Eltako FKS-SV) brauchen eine Antwort im Empfangsfenster
-  if (isHvacA52001()) {
+  // Bidirektionale Geräte (EEP A5-20-01/04/06 oder Eltako FKS-SV) brauchen eine Antwort im Empfangsfenster
+  if (hvacProfile() != HVAC_NONE) {
     handleHvac(pPacket);
     return true;
   }
@@ -273,62 +273,100 @@ bool EnoceanChannel::matchesDeviceId(const uint8_t id[4]) const {
   return memcmp(configuredId, id, 4) == 0;
 }
 
-// Kanal ist ein bidirektionaler Heizkörper-Stellantrieb A5-20-01: als EEP-Profil oder als Eltako FKS-SV.
-bool EnoceanChannel::isHvacA52001() const {
+// Bidirektionaler Heizkörper-Stellantrieb dieses Kanals (HVAC_*): EEP A5-20-01/04/06 oder Eltako FKS-SV (A5-20-01).
+uint8_t EnoceanChannel::hvacProfile() const {
   switch (ParamENO_CHProductsel) {
   case EEP_Profil:
-    return ParamENO_CHProfilSelection == u8RORG_4BS && ParamENO_CHProfilSelection4BS == A5_20 && ParamENO_CHProfil4BS20 == A5_20_01;
+    if (ParamENO_CHProfilSelection != u8RORG_4BS || ParamENO_CHProfilSelection4BS != A5_20)
+      return HVAC_NONE;
+    switch (ParamENO_CHProfil4BS20) {
+    case A5_20_01:
+      return HVAC_A52001;
+    case A5_20_04:
+      return HVAC_A52004;
+    case A5_20_06:
+      return HVAC_A52006;
+    default:
+      return HVAC_NONE;
+    }
   case Hersteller_Eltako:
-    return ParamENO_CHProductselType == Eltako_Heizung && ParamENO_CHProductselTypeHei == Eltako_Heizung_FKS_SV;
+    if (ParamENO_CHProductselType == Eltako_Heizung && ParamENO_CHProductselTypeHei == Eltako_Heizung_FKS_SV)
+      return HVAC_A52001;
+    return HVAC_NONE;
   default:
-    return false;
+    return HVAC_NONE;
+  }
+}
+
+static const char *hvacName(uint8_t profile) {
+  switch (profile) {
+  case HVAC_A52001:
+    return "A5-20-01";
+  case HVAC_A52004:
+    return "A5-20-04";
+  case HVAC_A52006:
+    return "A5-20-06";
+  default:
+    return "HVAC";
   }
 }
 
 // Telegramm des Antriebs: KOs aktualisieren und die Antwort vorbereiten (Teach-In-Antwort oder Sollwert).
 void EnoceanChannel::handleHvac(PACKET_SERIAL_TYPE_ *pPacket) {
   if (pPacket->u8DataBuffer[0] != u8RORG_4BS) {
-    logDebugP("A5-20-01: R-ORG %02X ignored", pPacket->u8DataBuffer[0]);
+    logDebugP("%s: R-ORG %02X ignored", hvacName(hvacProfile()), pPacket->u8DataBuffer[0]);
     return;
   }
 
   _hvacRxTime = millis();
   EnoceanModule::extractSenderId(pPacket, _hvacDest);
 
-  switch (handle4BS_A5_20_01(pPacket, _channelIndex)) {
-  case TEACHIN_A52001:
-    prepareHvacTeachResponse(pPacket);
+  uint8_t result = 0;
+  switch (hvacProfile()) {
+  case HVAC_A52001:
+    result = handle4BS_A5_20_01(pPacket, _channelIndex);
     break;
-  case msg_A5_20_01:
-    prepareHvacReply(pPacket);
+  case HVAC_A52004:
+    result = handle4BS_A5_20_04(pPacket, _channelIndex);
+    break;
+  case HVAC_A52006:
+    result = handle4BS_A5_20_06(pPacket, _channelIndex);
     break;
   default:
-    break;
+    return;
   }
+
+  if (result == TEACHIN_A52001 || result == TEACHIN_A52004 || result == TEACHIN_A52006)
+    prepareHvacTeachResponse(pPacket);
+  else if (result != 0)
+    prepareHvacReply(pPacket);
 }
 
 // Das Gateway hat im Teach-In-Fenster ein Lerntelegramm diesem Kanal zugeordnet. Bidirektionale Geräte erwarten
 // darauf eine Teach-In-Antwort, sonst brechen sie das Einlernen ab. Sie wird hier sofort gesendet (der Aufrufer
 // verarbeitet das Telegramm danach nicht weiter, der Empfangspuffer darf also überschrieben werden).
 void EnoceanChannel::teachInReceived(PACKET_SERIAL_TYPE_ *pPacket) {
-  if (!isHvacA52001()) {
-    logInfoP("Teach-in: channel is not configured as A5-20-01/FKS-SV, no teach-in response");
+  if (hvacProfile() == HVAC_NONE) {
+    logInfoP("Teach-in: channel has no bidirectional profile, no teach-in response");
     return;
   }
   handleHvac(pPacket);
   sendPendingHvacReply();
 }
 
-// Sendet eine vorbereitete Antwort an das bidirektionale Gerät. Die Teach-In-Antwort geht adressiert an den Antrieb.
+// Sendet eine vorbereitete Antwort an den Antrieb. Teach-In-Antworten und Antworten an A5-20-04 (laut EEP Unicast)
+// gehen adressiert an den Antrieb, die übrigen als Broadcast.
 void EnoceanChannel::sendPendingHvacReply() {
   if (!_hvacReplyPending)
     return;
   _hvacReplyPending = false;
 
-  bool ok = _hvacReplyIsTeach ? openknxEnoceanModule.send4BSTelegram(_channelIndex, _hvacReply, "A5-20-01 teach-in response", _hvacDest)
-                              : openknxEnoceanModule.send4BSTelegram(_channelIndex, _hvacReply, "A5-20-01 reply");
-  logInfoP("A5-20-01 %s %02X %02X %02X %02X sent %u ms after receive%s", _hvacReplyIsTeach ? "teach-in response" : "reply",
-           _hvacReply[0], _hvacReply[1], _hvacReply[2], _hvacReply[3], (uint32_t)(millis() - _hvacRxTime), ok ? "" : " (FAILED)");
+  const char *name = hvacName(hvacProfile());
+  bool addressed = _hvacReplyIsTeach || hvacProfile() == HVAC_A52004;
+  bool ok = openknxEnoceanModule.send4BSTelegram(_channelIndex, _hvacReply, _hvacReplyIsTeach ? "HVAC teach-in response" : "HVAC reply",
+                                                 addressed ? _hvacDest : nullptr);
+  logInfoP("%s %s %02X %02X %02X %02X sent %u ms after receive%s", name, _hvacReplyIsTeach ? "teach-in response" : "reply", _hvacReply[0],
+           _hvacReply[1], _hvacReply[2], _hvacReply[3], (uint32_t)(millis() - _hvacRxTime), ok ? "" : " (FAILED)");
   if (ok && !_hvacReplyIsTeach)
     _hvacOneShot = 0;
 }
@@ -342,99 +380,205 @@ void EnoceanChannel::prepareHvacTeachResponse(PACKET_SERIAL_TYPE_ *pPacket) {
   _hvacReply[3] = 0xF0;
   _hvacReplyIsTeach = true;
   _hvacReplyPending = true;
-  logInfoP("A5-20-01 teach-in request, sending response");
+  logInfoP("%s teach-in request, sending response", hvacName(hvacProfile()));
 }
 
-// Antwort auf ein Datentelegramm: DB3 Sollwert, DB2 Raumtemperatur (von KNX, sonst die gemessene Temperatur des
-// Antriebs zurück), DB1 Befehle, DB0 = Datentelegramm. Ohne Sollwert von KNX (z.B. nach einem Neustart) wird nicht
-// geantwortet, der Antrieb behält dann sein eigenes Verhalten.
+// Antwort auf ein Datentelegramm (Belegung siehe handle4BS_A5_20_xx in 4BS_Telegram.h). Ohne Sollwert von KNX (z.B.
+// nach einem Neustart) wird nicht geantwortet, der Antrieb behält dann sein eigenes Verhalten.
 void EnoceanChannel::prepareHvacReply(PACKET_SERIAL_TYPE_ *pPacket) {
+  const uint8_t *d = pPacket->u8DataBuffer; // d[1] = DB3 ... d[4] = DB0
+  uint8_t profile = hvacProfile();
+
+  // Am Gerät verstellte Solltemperatur übernehmen, damit die Antwort sie nicht gleich wieder zurücksetzt
+  if (profile == HVAC_A52004 && (d[4] & 0x02)) {
+    _hvacRoomTemp = d[2];
+    _hvacRoomTempValid = true;
+  }
+  if (profile == HVAC_A52006 && _hvacSetpointValid && ParamENO_CHA52006SPS && (d[2] & 0x80) && (d[2] & 0x7F) <= 80)
+    _hvacSetpoint = d[2] & 0x7F;
+
   if (!_hvacSetpointValid) {
-    logDebugP("A5-20-01: no setpoint from KNX yet, no reply");
+    logDebugP("%s: no setpoint from KNX yet, no reply", hvacName(profile));
     return;
   }
 
   _hvacReply[0] = _hvacSetpoint;
-  // DB2 ist in Richtung 2 invertiert (255..0 = 0..40 °C), die gemessene Temperatur (DB1) in Richtung 1 linear
-  _hvacReply[1] = _hvacRoomTempValid ? _hvacRoomTemp : (uint8_t)(255 - pPacket->u8DataBuffer[3]);
-  _hvacReply[2] = _hvacFlags | _hvacOneShot | (ParamENO_CHA52001SPS ? A52001_DB1_SPS : 0);
-  _hvacReply[3] = 0x08;
+  switch (profile) {
+  case HVAC_A52001:
+    // DB2 ist in Richtung 2 invertiert (255..0 = 0..40 °C), die gemessene Temperatur (DB1) in Richtung 1 linear
+    _hvacReply[1] = _hvacRoomTempValid ? _hvacRoomTemp : (uint8_t)(255 - d[3]);
+    _hvacReply[2] = _hvacFlags | _hvacOneShot | (ParamENO_CHA52001SPS ? A52001_DB1_SPS : 0);
+    _hvacReply[3] = 0x08;
+    break;
+
+  case HVAC_A52004: {
+    // DB2 Solltemperatur nur für das Display (Standard 20 °C), DB1 Aufwachzyklus (KO oder ETS), Messung immer aktiv
+    uint8_t wuc = (_hvacInterval != HVAC_INTERVAL_ETS) ? _hvacInterval : ParamENO_CHA52004WCU;
+    _hvacReply[1] = _hvacRoomTempValid ? _hvacRoomTemp : 128;
+    _hvacReply[2] = wuc & 0x3F;
+    _hvacReply[3] = ((ParamENO_CHA52004DSO & 0x03) << 4) | 0x08 | _hvacFlags | _hvacOneShot;
+    break;
+  }
+
+  case HVAC_A52006: {
+    // DB2 0 = interner Fühler des Antriebs, DB1 Funkintervall (KO oder ETS)
+    uint8_t rfc = (_hvacInterval != HVAC_INTERVAL_ETS) ? _hvacInterval : ParamENO_CHA52006RFC;
+    _hvacReply[1] = _hvacRoomTempValid ? _hvacRoomTemp : 0;
+    _hvacReply[2] = _hvacOneShot | ((rfc & 0x07) << 4) | _hvacFlags | (ParamENO_CHA52006SPS ? A52006_DB1_SPS : 0) |
+                    (ParamENO_CHA52006TSL ? A52006_DB1_TSL : 0);
+    _hvacReply[3] = 0x08;
+    break;
+  }
+
+  default:
+    return;
+  }
   _hvacReplyIsTeach = false;
   _hvacReplyPending = true;
 }
 
-// Temperatur in °C auf den A5-20-01-Wertebereich 0..255 = 0..40 °C umrechnen.
-static uint8_t hvacTempToRaw(double temp) {
-  if (temp < 0.0)
-    temp = 0.0;
-  if (temp > 40.0)
-    temp = 40.0;
-  return (uint8_t)round(temp * 255.0 / 40.0);
+// Temperatur in °C auf einen linearen Wertebereich raw 0..rawMax = tMin..tMax umrechnen (begrenzt).
+static uint8_t hvacTempToRaw(double temp, double tMin, double tMax, uint8_t rawMax) {
+  if (temp < tMin)
+    temp = tMin;
+  if (temp > tMax)
+    temp = tMax;
+  return (uint8_t)round((temp - tMin) * rawMax / (tMax - tMin));
 }
 
-// KNX -> Antrieb (A5-20-01): Werte nur merken, gesendet werden sie mit der nächsten Antwort (prepareHvacReply).
-// KO_0 Sollwert (Temperatur DPT 9.001 oder Ventilstellung DPT 5.001, je nach ETS), KO_1 Sommerbetrieb, KO_2
-// Referenzfahrt, KO_3 Raumtemperatur, KO_4 Service (1 = Ventil schließen, 2 = Ventil öffnen, 3 = Hub einstellen).
-// Liefert false, wenn der Kanal kein A5-20-01 ist.
-bool EnoceanChannel::processKnxHvac(int koIndex, GroupObject &ko) {
-  if (!isHvacA52001())
-    return false;
+// Setzt oder löscht Bits in einem Flag-Byte.
+static void hvacSetBits(uint8_t &flags, uint8_t bits, bool on) {
+  if (on)
+    flags |= bits;
+  else
+    flags &= ~bits;
+}
 
-  switch (koIndex) {
-  case ENO_KoGO_BASE__1:
-    if (ParamENO_CHA52001SPS) {
+// KNX -> Antrieb: Werte nur merken, gesendet werden sie mit der nächsten Antwort (prepareHvacReply).
+// KO_0 Sollwert (Temperatur DPT 9.001 oder Ventilstellung DPT 5.001, je nach ETS) bei allen Profilen, außerdem:
+// A5-20-01: KO_1 Sommerbetrieb, KO_2 Referenzfahrt, KO_3 Raumtemperatur, KO_4 Service (1 = Ventil schließen,
+//           2 = Ventil öffnen, 3 = Hub einstellen).
+// A5-20-04: KO_1 Solltemperatur für das Display, KO_2 Aufwachzyklus (0..63), KO_3 Tastensperre, KO_4 Service
+//           (1 = Ventil öffnen, 2 = Initialisierung, 3 = Ventil schließen).
+// A5-20-06: KO_1 Sommerbetrieb, KO_2 Funkintervall (0..7), KO_3 Raumtemperatur, KO_4 Standby, KO_5 Referenzfahrt.
+// Liefert false, wenn der Kanal kein bidirektionales Profil hat.
+bool EnoceanChannel::processKnxHvac(int koIndex, GroupObject &ko) {
+  uint8_t profile = hvacProfile();
+  if (profile == HVAC_NONE)
+    return false;
+  const char *name = hvacName(profile);
+
+  if (koIndex == ENO_KoGO_BASE__1) {
+    bool tempMode = (profile == HVAC_A52001 && ParamENO_CHA52001SPS) || (profile == HVAC_A52006 && ParamENO_CHA52006SPS);
+    if (tempMode) {
       double temp = ko.value(Dpt(9, 1));
-      _hvacSetpoint = hvacTempToRaw(temp);
-      logInfoP("A5-20-01 setpoint %.1f °C (sent with next reply)", temp);
+      _hvacSetpoint = hvacTempToRaw(temp, 0.0, 40.0, profile == HVAC_A52001 ? 255 : 80);
+      logInfoP("%s setpoint %.1f °C (sent with next reply)", name, temp);
     } else {
       _hvacSetpoint = (uint8_t)ko.value(Dpt(5, 1)); // 0..100 %
-      logInfoP("A5-20-01 valve position %u %% (sent with next reply)", _hvacSetpoint);
+      logInfoP("%s valve position %u %% (sent with next reply)", name, _hvacSetpoint);
     }
     _hvacSetpointValid = true;
-    break;
+    return true;
+  }
 
-  case ENO_KoGO_BASE__2:
-    if ((bool)ko.value(Dpt(1, 1)))
-      _hvacFlags |= A52001_DB1_SB;
-    else
-      _hvacFlags &= ~A52001_DB1_SB;
-    logInfoP("A5-20-01 summer mode %u", (_hvacFlags & A52001_DB1_SB) != 0);
-    break;
-
-  case ENO_KoGO_BASE__3:
-    if ((bool)ko.value(Dpt(1, 1))) {
-      _hvacOneShot |= A52001_DB1_RIN;
-      logInfoP("A5-20-01 reference run requested");
+  switch (profile) {
+  case HVAC_A52001:
+    switch (koIndex) {
+    case ENO_KoGO_BASE__2:
+      hvacSetBits(_hvacFlags, A52001_DB1_SB, ko.value(Dpt(1, 1)));
+      logInfoP("%s summer mode %u", name, (_hvacFlags & A52001_DB1_SB) != 0);
+      break;
+    case ENO_KoGO_BASE__3:
+      if ((bool)ko.value(Dpt(1, 1))) {
+        _hvacOneShot |= A52001_DB1_RIN;
+        logInfoP("%s reference run requested", name);
+      }
+      break;
+    case ENO_KoGO_BASE__4: {
+      double temp = ko.value(Dpt(9, 1));
+      _hvacRoomTemp = 255 - hvacTempToRaw(temp, 0.0, 40.0, 255); // Richtung 2: 255..0 = 0..40 °C
+      _hvacRoomTempValid = true;
+      logDebugP("%s room temperature %.1f °C", name, temp);
+      break;
+    }
+    case ENO_KoGO_BASE__5: {
+      uint8_t cmd = (uint8_t)ko.value(Dpt(5, 10));
+      static const uint8_t service[] = {0, A52001_DB1_VC, A52001_DB1_VO, A52001_DB1_LFS};
+      _hvacOneShot = (_hvacOneShot & A52001_DB1_RIN) | (cmd < 4 ? service[cmd] : 0);
+      logInfoP("%s service command %u", name, cmd);
+      break;
+    }
+    default:
+      break;
     }
     break;
 
-  case ENO_KoGO_BASE__4: {
-    double temp = ko.value(Dpt(9, 1));
-    _hvacRoomTemp = 255 - hvacTempToRaw(temp); // Richtung 2: 255..0 = 0..40 °C
-    _hvacRoomTempValid = true;
-    logDebugP("A5-20-01 room temperature %.1f °C", temp);
+  case HVAC_A52004:
+    switch (koIndex) {
+    case ENO_KoGO_BASE__2: {
+      double temp = ko.value(Dpt(9, 1));
+      _hvacRoomTemp = hvacTempToRaw(temp, 10.0, 30.0, 255);
+      _hvacRoomTempValid = true;
+      logInfoP("%s display setpoint %.1f °C", name, temp);
+      break;
+    }
+    case ENO_KoGO_BASE__3: {
+      uint8_t wuc = (uint8_t)ko.value(Dpt(5, 10));
+      _hvacInterval = wuc > 63 ? 63 : wuc;
+      logInfoP("%s wake-up cycle %u", name, _hvacInterval);
+      break;
+    }
+    case ENO_KoGO_BASE__4:
+      hvacSetBits(_hvacFlags, A52004_DB0_BLC, ko.value(Dpt(1, 1)));
+      logInfoP("%s button lock %u", name, (_hvacFlags & A52004_DB0_BLC) != 0);
+      break;
+    case ENO_KoGO_BASE__5: {
+      uint8_t cmd = (uint8_t)ko.value(Dpt(5, 10));
+      _hvacOneShot = cmd < 4 ? cmd : 0;
+      logInfoP("%s service command %u", name, cmd);
+      break;
+    }
+    default:
+      break;
+    }
     break;
-  }
 
-  case ENO_KoGO_BASE__5: {
-    uint8_t cmd = (uint8_t)ko.value(Dpt(5, 10));
-    _hvacOneShot &= ~(A52001_DB1_VC | A52001_DB1_VO | A52001_DB1_LFS);
-    switch (cmd) {
-    case 1:
-      _hvacOneShot |= A52001_DB1_VC;
+  case HVAC_A52006:
+    switch (koIndex) {
+    case ENO_KoGO_BASE__2:
+      hvacSetBits(_hvacFlags, A52006_DB1_SB, ko.value(Dpt(1, 1)));
+      logInfoP("%s summer mode %u", name, (_hvacFlags & A52006_DB1_SB) != 0);
       break;
-    case 2:
-      _hvacOneShot |= A52001_DB1_VO;
+    case ENO_KoGO_BASE__3: {
+      uint8_t rfc = (uint8_t)ko.value(Dpt(5, 10));
+      _hvacInterval = rfc > 7 ? 7 : rfc;
+      logInfoP("%s radio interval %u", name, _hvacInterval);
       break;
-    case 3:
-      _hvacOneShot |= A52001_DB1_LFS;
+    }
+    case ENO_KoGO_BASE__4: {
+      double temp = ko.value(Dpt(9, 1));
+      _hvacRoomTemp = hvacTempToRaw(temp, 0.0, 40.0, 160);
+      if (_hvacRoomTemp == 0)
+        _hvacRoomTemp = 1; // 0 hieße "interner Fühler"
+      _hvacRoomTempValid = true;
+      logDebugP("%s room temperature %.1f °C", name, temp);
+      break;
+    }
+    case ENO_KoGO_BASE__5:
+      hvacSetBits(_hvacFlags, A52006_DB1_SBY, ko.value(Dpt(1, 1)));
+      logInfoP("%s standby %u", name, (_hvacFlags & A52006_DB1_SBY) != 0);
+      break;
+    case ENO_KoGO_BASE__6:
+      if ((bool)ko.value(Dpt(1, 1))) {
+        _hvacOneShot |= A52006_DB1_REF;
+        logInfoP("%s reference run requested", name);
+      }
       break;
     default:
       break;
     }
-    logInfoP("A5-20-01 service command %u", cmd);
     break;
-  }
 
   default:
     break;

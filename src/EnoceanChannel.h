@@ -10,6 +10,14 @@
 #define ENO_SETUP_MANUAL   0
 #define ENO_SETUP_TEACHIN  1
 
+// Bidirektionale Heizkörper-Stellantriebe (EnoceanChannel::hvacProfile)
+#define HVAC_NONE   0
+#define HVAC_A52001 1
+#define HVAC_A52004 2
+#define HVAC_A52006 3
+// _hvacInterval: Aufwachzyklus/Funkintervall aus der ETS verwenden (kein Wert per KNX)
+#define HVAC_INTERVAL_ETS 0xFF
+
 
 
 
@@ -51,25 +59,27 @@ private:
   uint32_t _lastSeen = 0;
   bool _failed = false;
 
-  // Bidirektionales Heizungsprofil A5-20-01: Werte von KNX, die mit der nächsten Antwort an das Gerät gehen.
+  // Bidirektionale Heizungsprofile A5-20-01/04/06: Werte von KNX, die mit der nächsten Antwort an das Gerät gehen.
   // Der Antrieb hört nur kurz nach seinem eigenen Telegramm zu, daher wird nie direkt bei KNX-Empfang gesendet.
-  uint8_t _hvacSetpoint = 0;    // DB3: Ventilstellung 0..100 % oder Solltemperatur 0..255 = 0..40 °C
-  uint8_t _hvacRoomTemp = 0;    // DB2: Raumtemperatur, invertiert 255..0 = 0..40 °C
-  uint8_t _hvacFlags = 0;       // DB1: dauerhafte Bits (Sommerbetrieb)
-  uint8_t _hvacOneShot = 0;     // DB1: Befehle, die nur einmal gesendet werden (Referenzfahrt, Service)
+  // Rohwerte jeweils in der Codierung des Profils (siehe handle4BS_A5_20_xx in 4BS_Telegram.h).
+  uint8_t _hvacSetpoint = 0;    // DB3: Ventilstellung 0..100 % oder Solltemperatur
+  uint8_t _hvacRoomTemp = 0;    // DB2: Raumtemperatur (01, 06) bzw. Display-Solltemperatur (04)
+  uint8_t _hvacFlags = 0;       // dauerhafte Bits (Sommerbetrieb, Standby, Tastensperre)
+  uint8_t _hvacOneShot = 0;     // Befehle, die nur einmal gesendet werden (Referenzfahrt, Service)
+  uint8_t _hvacInterval = HVAC_INTERVAL_ETS; // Aufwachzyklus (04) bzw. Funkintervall (06) per KNX
   bool _hvacSetpointValid = false; // ohne Sollwert von KNX wird nicht geantwortet
-  bool _hvacRoomTempValid = false; // sonst wird die vom Antrieb gemessene Temperatur zurückgegeben
+  bool _hvacRoomTempValid = false; // sonst Standardwert je Profil (01: gemessene Temperatur, 04: 20 °C, 06: interner Fühler)
   uint8_t _hvacReply[4] = {0, 0, 0, 0}; // vorbereitete Antwort (DB3..DB0), gesendet in loop()
   bool _hvacReplyPending = false;
   bool _hvacReplyIsTeach = false;
-  uint8_t _hvacDest[4] = {0, 0, 0, 0}; // ID des Antriebs (Ziel der adressierten Teach-In-Antwort)
+  uint8_t _hvacDest[4] = {0, 0, 0, 0}; // ID des Antriebs (Ziel adressierter Antworten)
   uint32_t _hvacRxTime = 0;            // Empfangszeit, für die Laufzeit der Antwort im Log
 
   void handleRocker(PACKET_SERIAL_TYPE_ *pPacket);
   void knxRockerPress(uint8_t db0, uint32_t releaseAfterMs);
   void deviceSeen();
   void checkFailure();
-  bool isHvacA52001() const;
+  uint8_t hvacProfile() const;
   void handleHvac(PACKET_SERIAL_TYPE_ *pPacket);
   void prepareHvacTeachResponse(PACKET_SERIAL_TYPE_ *pPacket);
   void prepareHvacReply(PACKET_SERIAL_TYPE_ *pPacket);

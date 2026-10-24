@@ -16,14 +16,14 @@
 #define MAIN_FirmwareName "ENO_TestApp"
 #define MAIN_OpenKnxId 0xAF
 #define MAIN_ApplicationNumber 255
-#define MAIN_ApplicationVersion 4
+#define MAIN_ApplicationVersion 5
 #define MAIN_ApplicationEncoding iso-8859-15
 #define MAIN_ParameterSize 6141
 #define MAIN_MaxKoNumber 439
 #define MAIN_OrderNumber "ENO-TESTAPP"
 #define BASE_ModuleVersion 25
 #define UCT_ModuleVersion 5
-#define ENO_ModuleVersion 4
+#define ENO_ModuleVersion 5
 #define LOG_ModuleVersion 68
 // Parameter with single occurrence
 
