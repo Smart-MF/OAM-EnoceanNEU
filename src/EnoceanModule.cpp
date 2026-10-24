@@ -663,6 +663,14 @@ bool EnoceanModule::processFunctionProperty(uint8_t objectIndex, uint8_t propert
     memcpy(&resultData[6], _eurid, 4);
     resultLength = 10;
     return true;
+  case ENO_FP_CMD_LEARN:
+    // [0] Ergebnis: ENO_FP_OK oder ENO_FP_ERR_PROFILE, wenn der Kanal nicht sendet
+    if (!channelValid || !_channelsReady || channel > ParamENO_VisibleChannels) {
+      resultData[0] = ENO_FP_ERR_CHANNEL;
+      return true;
+    }
+    resultData[0] = _channels[channel - 1]->sendLearnTelegram() ? ENO_FP_OK : ENO_FP_ERR_PROFILE;
+    return true;
   case ENO_FP_CMD_VERSION:
     // [0] Ergebnis, [1..4] App-Version, [5..8] API-Version
     if (!_versionValid) {
@@ -1288,6 +1296,7 @@ bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
     openknx.console.printHelpLine("eno repeater M L", "Write repeater mode M (0..2) and level L (0..2)");
     openknx.console.printHelpLine("eno version", "Read transceiver version and EURID");
     openknx.console.printHelpLine("eno monitor on|off", "Log every received radio telegram");
+    openknx.console.printHelpLine("eno learn N", "Send learn telegram of channel N to an actuator");
     return true;
   }
 
@@ -1360,6 +1369,15 @@ bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
     return true;
   }
 
+  if (cmd.substr(0, 10) == "eno learn ") {
+    uint8_t channel = (uint8_t)strtoul(cmd.substr(10).c_str(), nullptr, 10);
+    if (!_channelsReady || channel < 1 || channel > ParamENO_VisibleChannels)
+      logInfoP("Channel must be 1..%u", ParamENO_VisibleChannels);
+    else if (!_channels[channel - 1]->sendLearnTelegram())
+      logInfoP("Channel %u does not send to EnOcean (rocker KNX -> EnOcean only)", channel);
+    return true;
+  }
+
   if (cmd == "eno monitor on" || cmd == "eno monitor off") {
     _monitor = cmd == "eno monitor on";
     logInfoP("Telegram monitor %s", _monitor ? "on" : "off");
@@ -1403,31 +1421,25 @@ uint8_t EnoceanModule::uart_getPacket(PACKET_SERIAL_TYPE_ *pPacket, uint16_t u16
   static uint16_t u16Count = 0;
   //! State machine counter
   // static STATES_GET_PACKET_ u8State = GET_SYNC_STATE;
-  //! Timeout measurement
-  // static uint8_t u8TickCount = 0;
+  //! Zeitpunkt des letzten empfangenen Bytes (Inter-Byte-Timeout)
+  static uint32_t lastByteTime = 0;
   // Byte buffer pointing at the paquet address
   uint8_t *u8Raw = (uint8_t *)pPacket;
   // Temporal variable
   uint8_t i;
-  // Check for timeout between two bytes
-  // TODO
-  // if (((uint8)ug32SystemTimer) - u8TickCount > SER_INTERBYTE_TIME_OUT)
-  //{
-  // Reset state machine to init state
-  // u8State = GET_SYNC_STATE;
-  //}
+  // Inter-Byte-Timeout (ESP3-Spec Kap. 3.4.2): bricht ein Paket mittendrin ab, wieder auf das nächste Sync-Byte warten,
+  // statt die folgenden Bytes als Rest des abgebrochenen Pakets zu lesen.
+  if (u8State != GET_SYNC_STATE && (millis() - lastByteTime) > ENOCEAN_INTERBYTE_TIMEOUT) {
+    logDebugP("Inter-byte timeout, resync");
+    u8State = GET_SYNC_STATE;
+  }
   // State machine goes on when a new byte is received
   // Nur bereits empfangene Bytes verarbeiten: read() blockiert nicht (im Gegensatz zu readBytes(), das bis zum
   // Stream-Timeout von 1 s auf weitere Bytes wartet).
   if (_serial->available() > 0) {
     while (_serial->available() > 0) {
       u8RxByte = (uint8_t)_serial->read();
-      // Comment out for debugging
-      // Serial.println(u8RxByte, HEX);
-
-      // Tick count of last received byte
-      // TODO
-      // u8TickCount = (uint8)ug32SystemTimer;
+      lastByteTime = millis();
       // State machine to load incoming packet bytes
       switch (u8State) {
       // Waiting for packet sync byte 0x55ENOModule::uart_getPacket

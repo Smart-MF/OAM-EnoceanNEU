@@ -13,8 +13,8 @@
   <op:ETS
     OpenKnxId="0xAF"
     ApplicationNumber="255"
-    ApplicationVersion="2"
-    ReplacesVersions="1 0"
+    ApplicationVersion="0.3"
+    ReplacesVersions="0.2 0.1 0.0"
     ApplicationRevision="0"
     ProductName="ENO_TestApp"
     BusCurrent="10"
@@ -37,13 +37,13 @@
     share="EnoceanModule.share.xml"
     template="EnoceanModule.templ.xml"
     NumChannels="30" KoOffset="50">
-    <op:verify File="../library.json" ModuleVersion="0.1" />
+    <op:verify File="../library.json" ModuleVersion="0.3" />
   </op:define>
 
   <op:define prefix="LOG" ModuleType="10"
     share="../lib/OFM-LogicModule/src/Logikmodul.share.xml"
     template="../lib/OFM-LogicModule/src/Logikmodul.templ.xml"
-    NumChannels="20" KoOffset="350">
+    NumChannels="20" KoOffset="380">
     <op:verify File="../lib/OFM-LogicModule/library.json" ModuleVersion="4.4" />
   </op:define>
 

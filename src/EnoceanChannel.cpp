@@ -16,18 +16,39 @@ EnoceanChannel::EnoceanChannel(uint8_t index) { _channelIndex = index; }
 // Liefert den Anzeigenamen des Kanals für Logging/Debug-Ausgaben.
 const std::string EnoceanChannel::name() { return "EnoceanChannel"; }
 
-// Wird einmalig beim Start des Kanals aufgerufen, aktuell nur für Log-Testausgaben genutzt.
+// Wird einmalig beim Start des Kanals aufgerufen: startet die Ausfallüberwachung ab dem Neustart.
 void EnoceanChannel::setup() {
-  logInfoP("setup");
-  logIndentUp();
-  logDebugP("debug setup");
-  logTraceP("trace setup");
-  logIndentDown();
+  logDebugP("setup");
+  _lastSeen = millis();
+}
+
+// Das Gerät dieses Kanals hat gesendet: Ausfallüberwachung neu starten und einen gemeldeten Ausfall zurücknehmen.
+void EnoceanChannel::deviceSeen() {
+  _lastSeen = millis();
+  if (_failed) {
+    _failed = false;
+    logInfoP("Device available again");
+    KoENO_CHFailure.value(false, Dpt(1, 5));
+  }
+}
+
+// Meldet über KO_10 einen Ausfall, wenn das Gerät länger als die per ETS eingestellte Zeit nichts gesendet hat.
+void EnoceanChannel::checkFailure() {
+  uint8_t hours = ParamENO_CHMonitorTime;
+  if (hours == 0 || _failed || ParamENO_CHProductsel == CH_inaktive)
+    return;
+  if (delayCheck(_lastSeen, hours * 3600000UL)) {
+    _failed = true;
+    logInfoP("Device failure: no telegram for %u h", hours);
+    KoENO_CHFailure.value(true, Dpt(1, 5));
+  }
 }
 
 // Wird zyklisch aufgerufen: sendet bei der Taster-Emulation (KNX -> EnOcean) das ausstehende Loslass-Telegramm und
 // erkennt bei gedrücktem Taster (EnOcean -> KNX) den langen Tastendruck (Zeit per ETS-Parameter in 10 ms).
 void EnoceanChannel::loop() {
+  checkFailure();
+
   if (_knxRockerReleaseAt != 0 && (int32_t)(millis() - _knxRockerReleaseAt) >= 0) {
     _knxRockerReleaseAt = 0;
     openknxEnoceanModule.sendRockerTelegram(_channelIndex, 0x00);
@@ -53,6 +74,18 @@ void EnoceanChannel::knxRockerPress(uint8_t db0, uint32_t releaseAfterMs) {
   _knxRockerReleaseAt = millis() + releaseAfterMs;
   if (_knxRockerReleaseAt == 0)
     _knxRockerReleaseAt = 1; // 0 ist "kein Loslassen ausstehend"
+}
+
+// Sendet ein Lerntelegramm mit der Sender-ID dieses Kanals (Base-ID + Kanalindex), damit ein EnOcean-Aktor im
+// Lernmodus den Kanal einlernen kann (ETS-Button / Konsole "eno learn N"). Derzeit für den Taster in Richtung
+// KNX -> EnOcean: Tastendruck oben (AO), danach Loslassen. Liefert false, wenn der Kanal nicht sendet.
+bool EnoceanChannel::sendLearnTelegram() {
+  if (ParamENO_CHProductsel != EEP_Profil || ParamENO_CHProfilSelection != u8RORG_Rocker || ParamENO_CHDirectionKnxEnocean != 1)
+    return false;
+
+  logInfoP("Send learn telegram (rocker AO)");
+  knxRockerPress(0x30, ROCKER_TAP_MS);
+  return true;
 }
 
 // Taster-Emulation KNX -> EnOcean für das Eingangs-KO KO_0, Funktion per ETS (ProfilRockerFunktionKNX):
@@ -146,6 +179,7 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
 
   logDebugP("ENO-ID:");
   logHexDebugP(senderId, 4);
+  deviceSeen();
 
   // Prüft wie der CH konfiguriert ist. Über EEP-Profil oder über Hersteller
   switch (ParamENO_CHProductsel) {

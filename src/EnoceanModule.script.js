@@ -143,6 +143,22 @@ function ENO_teachDelete(device, online, progress, context) {
     }
 }
 
+function ENO_sendLearn(device, online, progress, context) {
+    var ch = context.Channel;
+    progress.setText("Kanal " + ch + ": Lerntelegramm wird gesendet...");
+    online.connect();
+    try {
+        var resp = ENO_call(online, [6, ch]);
+        if (resp[0] == 7)
+            throw new Error("Kanal " + ch + " sendet nicht an EnOcean. Das Lerntelegramm gibt es nur für den Taster in Richtung KNX nach EnOcean.");
+        if (resp[0] != 0)
+            throw new Error("Kanal " + ch + ": Lerntelegramm konnte nicht gesendet werden (Code " + resp[0] + ").");
+        progress.setText("Kanal " + ch + ": Lerntelegramm gesendet. Den Lernmodus am Aktor jetzt beenden.");
+    } finally {
+        online.disconnect();
+    }
+}
+
 function ENO_readTransceiver(device, online, progress, context) {
     progress.setText("Base-ID und Transceiver-Info werden gelesen...");
     online.connect();

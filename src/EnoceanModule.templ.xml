@@ -172,12 +172,16 @@
               </Union> <!-- Union 8 -->
 
               <!-- Einrichtung des Geräts: ID manuell (0) oder Teach-In (1). Parameter-Nummer 074 nicht verwenden (Lücke). -->
-              <Parameter Id="%AID%_P-%TT%%CC%095" Name="CH%C%SetupMode" ParameterType="%AID%_PT-SetupMode" Text="Einrichtung des Geräts" Value="0">
+              <Parameter Id="%AID%_P-%TT%%CC%095" Name="CH%C%SetupMode" ParameterType="%AID%_PT-SetupMode" Text="Einrichtung des Geräts" Value="1">
                 <Memory CodeSegment="%AID%_RS-04-00000" Offset="39" BitOffset="0" />
               </Parameter>
               <!-- nur ETS (kein Speicher): werden von den Teach-In-Buttons befüllt -->
               <Parameter Id="%AID%_P-%TT%%CC%096" Name="CH%C%TeachStatus" ParameterType="%AID%_PT-Text80Byte" Text="Status" Value="Nicht abgefragt" Access="Read" />
               <Parameter Id="%AID%_P-%TT%%CC%097" Name="CH%C%TeachEep" ParameterType="%AID%_PT-Text40Byte" Text="Erkanntes Profil" Value="" Access="Read" />
+              <!-- Ausfallüberwachung: Stunden ohne Telegramm bis zur Meldung auf KO_10 (0 = aus) -->
+              <Parameter Id="%AID%_P-%TT%%CC%098" Name="CH%C%MonitorTime" ParameterType="%AID%_PT-MonitorTime" Text="Ausfall melden nach" Value="0">
+                <Memory CodeSegment="%AID%_RS-04-00000" Offset="40" BitOffset="0" />
+              </Parameter>
 
               
 
@@ -286,6 +290,7 @@
               <ParameterRef Id="%AID%_P-%TT%%CC%095_R-%TT%%CC%09501" RefId="%AID%_P-%TT%%CC%095" />
               <ParameterRef Id="%AID%_P-%TT%%CC%096_R-%TT%%CC%09601" RefId="%AID%_P-%TT%%CC%096" />
               <ParameterRef Id="%AID%_P-%TT%%CC%097_R-%TT%%CC%09701" RefId="%AID%_P-%TT%%CC%097" />
+              <ParameterRef Id="%AID%_P-%TT%%CC%098_R-%TT%%CC%09801" RefId="%AID%_P-%TT%%CC%098" />
               <!-- EnOcean-ID nur lesbar (Teach-In: wird per Button aus dem Gateway übernommen) -->
               <ParameterRef Id="%AID%_UP-%TT%%CC%055_R-%TT%%CC%05502" RefId="%AID%_UP-%TT%%CC%055" Access="Read" />
               <ParameterRef Id="%AID%_UP-%TT%%CC%056_R-%TT%%CC%05602" RefId="%AID%_UP-%TT%%CC%056" Access="Read" />
@@ -308,6 +313,8 @@
               <ComObject Id="%AID%_O-%TT%%CC%007" Name="GO_BASE_%C%_8" Text="GO_BASE_%C%_8"   FunctionText="" Number="%K7%" ObjectSize="4 Bytes" ReadFlag="Disabled" WriteFlag="Disabled" CommunicationFlag="Disabled" TransmitFlag="Disabled" UpdateFlag="Disabled" ReadOnInitFlag="Disabled" DatapointType="DPST-14-0" />
               <ComObject Id="%AID%_O-%TT%%CC%008" Name="GO_BASE_%C%_9" Text="GO_BASE_%C%_9"   FunctionText="" Number="%K8%" ObjectSize="4 Bytes" ReadFlag="Disabled" WriteFlag="Disabled" CommunicationFlag="Disabled" TransmitFlag="Disabled" UpdateFlag="Disabled" ReadOnInitFlag="Disabled" DatapointType="DPST-14-0" />
               <ComObject Id="%AID%_O-%TT%%CC%009" Name="GO_BASE_%C%_10" Text="GO_BASE_%C%_10" FunctionText="" Number="%K9%" ObjectSize="4 Bytes" ReadFlag="Disabled" WriteFlag="Disabled" CommunicationFlag="Disabled" TransmitFlag="Disabled" UpdateFlag="Disabled" ReadOnInitFlag="Disabled" DatapointType="DPST-14-0" />
+              <!-- KO_10: Ausfallüberwachung (unabhängig vom Profil) -->
+              <ComObject Id="%AID%_O-%TT%%CC%010" Name="CH%C%Failure" Text="Gerät ausgefallen" FunctionText="Ausfall" Number="%K10%" ObjectSize="1 Bit" ReadFlag="Enabled" WriteFlag="Disabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" UpdateFlag="Disabled" ReadOnInitFlag="Disabled" DatapointType="DPST-1-5" />
             </ComObjectTable>
             <ComObjectRefs>
               <!-- Enocean CH -->
@@ -421,6 +428,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%009_R-%TT%%CC%00904" RefId="%AID%_O-%TT%%CC%009" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Tarif" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%009_R-%TT%%CC%00905" RefId="%AID%_O-%TT%%CC%009" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Sensor-Status" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%009_R-%TT%%CC%00906" RefId="%AID%_O-%TT%%CC%009" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Werte µg/m3" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-30" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%010_R-%TT%%CC%01001" RefId="%AID%_O-%TT%%CC%010" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Gerät ausgefallen" Priority="Low" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
             </ComObjectRefs>
           </Static>
           <!-- Here statrs the UI definition -->
@@ -461,13 +469,13 @@
                     <choose ParamRefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401">
                       <when test="!=0">
                         <ParameterSeparator Id="%AID%_PS-1" Text="Einrichtung des Geräts" UIHint="Headline" />
-                        <ParameterRefRef RefId="%AID%_P-%TT%%CC%095_R-%TT%%CC%09501" IndentLevel="1" />
+                        <ParameterRefRef RefId="%AID%_P-%TT%%CC%095_R-%TT%%CC%09501" IndentLevel="1" HelpContext="ENO-Einrichtung" />
                         <ParameterSeparator Id="%AID%_PS-1" Text="Beide Wege sind möglich: Teach-In (Button im Unterkapitel &quot;Teach-In&quot;, dann Lerntaste am Gerät drücken) oder die EnOcean-ID vom Gerät von Hand eintragen (Unterkapitel &quot;ID manuell&quot;)." />
                         <ParameterSeparator Id="%AID%_PS-4" Text="" UIHint="HorizontalRuler" />
                         <choose ParamRefId="%AID%_P-%TT%%CC%095_R-%TT%%CC%09501">
                           <!-- ID manuell -->
                           <when test="0">
-                            <ParameterBlock Id="%AID%_PB-nnn" Name="f%C%ManualId" Text="ID manuell" Icon="pencil" HelpContext="Empty">
+                            <ParameterBlock Id="%AID%_PB-nnn" Name="f%C%ManualId" Text="ID manuell" Icon="pencil" HelpContext="ENO-Einrichtung">
                               <ParameterSeparator Id="%AID%_PS-1" Text="EnOcean-ID" UIHint="Headline" />
                               <ParameterSeparator Id="%AID%_PS-6" Text="Die EnOcean-ID des Geräts eintragen (steht auf dem Gerät oder in der Anleitung). Unbekannte IDs meldet das Gateway auf dem KO &quot;IDs unbekannter Geräte&quot;." />
                               <ParameterBlock Id="%AID%_PB-2" Name="Id1" Text="Id" Inline="true" Layout="Grid">
@@ -502,7 +510,7 @@
                           </when>
                           <!-- Teach-In -->
                           <when test="1">
-                            <ParameterBlock Id="%AID%_PB-nnn" Name="f%C%TeachIn" Text="Teach-In" Icon="fingerprint" HelpContext="Empty">
+                            <ParameterBlock Id="%AID%_PB-nnn" Name="f%C%TeachIn" Text="Teach-In" Icon="fingerprint" HelpContext="ENO-TeachIn">
                               <ParameterSeparator Id="%AID%_PS-1" Text="Teach-In" UIHint="Headline" />
                               <ParameterSeparator Id="%AID%_PS-6" Text="&quot;Teach-In starten&quot; öffnet den Lernmodus für diesen Kanal (gleiche Kanalnummer im TCM 615). Danach innerhalb des Zeitfensters die Lerntaste am Gerät drücken. Die ETS muss online mit dem Gateway verbunden sein." />
                               <ParameterSeparator Id="%AID%_PS-6" Text="Mit &quot;Ergebnis übernehmen&quot; werden ID und Status aus dem Gateway gelesen und hier gespeichert. Ein eingelernter Kanal wird nicht überschrieben, dafür zuerst &quot;Einlernung löschen&quot;." />
@@ -519,7 +527,7 @@
                                 <Button Id="%AID%_B-%TT%%CC%002" Cell="1,2" Text="Ergebnis übernehmen" EventHandlerOnline="ConnectionOriented" EventHandler="ENO_teachRead" EventHandlerParameters="{ &quot;Channel&quot;: %C% }" />
                                 <Button Id="%AID%_B-%TT%%CC%003" Cell="1,3" Text="Einlernung löschen" EventHandlerOnline="ConnectionOriented" EventHandler="ENO_teachDelete" EventHandlerParameters="{ &quot;Channel&quot;: %C% }" />
                               </ParameterBlock>
-                              <ParameterRefRef RefId="%AID%_P-%TT%%CC%096_R-%TT%%CC%09601" IndentLevel="1" />
+                              <ParameterRefRef RefId="%AID%_P-%TT%%CC%096_R-%TT%%CC%09601" IndentLevel="1" HelpContext="ENO-TeachIn" />
                               <ParameterBlock Id="%AID%_PB-3" Name="Id2" Text="Id" Inline="true" Layout="Grid">
                                 <Rows>
                                   <Row Id="%AID%_PB-3_R-1" Name="Row1" />
@@ -548,7 +556,7 @@
                                 <ParameterRefRef RefId="%AID%_UP-%TT%%CC%061_R-%TT%%CC%06102" Cell="1,11" />
                                 <ParameterRefRef RefId="%AID%_UP-%TT%%CC%062_R-%TT%%CC%06202" Cell="1,12" />
                               </ParameterBlock>
-                              <ParameterRefRef RefId="%AID%_P-%TT%%CC%097_R-%TT%%CC%09701" IndentLevel="1" />
+                              <ParameterRefRef RefId="%AID%_P-%TT%%CC%097_R-%TT%%CC%09701" IndentLevel="1" HelpContext="ENO-TeachIn" />
                               <ParameterSeparator Id="%AID%_PS-6" Text="ID und Profil werden mit dem nächsten Download ins Projekt übernommen. Bis dahin arbeitet der Kanal mit der im Gateway eingelernten ID." />
                             </ParameterBlock>
                           </when>
@@ -1307,7 +1315,9 @@
                               </when>
                               <!-- ********** KNX -> ENOCEAN ****************************** -->
                               <when test="1">
-                                <ParameterRefRef RefId="%AID%_P-%TT%%CC%054_R-%TT%%CC%05401" />
+                                <ParameterRefRef RefId="%AID%_P-%TT%%CC%054_R-%TT%%CC%05401" HelpContext="ENO-Lerntelegramm" />
+                                <ParameterSeparator Id="%AID%_PS-6" Text="Zum Einlernen in einen Aktor: Aktor in den Lernmodus bringen, dann den Button drücken. Gesendet wird ein Tastendruck oben mit der Sende-ID dieses Kanals." />
+                                <Button Id="%AID%_B-%TT%%CC%004" Text="Lerntelegramm an Aktor senden" EventHandlerOnline="ConnectionOriented" EventHandler="ENO_sendLearn" EventHandlerParameters="{ &quot;Channel&quot;: %C% }" />
                                 <choose ParamRefId="%AID%_P-%TT%%CC%054_R-%TT%%CC%05401">
                                   <!-- schalten -->
                                   <when test="1">
@@ -1490,6 +1500,19 @@
                               </choose> 
                           </when>
                         </choose> 
+                      </when>
+                    </choose>
+                    <!-- Ausfallüberwachung (ganz unten auf der Kanalseite) -->
+                    <choose ParamRefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401">
+                      <when test="!=0">
+                        <ParameterSeparator Id="%AID%_PS-4" Text="" UIHint="HorizontalRuler" />
+                        <ParameterSeparator Id="%AID%_PS-1" Text="Ausfallüberwachung" UIHint="Headline" />
+                        <ParameterRefRef RefId="%AID%_P-%TT%%CC%098_R-%TT%%CC%09801" IndentLevel="1" HelpContext="ENO-Ausfallueberwachung" />
+                        <choose ParamRefId="%AID%_P-%TT%%CC%098_R-%TT%%CC%09801">
+                          <when test="!=0">
+                            <ComObjectRefRef RefId="%AID%_O-%TT%%CC%010_R-%TT%%CC%01001" />
+                          </when>
+                        </choose>
                       </when>
                     </choose>
                   </ParameterBlock>

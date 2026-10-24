@@ -47,8 +47,14 @@ private:
   uint32_t _knxRockerReleaseAt = 0;
   uint8_t _knxRockerLastDb0 = 0;
 
+  // Ausfallüberwachung: Zeitpunkt des letzten Telegramms des Geräts und ob der Ausfall bereits gemeldet wurde
+  uint32_t _lastSeen = 0;
+  bool _failed = false;
+
   void handleRocker(PACKET_SERIAL_TYPE_ *pPacket);
   void knxRockerPress(uint8_t db0, uint32_t releaseAfterMs);
+  void deviceSeen();
+  void checkFailure();
 
 public:
   EnoceanChannel(uint8_t index);
@@ -58,4 +64,5 @@ public:
   bool check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket);
   bool matchesDeviceId(const uint8_t id[4]) const;
   void processKnxRocker(GroupObject &ko);
+  bool sendLearnTelegram();
 };

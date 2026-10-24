@@ -78,6 +78,7 @@ inline bool isSecureRorg(uint8_t rorg) { return rorg >= u8RORG_SEC && rorg <= u8
 #define ENO_FP_CMD_DELETE 3   // data[1] = Kanal 1..30
 #define ENO_FP_CMD_BASEID 4   // Base-ID, Schreibzyklen, EURID
 #define ENO_FP_CMD_VERSION 5  // App- und API-Version des Transceivers
+#define ENO_FP_CMD_LEARN 6    // data[1] = Kanal 1..30: Lerntelegramm an einen Aktor senden
 
 // Ergebniscodes (resultData[0])
 #define ENO_FP_OK 0
@@ -87,6 +88,7 @@ inline bool isSecureRorg(uint8_t rorg) { return rorg >= u8RORG_SEC && rorg <= u8
 #define ENO_FP_ERR_CHANNEL 4
 #define ENO_FP_ERR_TRANSCEIVER 5
 #define ENO_FP_ERR_COMMAND 6
+#define ENO_FP_ERR_PROFILE 7 // Kanal sendet nicht (kein Profil mit Richtung KNX -> EnOcean)
 
 // Teach-In-Status eines Kanals
 #define ENO_TEACH_FREE 0
@@ -133,6 +135,9 @@ struct EnoceanTeachEntry
 #define ENOCEAN_RESPONSE_TIMEOUT 500
 // Obergrenze, um die nach einem COMMAND_ACCEPTED zusätzlich auf die RESPONSE gewartet wird (ms)
 #define ENOCEAN_ACCEPTED_TIMEOUT_MAX 2000
+// Max. Pause zwischen zwei Bytes eines ESP3-Pakets, danach Neusynchronisation (ms). Bei 57600 Baud dauert ein Byte
+// ca. 0,17 ms, ein komplettes Paket < 10 ms.
+#define ENOCEAN_INTERBYTE_TIMEOUT 100
 
 #define SER_SYNCH_CODE 0x55
 #define SER_HEADER_NR_BYTES 4

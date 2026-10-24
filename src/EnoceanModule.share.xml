@@ -839,6 +839,19 @@
                   <Enumeration Text="Teach-In" Value="1" Id="%AID%_PT-SetupMode_EN-1" />
                 </TypeRestriction>
               </ParameterType>
+              <!-- Ausfallüberwachung: Stunden ohne Telegramm -->
+              <ParameterType Id="%AID%_PT-MonitorTime" Name="MonitorTime">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="aus" Value="0" Id="%AID%_PT-MonitorTime_EN-0" />
+                  <Enumeration Text="1 h" Value="1" Id="%AID%_PT-MonitorTime_EN-1" />
+                  <Enumeration Text="2 h" Value="2" Id="%AID%_PT-MonitorTime_EN-2" />
+                  <Enumeration Text="4 h" Value="4" Id="%AID%_PT-MonitorTime_EN-4" />
+                  <Enumeration Text="8 h" Value="8" Id="%AID%_PT-MonitorTime_EN-8" />
+                  <Enumeration Text="12 h" Value="12" Id="%AID%_PT-MonitorTime_EN-12" />
+                  <Enumeration Text="24 h" Value="24" Id="%AID%_PT-MonitorTime_EN-24" />
+                  <Enumeration Text="48 h" Value="48" Id="%AID%_PT-MonitorTime_EN-48" />
+                </TypeRestriction>
+              </ParameterType>
               <!-- Dauer des Teach-In-Fensters in Sekunden -->
               <ParameterType Id="%AID%_PT-TeachWindow" Name="TeachWindow">
                 <TypeRestriction Base="Value" SizeInBit="8">
@@ -956,7 +969,7 @@
                 <ParameterSeparator Id="%AID%_PS-nnn" Text="Die Base-ID ist in jedem Transceiver anders. Mit dem Button wird sie aus dem Gateway gelesen und hier gespeichert." />
                 <ParameterSeparator Id="%AID%_PS-nnn" Text="Ist das Schreiben eingeschaltet, setzt das Gateway nach einem Hardwaretausch beim Start wieder diese Base-ID. So bleiben die Sende-IDs der Kanäle gleich." />
                 <Button Id="%AID%_B-%TT%00001" Text="Base-ID und Transceiver-Info aus dem Gateway lesen" EventHandler="ENO_readTransceiver" EventHandlerOnline="ConnectionOriented" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00014_R-%TT%0001401" IndentLevel="1" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00014_R-%TT%0001401" IndentLevel="1" HelpContext="ENO-BaseID" />
                 <ParameterRefRef RefId="%AID%_P-%TT%00001_R-%TT%0000101" HelpContext="ENO-BaseID" IndentLevel="1" />
                 <choose ParamRefId="%AID%_P-%TT%00001_R-%TT%0000101">
                   <when test="0">
@@ -1001,9 +1014,9 @@
               </ParameterBlock>
 
               <!-- Teach-In-Übersicht aller Kanäle -->
-              <ParameterBlock Id="%AID%_PB-nnn" Name="TeachOverview" Text="Teach-In Übersicht" Icon="format-list-bulleted" HelpContext="Empty">
+              <ParameterBlock Id="%AID%_PB-nnn" Name="TeachOverview" Text="Teach-In Übersicht" Icon="format-list-bulleted" HelpContext="ENO-TeachInUebersicht">
                 <ParameterSeparator Id="%AID%_PS-nnn" Text="Teach-In" UIHint="Headline" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00013_R-%TT%0001301" IndentLevel="1" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00013_R-%TT%0001301" IndentLevel="1" HelpContext="ENO-TeachInUebersicht" />
                 <ParameterSeparator Id="%AID%_PS-nnn" Text="Der Button liest den Teach-In-Status aller Kanäle aus dem Gateway. So ist vor dem Einlernen zu sehen, welche Kanäle frei sind." />
                 <Button Id="%AID%_B-%TT%00002" Text="Status aller Kanäle abfragen" EventHandler="ENO_readAllChannels" EventHandlerOnline="ConnectionOriented" />
                 <ParameterBlock Id="%AID%_PB-nnn" Inline="true" Layout="Grid">
