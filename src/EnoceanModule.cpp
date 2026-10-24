@@ -730,6 +730,32 @@ void EnoceanModule::disableLearnMode() {
     setIsTeachChannel((uint8_t)0);
 }
 
+// Klartext zur Ursache von CO_EVENT_SECUREDEVICES (ESP3-Spec Kap. 2.4.7).
+static const char *secureEventText(uint8_t cause) {
+  switch (cause) {
+  case 0x00:
+    return "teach-in failed, secure link table full";
+  case 0x02:
+    return "resynchronization with wrong private key";
+  case 0x03:
+    return "too many telegrams with wrong CMAC";
+  case 0x04:
+    return "teach-in failed, telegram corrupted";
+  case 0x05:
+    return "teach-in failed, no PSK set for device";
+  case 0x06:
+    return "teach-in failed, PSK required";
+  case 0x07:
+    return "CMAC or RLC not correct";
+  case 0x08:
+    return "unencrypted telegram from secure device (device sends unencrypted again? delete teach-in and teach again)";
+  case 0x09:
+    return "teach-in ok, device added";
+  default:
+    return "unknown cause";
+  }
+}
+
 // Wertet ein EVENT-Paket des Transceivers aus (ESP3-Spec Kap. 2.4).
 void EnoceanModule::handleEvent(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
   if (f_Pkt_st->u16DataLength < 1)
@@ -763,7 +789,7 @@ void EnoceanModule::handleEvent(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
       break;
     uint8_t cause = f_Pkt_st->u8DataBuffer[1];
     uint8_t *id = &f_Pkt_st->u8DataBuffer[2];
-    logInfoP("Secure device event %u, ID %02X%02X%02X%02X", cause, id[0], id[1], id[2], id[3]);
+    logInfoP("Secure device event %u (%s), ID %02X%02X%02X%02X", cause, secureEventText(cause), id[0], id[1], id[2], id[3]);
     if (cause == 0x09 && _teachChannel) {
       // Teach-In erfolgreich, Gerät in der Secure-Link-Tabelle des TCM
       storeTeachIn(id, 0, 0, 0, ENO_TEACH_FLAG_SECURE); // Profil im Secure-Teach-In nicht enthalten
