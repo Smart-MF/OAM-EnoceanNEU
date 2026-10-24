@@ -18,13 +18,10 @@ inline void handle4BS_A5_09_0C(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIn
 inline void handle4BS_A5_14_09(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_A5_30_03(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 inline void handle4BS_D5_00_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
+inline uint8_t handle4BS_A5_20_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex);
 
 
 inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
-  union intParts {
-    uint8_t uint8;
-  } _value;
-
   uint32_t value_4Byte;
   uint16_t lux;
   float luxfloat;
@@ -49,7 +46,6 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
   FOURBS_A5_14_01_06_TYPE *fourBsA5_14_01_06_Tlg_p;
   FOURBS_A5_14_07_08_TYPE *fourBsA5_14_07_08_Tlg_p;
   FOURBS_A5_14_09_0A_TYPE *fourBsA5_14_09_0A_Tlg_p;
-  FOURBS_A5_20_01_TYPE *fourBsA5_20_01_Tlg_p;
   FOURBS_A5_20_04_TYPE *fourBsA5_20_04_Tlg_p;
   FOURBS_A5_20_06_TYPE *fourBsA5_20_06_Tlg_p;
 
@@ -850,34 +846,8 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
     // ----------------- Profil: A5-20-01 --------------------------
     //**************************************************************
     case A5_20_01:
-      fourBsA5_20_01_Tlg_p = (FOURBS_A5_20_01_TYPE *)&(f_Pkt_st->u8DataBuffer[1]);
-      logDebug("4BS", "01");
-      // check TeachIn-Bit
-      if ((fourBsA5_20_01_Tlg_p->u84BsTelData.LRNstatus) == 0) {
-        logDebug("4BS", "TeachIn: %u", fourBsA5_20_01_Tlg_p->u84BsTelData.LRNstatus);
-        // check LRN TYP Bit (bit8) and  LRN Status (Bit4)
-        if ((fourBsA5_20_01_Tlg_p->u84BsTelData.LRNtype == 1) && (fourBsA5_20_01_Tlg_p->u84BsTelData.LRNstatus == 0)) {
-          logDebug("4BS", " OK");
-          return TEACHIN_A52001;
-        } else {
-          logDebug("4BS", " NOK");
-        }
-      } else {
-        // ......Current Position.........................................
-        _value.uint8 =
-            fourBsA5_20_01_Tlg_p->u8CurrentPos * 2.55; // Value 0...100 = 0...100%  --> Value 0...255 = 0...100%
-        KoENO_GO_BASE__8.value(_value.uint8, Dpt(5, 1));
-        logDebug("4BS", "current Pos: %u%%", fourBsA5_20_01_Tlg_p->u8CurrentPos);
-        // ......Status Bits.........................................
-        KoENO_GO_BASE__10.value(fourBsA5_20_01_Tlg_p->u8StatusBits, Dpt(5, 1));
-        logDebug("4BS", "Status Bits (MSB-LSB): %u", fourBsA5_20_01_Tlg_p->u8StatusBits);
-        // Temperature
-        temp = (float)fourBsA5_20_01_Tlg_p->u8Temp / 6.375;
-        KoENO_GO_BASE__7.value(temp, Dpt(9, 1));
-        logDebug("4BS", "Temperatur: %.1f", temp);
-      }
-      return msg_A5_20_01;
-      break;
+      // Kanäle mit A5-20-01 werden in EnoceanChannel::handleHvac() verarbeitet (Antwort an den Antrieb)
+      return handle4BS_A5_20_01(f_Pkt_st, _channelIndex);
     //**************************************************************
     // ----------------- Profil: A5-20-04 --------------------------
     //**************************************************************
@@ -897,9 +867,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
         }
       } else {
         // ......Current Position.........................................
-        _value.uint8 =
-            fourBsA5_20_04_Tlg_p->u8CurrentPos * 2.55; // Value 0...100 = 0...100%  --> Value 0...255 = 0...100%
-        KoENO_GO_BASE__8.value(_value.uint8, Dpt(5, 1));
+        KoENO_GO_BASE__8.value(fourBsA5_20_04_Tlg_p->u8CurrentPos, Dpt(5, 1)); // 0..100 %
         logDebug("4BS", "current Pos: %u%%", fourBsA5_20_04_Tlg_p->u8CurrentPos);
         // ......Temperature SetPoint or FeeD Temp ......................................
         if (fourBsA5_20_04_Tlg_p->u84BsTelData.TS == 1) {
@@ -910,8 +878,8 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
         } else // FEED Temperature
         {
           temp = (float)fourBsA5_20_04_Tlg_p->u8Temp / 4.25 + 20.0;
-          KoENO_GO_BASE__7.value(fourBsA5_20_04_Tlg_p->u8Temp, Dpt(9, 1));
-          logDebug("4BS", "Feed-Temp: %u", fourBsA5_20_04_Tlg_p->u8Temp);
+          KoENO_GO_BASE__7.value(temp, Dpt(9, 1));
+          logDebug("4BS", "Feed-Temp: %.1f", temp);
         }
         // ...... Room Temperature or Failure Code ......................................
         if (fourBsA5_20_04_Tlg_p->u84BsTelData.FL == 1) {
@@ -926,7 +894,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
         }
 
         // ......Status Bits.........................................
-        KoENO_GO_BASE__10.value(f_Pkt_st->u8DataBuffer[4], Dpt(5, 1));
+        KoENO_GO_BASE__10.value(f_Pkt_st->u8DataBuffer[4], Dpt(5, 10));
         logDebug("4BS", "Status Bits (MSB-LSB): %u", f_Pkt_st->u8DataBuffer[4]);
       }
 
@@ -953,9 +921,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
       } else {
         // ......Current Position.........................................
 #ifndef EnOceanTEST
-        _value.uint8 =
-            fourBsA5_20_06_Tlg_p->u8CurrentPos * 2.55; // Value 0...100 = 0...100%  --> Value 0...255 = 0...100%
-        KoENO_GO_BASE__8.value(_value.uint8, Dpt(5, 1));
+        KoENO_GO_BASE__8.value(fourBsA5_20_06_Tlg_p->u8CurrentPos, Dpt(5, 1)); // 0..100 %
 #endif
         logDebug("4BS", "current Pos: %u%%", fourBsA5_20_06_Tlg_p->u8CurrentPos);
 
@@ -1014,7 +980,7 @@ inline uint8_t handle_4BS(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) 
         // ......Temperature.........................................
         KoENO_GO_BASE__7.value(fourBsA5_20_06_Tlg_p->u8Temp / 2.0, Dpt(9, 1));
         // ......Status Bits.........................................
-        KoENO_GO_BASE__10.value(fourBsA5_20_06_Tlg_p->u8StatusBits, Dpt(5, 1));
+        KoENO_GO_BASE__10.value(fourBsA5_20_06_Tlg_p->u8StatusBits, Dpt(5, 10));
 #endif
 
         logDebug("4BS", "Temperature: %.1f Status Bits (MSB-LSB): %u", fourBsA5_20_06_Tlg_p->u8Temp / 2.0,
@@ -1069,6 +1035,44 @@ inline void handle4BS_D5_00_01_V2(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channe
   KoENO_GO_BASE__5.value(l1bsV2Tlg_p->u8BatteryVoltage * 19.608, Dpt(9, 20));
 
   logDebug("4BS", "Enr: %.1f V Bat: %.1f V", l1bsV2Tlg_p->u8EnergyVoltage / 51.0, l1bsV2Tlg_p->u8BatteryVoltage / 51.0);
+}
+
+// A5-20-01 Heizkörper-Stellantrieb (bidirektional, z.B. Eltako FKS-SV).
+// Antrieb -> Gateway: DB3 Ventilstellung 0..100 %, DB2 Statusbits, DB1 Temperatur 0..255 = 0..40 °C, DB0 Bit 3 LRN.
+// Gateway -> Antrieb (Antwort im Empfangsfenster, siehe EnoceanChannel::prepareHvacReply): DB3 Sollwert, DB2 Raumtemperatur (invertiert),
+// DB1 Befehle (folgende Bits), DB0 = 0x08.
+#define A52001_DB1_RIN 0x80 // Referenzfahrt (Run Init)
+#define A52001_DB1_LFS 0x40 // Hub einstellen (Lift Set)
+#define A52001_DB1_VO 0x20  // Ventil öffnen (Wartung)
+#define A52001_DB1_VC 0x10  // Ventil schließen
+#define A52001_DB1_SB 0x08  // Sommerbetrieb
+#define A52001_DB1_SPS 0x04 // Sollwert ist eine Temperatur (sonst Ventilstellung)
+// Befehle, die nur mit einer Antwort gesendet und danach zurückgesetzt werden
+#define A52001_ONESHOT (A52001_DB1_RIN | A52001_DB1_LFS | A52001_DB1_VO | A52001_DB1_VC)
+
+// Wertet ein Telegramm des Antriebs aus: KO_6 Temperatur, KO_7 Ventilstellung, KO_9 Statusbits.
+// Liefert TEACHIN_A52001 für ein Lerntelegramm mit EEP (verlangt eine Teach-In-Antwort), msg_A5_20_01 für ein
+// Datentelegramm (verlangt eine Antwort mit dem Sollwert), sonst 0.
+inline uint8_t handle4BS_A5_20_01(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {
+  const uint8_t *d = f_Pkt_st->u8DataBuffer; // d[1] = DB3 ... d[4] = DB0
+
+  if (!(d[4] & 0x08)) {
+    // Lerntelegramm: nur Variante 3 (LRN-Typ = 1, mit EEP) wird beantwortet
+    if (d[4] & 0x80) {
+      logDebug("4BS", "A5-20-01 teach-in request");
+      return TEACHIN_A52001;
+    }
+    logDebug("4BS", "A5-20-01 teach-in without EEP ignored");
+    return 0;
+  }
+
+  uint8_t pos = d[1] > 100 ? 100 : d[1];
+  float temp = d[3] * 40.0f / 255.0f;
+  KoENO_GO_BASE__8.value(pos, Dpt(5, 1));
+  KoENO_GO_BASE__10.value(d[2], Dpt(5, 10));
+  KoENO_GO_BASE__7.value(temp, Dpt(9, 1));
+  logDebug("4BS", "A5-20-01 Pos: %u%% Temp: %.1f Status: %02X", pos, temp, d[2]);
+  return msg_A5_20_01;
 }
 
 inline void handle4BS_A5_04_02(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelIndex) {

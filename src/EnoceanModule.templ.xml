@@ -121,7 +121,7 @@
                 <Parameter Id="%AID%_UP-%TT%%CC%067" Name="CH%C%WindowcloseValue" Offset="0" BitOffset="0" ParameterType="%AID%_PT-OneZero" Text="Wert für geschlossen" Value="1" />
                 <Parameter Id="%AID%_UP-%TT%%CC%068" Name="CH%C%RockerLongPressWaitTime" Offset="0" BitOffset="0" ParameterType="%AID%_PT-RockerLongPressWaitTime" Text="Zeit langer Tastendruck" Value="50" />
                 <!-- A5-20-01 -->
-                <Parameter Id="%AID%_UP-%TT%%CC%070" Name="CH%C%A52001SPS" Offset="0" BitOffset="3" ParameterType="%AID%_PT-A52006SPS" Text="Set Point Selection" Value="1" />
+                <Parameter Id="%AID%_UP-%TT%%CC%070" Name="CH%C%A52001SPS" Offset="0" BitOffset="3" ParameterType="%AID%_PT-A52006SPS" Text="Sollwert" Value="1" />
                 <!-- A5-20-01 ENDE -->
                 <!-- A5-20-04 (1)-->
                 <Parameter Id="%AID%_UP-%TT%%CC%071" Name="CH%C%A52004MC"  Offset="0" BitOffset="0" ParameterType="%AID%_PT-A52004MC"  Text="Auswahl KO:" Value="0" />
@@ -380,7 +380,7 @@
               <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00405" RefId="%AID%_O-%TT%%CC%004" Name="OUT_CH_1_DPT_09" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Bat Voltage" Priority="Low" ObjectSize="2 Bytes" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-9-20" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00406" RefId="%AID%_O-%TT%%CC%004" Name="INP_CH_1_DPT_01" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Standby Schalten" Priority="Low" ObjectSize="1 Bit" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-1-3" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00407" RefId="%AID%_O-%TT%%CC%004" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Alarm Energy Low" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-5" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
-              <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00408" RefId="%AID%_O-%TT%%CC%004" Name="INP_CH_1_DPT_05" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Servcie Commands" Priority="Low" ObjectSize="1 Byte" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
+              <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00408" RefId="%AID%_O-%TT%%CC%004" Name="INP_CH_1_DPT_05" Text="Input     Kanal %C%: {{0:-}}" FunctionText="Service-Befehl" Priority="Low" ObjectSize="1 Byte" WriteFlag="Enabled" CommunicationFlag="Enabled" DatapointType="DPST-5-10" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00409" RefId="%AID%_O-%TT%%CC%004" Name="OUT_CH_1_DPT_01" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Status Switch" Priority="Low" ObjectSize="1 Bit" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-1-1" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" />
               
               <ComObjectRef Id="%AID%_O-%TT%%CC%004_R-%TT%%CC%00411" RefId="%AID%_O-%TT%%CC%004" Name="OUT_CH_1_DPT_05" Text="Output    Kanal %C%: {{0:-}}" FunctionText="Battery (%)" Priority="Low" ObjectSize="1 Byte" ReadFlag="Enabled" CommunicationFlag="Enabled" TransmitFlag="Enabled" DatapointType="DPST-5-4" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" /> 
@@ -807,35 +807,24 @@
                                   <!-- A5-20-01 -->
                                   <when test="116">
                                     <ParameterSeparator Id="%AID%_PS-2" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-3" Text="Batteriebetriebener Heizkörperstellantrieb" />
-                                    <ParameterSeparator Id="%AID%_PS-4" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-6" Text="Definiert ob das Ventil manuell gesteuert(0.100%), oder geregelt auf eine Soll-Temp(°C) arbeitet" />
-                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%070_R-%TT%%CC%07001" IndentLevel="1"  /> <!-- SPS -->
-                                    <ParameterSeparator Id="%AID%_PS-10" Text="" UIHint="HorizontalRuler" />
-                                    <ParameterSeparator Id="%AID%_PS-11" Text="KO Status byte:" />
-                                    <ParameterSeparator Id="%AID%_PS-12" Text="Bit1: ACO  (Ventilerkennung) = Der Stellantrieb erkennt im Rahmen der Inbetriebnahme, ob er an einem Ventil montiert ist" />
-                                    <ParameterSeparator Id="%AID%_PS-13" Text="Bit2: DWO  (Detection Window open) = Fenster offen Erkennung" />
-                                    <ParameterSeparator Id="%AID%_PS-14" Text="Bit3: FTS  (Failure Temp-Sensor) = Temperatursensor-Fehler" />
-                                    <ParameterSeparator Id="%AID%_PS-15" Text="Bit4: CCO  (Contact, cover open)" />
-                                    <ParameterSeparator Id="%AID%_PS-16" Text="Bit5: BCAP (Battery capacity) = Batterie-Füllstand kritisch - Bitte in den nächsten Tagen wechseln" />
-                                    <ParameterSeparator Id="%AID%_PS-17" Text="Bit6: ES   (Energy Storage) = Der Antrieb zeigt an, dass durch den Betrieb langfristig mehr Energie verbraucht als erzeugt wurde" />
-                                    <ParameterSeparator Id="%AID%_PS-18" Text="Bit7: ENIE (Energy Input enable) = Zeigt an, ob gerade Energie zur Verfügung steht" />
-                                    <ParameterSeparator Id="%AID%_PS-19" Text="Bit8: SO   (Service ON)" />
+                                    <ParameterSeparator Id="%AID%_PS-3" Text="Heizkörper-Stellantrieb (bidirektional)" UIHint="Headline" />
+                                    <ParameterSeparator Id="%AID%_PS-5" Text="Das Gateway antwortet dem Antrieb nach jedem seiner Telegramme. Werte von KNX werden deshalb erst mit dem nächsten Telegramm des Antriebs übertragen." />
+                                    <ParameterRefRef RefId="%AID%_UP-%TT%%CC%070_R-%TT%%CC%07001" IndentLevel="1" HelpContext="ENO-A52001" /> <!-- SPS -->
                                     <choose ParamRefId="%AID%_UP-%TT%%CC%070_R-%TT%%CC%07001">
                                       <when test="0">
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00014" />  <!-- Set Pos 0...100% -->
+                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00014" />  <!-- Sollwert Ventilstellung 0..100 % -->
                                       </when>
-                                      <when test="1"> 
-                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00013" />  <!-- Set Temp -->
+                                      <when test="1">
+                                        <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00013" />  <!-- Solltemperatur -->
                                       </when>
                                     </choose>
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00104" /> <!-- Sommer Umschaltung-->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00209" /> <!-- Reference RUN-->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00308" /> <!-- Raum Temperatur -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%004_R-%TT%%CC%00408" /> <!-- Servcie CMD -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" /> <!-- Temperatur am Ventil  -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00701" /> <!-- Aktuelle Ventil Pos -->
-                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00901" /> <!-- Status Bits -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00104" /> <!-- Sommerbetrieb -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00209" /> <!-- Referenzfahrt -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00308" /> <!-- Raumtemperatur -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%004_R-%TT%%CC%00408" /> <!-- Service-Befehl -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" /> <!-- Temperatur am Ventil -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00701" /> <!-- Ventilstellung -->
+                                    <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00901" /> <!-- Statusbits -->
                                   </when>
                                   <!-- A5-20-04 -->
                                   <when test="119">
@@ -1488,7 +1477,26 @@
                           <when test="7">  <!-- AUSWAHL Heizung -->
                             <ParameterRefRef RefId="%AID%_UP-%TT%%CC%092_R-%TT%%CC%09201" IndentLevel="3"  />
                               <choose ParamRefId="%AID%_UP-%TT%%CC%092_R-%TT%%CC%09201">
-                                <when test="0">  
+                                <when test="1">  <!-- FKS-SV - Klein-Stellantrieb Smart Valve -->
+                                  <ParameterSeparator Id="%AID%_PS-1" Text="Informationen:" UIHint="Headline" />
+                                  <ParameterSeparator Id="%AID%_PS-2" Text="EEP A5-20-01 (bidirektional)" />
+                                  <ParameterSeparator Id="%AID%_PS-5" Text="Das Gateway antwortet dem Antrieb nach jedem seiner Telegramme. Werte von KNX werden deshalb erst mit dem nächsten Telegramm des Antriebs übertragen." />
+                                  <ParameterRefRef RefId="%AID%_UP-%TT%%CC%070_R-%TT%%CC%07001" IndentLevel="1" HelpContext="ENO-A52001" /> <!-- SPS -->
+                                  <choose ParamRefId="%AID%_UP-%TT%%CC%070_R-%TT%%CC%07001">
+                                    <when test="0">
+                                      <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00014" />  <!-- Sollwert Ventilstellung 0..100 % -->
+                                    </when>
+                                    <when test="1">
+                                      <ComObjectRefRef RefId="%AID%_O-%TT%%CC%000_R-%TT%%CC%00013" />  <!-- Solltemperatur -->
+                                    </when>
+                                  </choose>
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%001_R-%TT%%CC%00104" /> <!-- Sommerbetrieb -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%002_R-%TT%%CC%00209" /> <!-- Referenzfahrt -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%003_R-%TT%%CC%00308" /> <!-- Raumtemperatur -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%004_R-%TT%%CC%00408" /> <!-- Service-Befehl -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%006_R-%TT%%CC%00601" /> <!-- Temperatur am Ventil -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%007_R-%TT%%CC%00701" /> <!-- Ventilstellung -->
+                                  <ComObjectRefRef RefId="%AID%_O-%TT%%CC%009_R-%TT%%CC%00901" /> <!-- Statusbits -->
                                 </when>
                               </choose> 
                           </when>

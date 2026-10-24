@@ -470,6 +470,10 @@ bool EnoceanModule::isIdAssigned(const uint8_t id[4]) {
 // und ordnet es dann dem Kanal zu: 4BS und 1BS mit LRN-Bit = 0, UTE-Anfrage (VLD-Geräte) sowie bei unverschlüsselten
 // Tastern (RPS) das erste Tastentelegramm. Liefert true, wenn das Telegramm eingelernt wurde.
 bool EnoceanModule::tryTeachIn(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
+  // Kanal bereits belegt (z.B. verschachtelter Empfang, während die Teach-In-Antwort gesendet wird)
+  if (_teach[_teachChannel - 1].valid)
+    return false;
+
   uint8_t id[4];
   if (!extractSenderId(f_Pkt_st, id) || isIdAssigned(id))
     return false;
@@ -506,7 +510,7 @@ bool EnoceanModule::tryTeachIn(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
   }
 }
 
-// Speichert die eingelernte ID für den Kanal des laufenden Teach-In, sichert den Flash und beendet das Teach-In.
+// Speichert die eingelernte ID für den Kanal des laufenden Teach-In (nur im RAM, danach finishTeachIn() aufrufen).
 void EnoceanModule::storeTeachIn(const uint8_t id[4], uint8_t rorg, uint8_t func, uint8_t type, uint8_t flags) {
   if (_teachChannel == 0)
     return;
@@ -519,6 +523,11 @@ void EnoceanModule::storeTeachIn(const uint8_t id[4], uint8_t rorg, uint8_t func
   entry.eep[2] = type;
   logInfoP("Channel %u learned: ID %02X%02X%02X%02X, EEP %02X-%02X-%02X%s", _teachChannel, id[0], id[1], id[2], id[3], rorg,
            func, type, (flags & ENO_TEACH_FLAG_SECURE) ? " (secure)" : "");
+}
+
+// Sichert die eingelernte ID im Flash und beendet das Teach-In. Getrennt von storeTeachIn(), damit bidirektionale
+// Geräte ihre Teach-In-Antwort vorher bekommen (Flash-Schreiben und Lernmodus-Befehl kosten Zeit).
+void EnoceanModule::finishTeachIn() {
   openknx.flash.save(true);
   stopTeachIn();
 }
@@ -758,6 +767,7 @@ void EnoceanModule::handleEvent(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
     if (cause == 0x09 && _teachChannel) {
       // Teach-In erfolgreich, Gerät in der Secure-Link-Tabelle des TCM
       storeTeachIn(id, 0, 0, 0, ENO_TEACH_FLAG_SECURE); // Profil im Secure-Teach-In nicht enthalten
+      finishTeachIn();
     } else if (_teachChannel && (cause == 0x00 || cause == 0x04 || cause == 0x05 || cause == 0x06)) {
       // Tabelle voll, fehlerhaftes Teach-In-Telegramm oder PSK erforderlich
       _teachErrorChannel = _teachChannel;
@@ -767,6 +777,10 @@ void EnoceanModule::handleEvent(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
     }
     break;
   }
+  case u8CO_TX_DONE:
+    // Adressiertes Telegramm (z.B. Teach-In-Antwort) wurde gesendet
+    logDebugP("Addressed telegram sent (TX done)");
+    break;
   default:
     logDebugP("Event %u ignored", f_Pkt_st->u8DataBuffer[0]);
     break;
@@ -894,7 +908,9 @@ void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObje
   //logHexDebugP(iKo.valueRef(), iKo.valueSize());
   // TODO: je nach konfiguriertem EEP-Profil und koIndex das passende EnOcean-Funktelegramm senden.
 
-  uint8_t teachinCH = 0;
+  // Bidirektionale Geräte (A5-20-01, z.B. FKS-SV): Wert merken, gesendet wird mit der nächsten Antwort an das Gerät
+  if (_channels[_channelIndex]->processKnxHvac(koIndex, iKo))
+    return;
 
 //  if (koIndex != _channelIndex) // prüft ob KO zum CHannel passt
 //  {
@@ -908,95 +924,6 @@ void EnoceanModule::handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObje
   case u8RORG_4BS:
     logInfoP("4BS %u", ParamENO_CHProfil4BS20); //knx.paramWord(ENO_CHProfil4BS20 + firstParameter));
     switch (ParamENO_CHProfil4BS20) {
-    // *************** A5-20-01 ***********************************************************
-    case A5_20_01:
-//      switch (koNr) {
-//      case KO_0: // SET Temp / SET Pos
-//        if ((knx.paramByte(ENO_CHA52001SPS + firstParameter) >> ENO_CHA52001SPSShift) & 1) {
-//          union1.val_A5_20_01[0] = (float)iKo.value(getDPT(VAL_DPT_9)) * 2.5; // Set Point Temp#
-//#ifdef KDEBUG
-//          SERIAL_PORT.print(F("SET Temp to: "));
-//          SERIAL_PORT.print(union1.val_A5_20_01[0] / 2.5);
-//          SERIAL_PORT.println(F("°C"));
-//#endif
-//        } else {
-//          union1.val_A5_20_01[0] = (uint8_t)iKo.value(getDPT(VAL_DPT_5)); // Set Point Pos
-//          union1.val_A5_20_01[0] = round(union1.val_A5_20_01[0] / 2.55);
-//#ifdef KDEBUG
-//          SERIAL_PORT.print(F("SET Pos to: "));
-//          SERIAL_PORT.print(union1.val_A5_20_01[0]);
-//          SERIAL_PORT.println(F("%"));
-//#endif
-//        }
-//        break;
-//      case KO_1: // Summer Bit
-//        if (iKo.value(getDPT(VAL_DPT_1))) {
-//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] | (1 << 3); // Set Bit
-//#ifdef KDEBUG
-//          SERIAL_PORT.println(F("Sommer Umschaltung: aktiv"));
-//#endif
-//        } else {
-//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] & ~(1 << 3); // clear Bit
-//#ifdef KDEBUG
-//          SERIAL_PORT.println(F("Sommer Umschaltung: inaktiv"));
-//#endif
-//        }
-//        break;
-//      case KO_2: // Run Init
-//        if (iKo.value(getDPT(VAL_DPT_1))) {
-//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] | (1 << 7); // Set Bit
-//#ifdef KDEBUG
-//          SERIAL_PORT.println(F("Run Init"));
-//#endif
-//        } else {
-//          union1.val_A5_20_01[2] = (uint8_t)union1.val_A5_20_01[2] & ~(1 << 7); // clear Bit
-//        }
-//
-//        break;
-//      case KO_3: // Raum Temp
-//        union1.val_A5_20_01[1] = (uint8_t)iKo.value(getDPT(VAL_DPT_9)) * 6.375;
-//#ifdef KDEBUG
-//        SERIAL_PORT.print(F("Raum-Temp: "));
-//        SERIAL_PORT.print(union1.val_A5_20_01[1] / 6.375);
-//        SERIAL_PORT.println(F("°C"));
-//#endif
-//        break;
-//      case KO_4: // Service CMD
-//
-//        union3.A52001_CMD = iKo.value(getDPT(VAL_DPT_5));
-//        if (union3.A52001_CMD < 8) {
-//          if (union3.A52001_CMD == 0) {
-//            union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
-//            union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
-//            union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
-//          } else if (union3.A52001_CMD == 1) {
-//            union1.val_A5_20_01[2] |= (1 << 4);  // Set   Bit4
-//            union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
-//            union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
-//          } else if (union3.A52001_CMD == 2) {
-//            union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
-//            union1.val_A5_20_01[2] |= (1 << 5);  // set   Bit5
-//            union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
-//          } else if (union3.A52001_CMD == 3) {
-//            union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
-//            union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
-//            union1.val_A5_20_01[2] |= (1 << 6);  // set   Bit6
-//          }
-//#ifdef KDEBUG
-//          SERIAL_PORT.print(F("Service CMD: "));
-//          SERIAL_PORT.println(union3.A52001_CMD);
-//#endif
-//        } else {
-//          union1.val_A5_20_01[2] &= ~(1 << 4); // clear Bit4
-//          union1.val_A5_20_01[2] &= ~(1 << 5); // clear Bit5
-//          union1.val_A5_20_01[2] &= ~(1 << 6); // clear Bit6
-//#ifdef KDEBUG
-//          SERIAL_PORT.print(F("Service CMD: Wrong Value"));
-//#endif
-//        }
-//        break;
-//      }
-      break;
     // *************** A5-20-04 ***********************************************************
     case A5_20_04:
 //      switch (koNr) {
@@ -1686,9 +1613,15 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
         }
       }
 
-      // Teach-In aktiv: Lerntelegramm eines unbekannten Senders dem Kanal zuordnen
-      if (_teachChannel && tryTeachIn(f_Pkt_st))
+      // Teach-In aktiv: Lerntelegramm eines unbekannten Senders dem Kanal zuordnen. Bidirektionale Geräte (z.B.
+      // A5-20-01) erwarten darauf eine Teach-In-Antwort des Kanals.
+      uint8_t teachChannel = _teachChannel;
+      if (teachChannel && tryTeachIn(f_Pkt_st)) {
+        if (knx.configured() && _channelsReady && teachChannel <= ParamENO_VisibleChannels)
+          _channels[teachChannel - 1]->teachInReceived(f_Pkt_st);
+        finishTeachIn();
         return;
+      }
 
       // Senden Unknown ID
       if(packetWasHandled == false && ParamENO_NewID_OnOff == true)
@@ -1865,58 +1798,57 @@ bool EnoceanModule::sendRadioPacket(PACKET_SERIAL_TYPE_ *pPacket, const char *de
     }
 }
 
-void EnoceanModule::send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH)
+// Sendet ein Funktelegramm mit der Sender-ID Base-ID + Kanalindex, damit jeder Kanal eine eigene, in Aktoren
+// einlernbare ID hat. data: Nutzdaten ohne R-ORG (z.B. 1 Byte RPS, 4 Byte 4BS). destId: nullptr = Broadcast, sonst
+// adressiert an dieses Gerät (Optional Data mit Ziel-ID, der Transceiver sendet dann ein ADT-Telegramm).
+bool EnoceanModule::sendChannelTelegram(uint8_t channelIndex, uint8_t rorg, const uint8_t *data, uint8_t dataLength, uint8_t status, const char *description, const uint8_t *destId)
 {
-    PACKET_SERIAL_TYPE_ l_TestPacket_st;
-    uint8_t l_TestBuf_p[10];
-    l_TestPacket_st.u16DataLength = 0x000A;
-    l_TestPacket_st.u8OptionLength = 0x00;
-    l_TestPacket_st.u8Type = u8RADIO_ERP1;
-    l_TestPacket_st.u8DataBuffer = &l_TestBuf_p[0];
+    PACKET_SERIAL_TYPE_ lPacket_st;
+    uint8_t lBuf_p[1 + 4 + 4 + 1 + 7]; // R-ORG + max. 4 Byte Daten + Sender-ID + Status + Optional Data
+    if (dataLength > 4)
+        return false;
 
-    l_TestBuf_p[0] = u8RORG_4BS;
+    lPacket_st.u16DataLength = 1 + dataLength + 4 + 1;
+    lPacket_st.u8OptionLength = destId ? 7 : 0;
+    lPacket_st.u8Type = u8RADIO_ERP1;
+    lPacket_st.u8DataBuffer = &lBuf_p[0];
 
-    l_TestBuf_p[1] = inputs[0];
-    l_TestBuf_p[2] = inputs[1];
-    l_TestBuf_p[3] = inputs[2];
-    l_TestBuf_p[4] = inputs[3];
+    uint8_t pos = 0;
+    lBuf_p[pos++] = rorg;
+    for (uint8_t i = 0; i < dataLength; i++)
+        lBuf_p[pos++] = data[i];
+    // Base-ID: untere 7 Bit sind 0 -> 128 Sende-IDs, Kanalindex 0..29 erzeugt keinen Übertrag
+    for (uint8_t i = 0; i < 4; i++)
+        lBuf_p[pos++] = lui8_BaseID_p[i];
+    lBuf_p[pos - 1] += channelIndex;
+    lBuf_p[pos] = status;
 
-    for (int i = 0; i < 4; i++)
-    {
-        l_TestBuf_p[i + 5] = fui8_BaseID_p[i];
+    if (destId) {
+        // Optional Data: SubTelNum 3, Ziel-ID, dBm 0xFF (Senden), Security-Level 0
+        lBuf_p[++pos] = 0x03;
+        for (uint8_t i = 0; i < 4; i++)
+            lBuf_p[++pos] = destId[i];
+        lBuf_p[++pos] = 0xFF;
+        lBuf_p[++pos] = 0x00;
     }
-    if (baseID_CH <= 4) // anpassen der Sende ID -> baseID_CH max 4 !!!
-        l_TestBuf_p[8] = l_TestBuf_p[8] + baseID_CH;
-    l_TestBuf_p[9] = 0x00; // Status
 
-    logInfoP("ID: %u", l_TestBuf_p[8]);
-
-    sendRadioPacket(&l_TestPacket_st, "4BS telegram");
+    return sendRadioPacket(&lPacket_st, description);
 }
 
-// Sendet ein Rocker-Telegramm (RPS, F6-02-01) mit der Sender-ID Base-ID + Kanalindex, damit jeder Kanal eine eigene,
-// in Aktoren einlernbare ID hat. db0: Tastencode (z.B. 0x30 = AO gedrückt, 0x10 = AI gedrückt, 0x00 = losgelassen).
+// Sendet ein Rocker-Telegramm (RPS, F6-02-01) mit der Sender-ID des Kanals.
+// db0: Tastencode (z.B. 0x30 = AO gedrückt, 0x10 = AI gedrückt, 0x00 = losgelassen).
 bool EnoceanModule::sendRockerTelegram(uint8_t channelIndex, uint8_t db0)
 {
-    PACKET_SERIAL_TYPE_ l_TestPacket_st;
-    uint8_t l_TestBuf_p[7];
-    l_TestPacket_st.u16DataLength = 0x0007;
-    l_TestPacket_st.u8OptionLength = 0x00;
-    l_TestPacket_st.u8Type = u8RADIO_ERP1;
-    l_TestPacket_st.u8DataBuffer = &l_TestBuf_p[0];
-
-    l_TestBuf_p[0] = u8RORG_RPS;
-    l_TestBuf_p[1] = db0;
-    for (int i = 0; i < 4; i++)
-        l_TestBuf_p[i + 2] = lui8_BaseID_p[i];
-    // Base-ID: untere 7 Bit sind 0 -> 128 Sende-IDs, Kanalindex 0..29 erzeugt keinen Übertrag
-    l_TestBuf_p[5] += channelIndex;
+    logDebugP("Send rocker %02X, channel %u", db0, channelIndex + 1);
     // Status: T21 = 1, NU = 1 bei gedrückter Taste, NU = 0 beim Loslassen
-    l_TestBuf_p[6] = (db0 & 0x10) ? 0x30 : 0x20;
+    return sendChannelTelegram(channelIndex, u8RORG_RPS, &db0, 1, (db0 & 0x10) ? 0x30 : 0x20, "RPS telegram");
+}
 
-    logDebugP("Send rocker %02X, ID %02X%02X%02X%02X", db0, l_TestBuf_p[2], l_TestBuf_p[3], l_TestBuf_p[4], l_TestBuf_p[5]);
-
-    return sendRadioPacket(&l_TestPacket_st, "RPS telegram");
+// Sendet ein 4BS-Telegramm (data = DB3..DB0) mit der Sender-ID des Kanals, z.B. Antworten an bidirektionale Geräte.
+bool EnoceanModule::send4BSTelegram(uint8_t channelIndex, const uint8_t data[4], const char *description, const uint8_t *destId)
+{
+    logDebugP("Send 4BS %02X %02X %02X %02X, channel %u", data[0], data[1], data[2], data[3], channelIndex + 1);
+    return sendChannelTelegram(channelIndex, u8RORG_4BS, data, 4, 0x00, description, destId);
 }
 
 void EnoceanModule::setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool state)

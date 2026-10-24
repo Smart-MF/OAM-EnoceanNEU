@@ -51,10 +51,29 @@ private:
   uint32_t _lastSeen = 0;
   bool _failed = false;
 
+  // Bidirektionales Heizungsprofil A5-20-01: Werte von KNX, die mit der nächsten Antwort an das Gerät gehen.
+  // Der Antrieb hört nur kurz nach seinem eigenen Telegramm zu, daher wird nie direkt bei KNX-Empfang gesendet.
+  uint8_t _hvacSetpoint = 0;    // DB3: Ventilstellung 0..100 % oder Solltemperatur 0..255 = 0..40 °C
+  uint8_t _hvacRoomTemp = 0;    // DB2: Raumtemperatur, invertiert 255..0 = 0..40 °C
+  uint8_t _hvacFlags = 0;       // DB1: dauerhafte Bits (Sommerbetrieb)
+  uint8_t _hvacOneShot = 0;     // DB1: Befehle, die nur einmal gesendet werden (Referenzfahrt, Service)
+  bool _hvacSetpointValid = false; // ohne Sollwert von KNX wird nicht geantwortet
+  bool _hvacRoomTempValid = false; // sonst wird die vom Antrieb gemessene Temperatur zurückgegeben
+  uint8_t _hvacReply[4] = {0, 0, 0, 0}; // vorbereitete Antwort (DB3..DB0), gesendet in loop()
+  bool _hvacReplyPending = false;
+  bool _hvacReplyIsTeach = false;
+  uint8_t _hvacDest[4] = {0, 0, 0, 0}; // ID des Antriebs (Ziel der adressierten Teach-In-Antwort)
+  uint32_t _hvacRxTime = 0;            // Empfangszeit, für die Laufzeit der Antwort im Log
+
   void handleRocker(PACKET_SERIAL_TYPE_ *pPacket);
   void knxRockerPress(uint8_t db0, uint32_t releaseAfterMs);
   void deviceSeen();
   void checkFailure();
+  bool isHvacA52001() const;
+  void handleHvac(PACKET_SERIAL_TYPE_ *pPacket);
+  void prepareHvacTeachResponse(PACKET_SERIAL_TYPE_ *pPacket);
+  void prepareHvacReply(PACKET_SERIAL_TYPE_ *pPacket);
+  void sendPendingHvacReply();
 
 public:
   EnoceanChannel(uint8_t index);
@@ -65,4 +84,6 @@ public:
   bool matchesDeviceId(const uint8_t id[4]) const;
   void processKnxRocker(GroupObject &ko);
   bool sendLearnTelegram();
+  bool processKnxHvac(int koIndex, GroupObject &ko);
+  void teachInReceived(PACKET_SERIAL_TYPE_ *pPacket);
 };

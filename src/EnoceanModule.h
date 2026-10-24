@@ -52,6 +52,7 @@ inline bool isSecureRorg(uint8_t rorg) { return rorg >= u8RORG_SEC && rorg <= u8
 #define u8CO_DUTYCYCLE_LIMIT 0x06
 #define u8CO_EVENT_SECUREDEVICES 0x05
 #define u8CO_TRANSMIT_FAILED 0x07
+#define u8CO_TX_DONE 0x08
 #define u8CO_LRN_MODE_DISABLED 0x09
 
 // COMANDS
@@ -224,6 +225,7 @@ private:
     void stopTeachIn();
     bool tryTeachIn(PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void storeTeachIn(const uint8_t id[4], uint8_t rorg, uint8_t func, uint8_t type, uint8_t flags);
+    void finishTeachIn();
     bool isIdAssigned(const uint8_t id[4]);
     void deleteTeachIn(uint8_t channel);
     void deleteSecureDevice(const uint8_t id[4]);
@@ -241,7 +243,7 @@ private:
     void getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st);
     void handleKnxEvent(uint8_t _channelIndex, int koIndex, GroupObject &ko);
-    void send_4BS_Msg(uint8_t *fui8_BaseID_p, uint8_t Index, uint8_t *inputs, uint8_t baseID_CH);
+    bool sendChannelTelegram(uint8_t channelIndex, uint8_t rorg, const uint8_t *data, uint8_t dataLength, uint8_t status, const char *description, const uint8_t *destId = nullptr);
     void setStatusActors(uint8_t *mySenderId, uint8_t idExtra, bool state);
     void getStatusActors(uint8_t *mySenderId, uint8_t idExtra);
     void setActorsMeasurment(uint8_t *mySenderId, uint8_t idExtra, uint8_t *inputs);
@@ -310,6 +312,7 @@ public:
     bool processFunctionProperty(uint8_t objectIndex, uint8_t propertyId, uint8_t length, uint8_t *data, uint8_t *resultData, uint8_t &resultLength) override;
     static bool extractSenderId(const PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);
     bool sendRockerTelegram(uint8_t channelIndex, uint8_t db0);
+    bool send4BSTelegram(uint8_t channelIndex, const uint8_t data[4], const char *description, const uint8_t *destId = nullptr);
     bool learnedId(uint8_t channelIndex, uint8_t out8Id[4]);
 };
 
