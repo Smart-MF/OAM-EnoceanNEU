@@ -23,6 +23,13 @@
 #define u8RORG_VLD 0xD2    // 210
 #define u8RORG_4BS 0xA5    // 165
 #define u8RORG_UTE 0xD4    // Universal Teach-In (VLD-Geräte)
+// Verschlüsselte Telegramme; nach dem Entschlüsseln durch den TCM bleibt der R-ORG, die Daten sind entschlüsselt
+#define u8RORG_SEC 0x30
+#define u8RORG_SEC_CDM 0x31
+#define u8RORG_SEC_ENCAPS 0x32
+#define u8RORG_SEC_CDM_ENCAPS 0x33
+
+inline bool isSecureRorg(uint8_t rorg) { return rorg >= u8RORG_SEC && rorg <= u8RORG_SEC_CDM_ENCAPS; }
 #define u8RORG_Rocker 0xFA // 250
 
 // Send
@@ -262,6 +269,9 @@ private:
     uint8_t _baseIdRemainingWrites = 0xFF;
 
     uint32_t _lastPollingTime = 0;
+
+    // Konsole "eno monitor on": jedes empfangene Funktelegramm loggen (auch mit ETS-Konfiguration)
+    bool _monitor = false;
 
     // Transceiver-Info (beim Start gelesen, für "eno version" und die ETS)
     bool _versionValid = false;

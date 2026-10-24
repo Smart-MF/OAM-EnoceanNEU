@@ -66,7 +66,7 @@
 inline bool eltakoExpectRorg(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t rorg) {
   if (f_Pkt_st->u8DataBuffer[0] == rorg)
     return true;
-  logDebug("Eltako", "R-ORG %02X ignored (expected %02X)", f_Pkt_st->u8DataBuffer[0], rorg);
+  logInfo("Eltako", "R-ORG %02X ignored (expected %02X)", f_Pkt_st->u8DataBuffer[0], rorg);
   return false;
 }
 
@@ -113,9 +113,20 @@ inline void handleProductEltako(PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t _channelI
       /* Funk-Telegramme nach EEP F6-10-00
             ORG = 0x05
             Data_byte3 = 0xF0 = Fenster geschlossen
-                         0xE0 = Fenster offen */
-      if (eltakoExpectRorg(f_Pkt_st, u8RORG_RPS))
+                         0xE0 = Fenster offen
+         Verschlüsselt (Secure Teach-In): vom TCM entschlüsselt mit R-ORG 0x32 (SEC_ENCAPS) und 1 Datenbyte
+            0x02 = Fenster geschlossen
+            0x03 = Fenster offen */
+      if (f_Pkt_st->u8DataBuffer[0] == u8RORG_SEC_ENCAPS) {
+        uint8_t state = f_Pkt_st->u8DataBuffer[1];
+        logDebug("Eltako", "FTKE secure: %02X", state);
+        if (state == 0x02)
+          setWindowHandleKOs(false, false, _channelIndex); // geschlossen
+        else if (state == 0x03)
+          setWindowHandleKOs(true, false, _channelIndex); // offen
+      } else if (eltakoExpectRorg(f_Pkt_st, u8RORG_RPS)) {
         handle_F6_10_00(f_Pkt_st, _channelIndex);
+      }
       break;
 
     default:

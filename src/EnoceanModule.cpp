@@ -1287,6 +1287,7 @@ bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
     openknx.console.printHelpLine("eno repeater", "Read repeater mode/level");
     openknx.console.printHelpLine("eno repeater M L", "Write repeater mode M (0..2) and level L (0..2)");
     openknx.console.printHelpLine("eno version", "Read transceiver version and EURID");
+    openknx.console.printHelpLine("eno monitor on|off", "Log every received radio telegram");
     return true;
   }
 
@@ -1356,6 +1357,12 @@ bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
     }
     setRepeaterFunc(mode, level);
     readRepeaterFunc();
+    return true;
+  }
+
+  if (cmd == "eno monitor on" || cmd == "eno monitor off") {
+    _monitor = cmd == "eno monitor on";
+    logInfoP("Telegram monitor %s", _monitor ? "on" : "off");
     return true;
   }
 
@@ -1649,8 +1656,23 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
       } 
 
       // Testbetrieb ohne ETS-Konfiguration: jedes Telegramm mit Sender-ID und Empfangsstärke loggen
-      if (!knx.configured())
+      if (!knx.configured() || _monitor)
         logReceivedTelegram(f_Pkt_st);
+
+      // Secure-R-ORG (SEC 0x30, SEC_CDM 0x31/0x33, SEC_ENCAPS 0x32): Der TCM gibt entschlüsselte Telegramme mit diesem
+      // R-ORG und den entschlüsselten Nutzdaten weiter; der Security-Level in den Optional Data zeigt, ob das geklappt
+      // hat (2 = entschlüsselt, 3 = authentifiziert, 4 = beides). Nur nicht entschlüsselte Telegramme verwerfen.
+      if (isSecureRorg(f_Pkt_st->u8DataBuffer[0])) {
+        uint8_t security = (f_Pkt_st->u8OptionLength >= 7) ? f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength + 6] : 0;
+        uint16_t len = f_Pkt_st->u16DataLength;
+        if (security < 2) {
+          if (len >= 6)
+            logInfoP("Encrypted telegram (R-ORG %02X) from %02X%02X%02X%02X not decrypted by transceiver (device not in secure link table?)",
+                     f_Pkt_st->u8DataBuffer[0], f_Pkt_st->u8DataBuffer[len - 5], f_Pkt_st->u8DataBuffer[len - 4], f_Pkt_st->u8DataBuffer[len - 3],
+                     f_Pkt_st->u8DataBuffer[len - 2]);
+          return;
+        }
+      }
 
       // Teach-In aktiv: Lerntelegramm eines unbekannten Senders dem Kanal zuordnen
       if (_teachChannel && tryTeachIn(f_Pkt_st))
@@ -1696,6 +1718,10 @@ bool EnoceanModule::extractSenderId(const PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t
 
   case u8RORG_VLD:
   case u8RORG_UTE:
+  case u8RORG_SEC:
+  case u8RORG_SEC_CDM:
+  case u8RORG_SEC_ENCAPS:
+  case u8RORG_SEC_CDM_ENCAPS:
     // RORG (1) + Data (1..14, UTE: 7) + Sender-ID (4) + Status (1)
     if (f_Pkt_st->u16DataLength < 7)
       return false;
@@ -1733,25 +1759,27 @@ void EnoceanModule::checkAndReportUnknownId(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
 
 // Loggt ein empfangenes ERP1-Telegramm mit R-ORG, Sender-ID, Nutzdaten und Empfangsstärke (Testbetrieb).
 void EnoceanModule::logReceivedTelegram(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
-  uint8_t senderId[4];
-  if (!extractSenderId(f_Pkt_st, senderId)) {
-    logInfoP("RX R-ORG %02X (unsupported)", f_Pkt_st->u8DataBuffer[0]);
-    return;
-  }
-
   // Optional Data: SubTelNum (1), Destination ID (4), dBm (1), Security Level (1)
   uint8_t dBm = (f_Pkt_st->u8OptionLength >= 6) ? f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength + 5] : 0;
+  uint8_t security = (f_Pkt_st->u8OptionLength >= 7) ? f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength + 6] : 0;
 
-  // Nutzdaten liegen zwischen R-ORG und Sender-ID (Sender-ID + Status = letzte 5 Bytes)
+  // Sender-ID + Status = letzte 5 Bytes der Daten (gilt für alle ERP1-Telegramme), Nutzdaten dazwischen
+  uint16_t len = f_Pkt_st->u16DataLength;
+  if (len < 6) {
+    logInfoP("RX R-ORG %02X (too short, %u bytes)", f_Pkt_st->u8DataBuffer[0], len);
+    return;
+  }
+  uint8_t *id = &f_Pkt_st->u8DataBuffer[len - 5];
+
   std::string data;
   char hexByte[4];
-  for (uint16_t i = 1; i + 5 < f_Pkt_st->u16DataLength; i++) {
+  for (uint16_t i = 1; i + 5 < len; i++) {
     snprintf(hexByte, sizeof(hexByte), "%02X ", f_Pkt_st->u8DataBuffer[i]);
     data += hexByte;
   }
 
-  logInfoP("RX R-ORG %02X ID %02X%02X%02X%02X -%u dBm Data: %s", f_Pkt_st->u8DataBuffer[0], senderId[0], senderId[1],
-           senderId[2], senderId[3], dBm, data.c_str());
+  logInfoP("RX R-ORG %02X ID %02X%02X%02X%02X -%u dBm Security %u Status %02X Data: %s", f_Pkt_st->u8DataBuffer[0], id[0], id[1],
+           id[2], id[3], dBm, security, f_Pkt_st->u8DataBuffer[len - 1], data.c_str());
 }
 
 // Liest Versionsinformationen und EURID des Transceivers (CO_RD_VERSION, ESP3-Spec Kap. 2.5.5) und loggt sie.
