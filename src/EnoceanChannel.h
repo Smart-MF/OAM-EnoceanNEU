@@ -6,6 +6,10 @@
 #define EEP_Profil         1
 #define Hersteller_Eltako  2
 
+// ETS-Parameter "Einrichtung des Geräts" (CHSetupMode)
+#define ENO_SETUP_MANUAL   0
+#define ENO_SETUP_TEACHIN  1
+
 
 
 

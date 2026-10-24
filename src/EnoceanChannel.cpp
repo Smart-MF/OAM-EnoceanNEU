@@ -206,8 +206,10 @@ bool EnoceanChannel::check_Eno_ID(PACKET_SERIAL_TYPE_ *pPacket) {
   return false;
 }
 
-// Vergleicht die für diesen Kanal parametrierte EnOcean-ID mit der übergebenen ID (unabhängig vom gewählten Profil),
-// um kanalübergreifend feststellen zu können, ob eine empfangene EnOcean-ID bereits bekannt ist.
+// Vergleicht die EnOcean-ID dieses Kanals mit der übergebenen ID (unabhängig vom gewählten Profil), um
+// kanalübergreifend feststellen zu können, ob eine empfangene EnOcean-ID bereits bekannt ist.
+// ID-Quelle: die ETS-Parameter, wenn dort eine ID steht; sonst im Teach-In-Modus die im Gateway eingelernte ID
+// (Brücke bis zum nächsten ETS-Download, siehe "Ergebnis übernehmen").
 bool EnoceanChannel::matchesDeviceId(const uint8_t id[4]) const {
   if (ParamENO_CHProductsel == CH_inaktive)
     return false;
@@ -218,5 +220,11 @@ bool EnoceanChannel::matchesDeviceId(const uint8_t id[4]) const {
   configuredId[2] = (ParamENO_CHId4 << 4) | ParamENO_CHId5;
   configuredId[3] = (ParamENO_CHId6 << 4) | ParamENO_CHId7;
 
-  return configuredId[0] == id[0] && configuredId[1] == id[1] && configuredId[2] == id[2] && configuredId[3] == id[3];
+  bool paramIdSet = configuredId[0] | configuredId[1] | configuredId[2] | configuredId[3];
+  if (!paramIdSet) {
+    if (ParamENO_CHSetupMode != ENO_SETUP_TEACHIN || !openknxEnoceanModule.learnedId(_channelIndex, configuredId))
+      return false;
+  }
+
+  return memcmp(configuredId, id, 4) == 0;
 }

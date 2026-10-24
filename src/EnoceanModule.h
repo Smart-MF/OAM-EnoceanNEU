@@ -22,6 +22,7 @@
 #define u8RORG_RPS 0xF6    // 246
 #define u8RORG_VLD 0xD2    // 210
 #define u8RORG_4BS 0xA5    // 165
+#define u8RORG_UTE 0xD4    // Universal Teach-In (VLD-Geräte)
 #define u8RORG_Rocker 0xFA // 250
 
 // Send
@@ -42,6 +43,7 @@
 // EVENT Codes
 #define u8CO_READY 0x04
 #define u8CO_DUTYCYCLE_LIMIT 0x06
+#define u8CO_EVENT_SECUREDEVICES 0x05
 #define u8CO_TRANSMIT_FAILED 0x07
 #define u8CO_LRN_MODE_DISABLED 0x09
 
@@ -53,6 +55,52 @@
 #define u8CO_RD_REPEATER 0x0A // 10
 #define u8CO_WR_LEARNMODE 0x17 // 23
 #define u8CO_RD_LEARNMODE 0x18 // 24
+#define u8CO_WR_SECUREDEVICE_DEL 0x1A
+
+/*
+    Teach-In über die ETS (Buttons + Script, siehe EnoceanModule.script.js)
+*/
+
+// FunctionProperty-Adresse für die ETS-Buttons (Objekt 160, Property 7; Logik nutzt 160/4, Meter 160/2, Network 160/5)
+#define ENO_FP_OBJECT 160
+#define ENO_FP_PROPERTY 7
+
+// Befehle (data[0])
+#define ENO_FP_CMD_STATUS 1   // data[1] = Kanal 1..30
+#define ENO_FP_CMD_START 2    // data[1] = Kanal 1..30
+#define ENO_FP_CMD_DELETE 3   // data[1] = Kanal 1..30
+#define ENO_FP_CMD_BASEID 4   // Base-ID, Schreibzyklen, EURID
+#define ENO_FP_CMD_VERSION 5  // App- und API-Version des Transceivers
+
+// Ergebniscodes (resultData[0])
+#define ENO_FP_OK 0
+#define ENO_FP_ERR_NOT_CONFIGURED 1
+#define ENO_FP_ERR_ALREADY_LEARNED 2
+#define ENO_FP_ERR_BUSY 3
+#define ENO_FP_ERR_CHANNEL 4
+#define ENO_FP_ERR_TRANSCEIVER 5
+#define ENO_FP_ERR_COMMAND 6
+
+// Teach-In-Status eines Kanals
+#define ENO_TEACH_FREE 0
+#define ENO_TEACH_RUNNING 1
+#define ENO_TEACH_LEARNED 2
+#define ENO_TEACH_ERROR 3
+
+// Flags einer eingelernten ID
+#define ENO_TEACH_FLAG_SECURE 0x01
+
+// Version des Flash-Formats der eingelernten IDs (bei Formatänderung erhöhen)
+#define ENO_FLASH_VERSION 1
+
+// Eingelernte ID eines Kanals (im OpenKNX-Flash gespeichert)
+struct EnoceanTeachEntry
+{
+    uint8_t valid;  // 1 = eingelernt
+    uint8_t flags;  // ENO_TEACH_FLAG_*
+    uint8_t id[4];  // Sender-ID
+    uint8_t eep[3]; // R-ORG, FUNC, TYPE (0 = unbekannt)
+};
 
 #define RPS_BUTTON_CHANNEL_AI 0
 #define RPS_BUTTON_CHANNEL_AO 1
@@ -159,7 +207,15 @@ private:
     bool checkBaseID();
     uint8_t waitForResponse(uint32_t timeoutMs);
     static bool isValidBaseId(const uint8_t baseId[BASEID_BYTES]);
-    bool activateLearnMode(uint8_t channel, uint8_t enable);
+    bool activateLearnMode(uint8_t channel, uint8_t enable, uint32_t timeoutMs = 0);
+    uint8_t startTeachIn(uint8_t channel);
+    void stopTeachIn();
+    bool tryTeachIn(PACKET_SERIAL_TYPE_ *f_Pkt_st);
+    void storeTeachIn(const uint8_t id[4], uint8_t rorg, uint8_t func, uint8_t type, uint8_t flags);
+    bool isIdAssigned(const uint8_t id[4]);
+    void deleteTeachIn(uint8_t channel);
+    void deleteSecureDevice(const uint8_t id[4]);
+    uint32_t teachWindowMs();
     bool readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p);
     void handleTeachCommand(uint8_t value);
     void setIsTeachChannel(uint8_t channel);
@@ -207,6 +263,19 @@ private:
 
     uint32_t _lastPollingTime = 0;
 
+    // Transceiver-Info (beim Start gelesen, für "eno version" und die ETS)
+    bool _versionValid = false;
+    uint8_t _eurid[4] = {0, 0, 0, 0};
+    uint8_t _appVersion[4] = {0, 0, 0, 0};
+    uint8_t _apiVersion[4] = {0, 0, 0, 0};
+
+    // Teach-In: eingelernte IDs je Kanal (Flash), laufendes Teach-In-Fenster und letzter Fehler
+    EnoceanTeachEntry _teach[ENO_ChannelCount] = {};
+    uint8_t _teachChannel = 0; // 1..30, 0 = kein Teach-In aktiv
+    uint32_t _teachStart = 0;
+    uint8_t _teachErrorChannel = 0;
+    uint8_t _teachErrorCause = 0; // Ursache aus CO_EVENT_SECUREDEVICES
+
 public:
     EnoceanModule();
     void loop(bool configured) override;
@@ -220,8 +289,13 @@ public:
     void processInputKo(GroupObject &ko) override;
     bool processCommand(const std::string cmd, bool diagnoseKo);
     void showHelp() override;
+    uint16_t flashSize() override;
+    void writeFlash() override;
+    void readFlash(const uint8_t *data, const uint16_t size) override;
+    bool processFunctionProperty(uint8_t objectIndex, uint8_t propertyId, uint8_t length, uint8_t *data, uint8_t *resultData, uint8_t &resultLength) override;
     static bool extractSenderId(const PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t out8SenderId[4]);
     bool sendRockerTelegram(uint8_t channelIndex, uint8_t db0);
+    bool learnedId(uint8_t channelIndex, uint8_t out8Id[4]);
 };
 
 extern EnoceanModule openknxEnoceanModule;

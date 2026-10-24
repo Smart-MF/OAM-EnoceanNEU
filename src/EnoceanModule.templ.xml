@@ -171,6 +171,13 @@
                
               </Union> <!-- Union 8 -->
 
+              <!-- Einrichtung des Geräts: ID manuell (0) oder Teach-In (1). Parameter-Nummer 074 nicht verwenden (Lücke). -->
+              <Parameter Id="%AID%_P-%TT%%CC%095" Name="CH%C%SetupMode" ParameterType="%AID%_PT-SetupMode" Text="Einrichtung des Geräts" Value="0">
+                <Memory CodeSegment="%AID%_RS-04-00000" Offset="39" BitOffset="0" />
+              </Parameter>
+              <!-- nur ETS (kein Speicher): werden von den Teach-In-Buttons befüllt -->
+              <Parameter Id="%AID%_P-%TT%%CC%096" Name="CH%C%TeachStatus" ParameterType="%AID%_PT-Text80Byte" Text="Status" Value="Nicht abgefragt" Access="Read" />
+              <Parameter Id="%AID%_P-%TT%%CC%097" Name="CH%C%TeachEep" ParameterType="%AID%_PT-Text40Byte" Text="Erkanntes Profil" Value="" Access="Read" />
 
               
 
@@ -274,7 +281,20 @@
               <ParameterRef Id="%AID%_UP-%TT%%CC%091_R-%TT%%CC%09101" RefId="%AID%_UP-%TT%%CC%091" />  <!-- Auswahl Produkt Type Melder-->       
               <ParameterRef Id="%AID%_UP-%TT%%CC%092_R-%TT%%CC%09201" RefId="%AID%_UP-%TT%%CC%092" />  <!-- Auswahl Produkt Type Heizung-->       
               <ParameterRef Id="%AID%_UP-%TT%%CC%093_R-%TT%%CC%09301" RefId="%AID%_UP-%TT%%CC%093" />  <!-- Auswahl Produkt Type Wasser-->       
-              <ParameterRef Id="%AID%_UP-%TT%%CC%094_R-%TT%%CC%09401" RefId="%AID%_UP-%TT%%CC%094" />  <!-- FFG7B - Fenstergriffsensor Auswahl EEP-Profil -->       
+              <ParameterRef Id="%AID%_UP-%TT%%CC%094_R-%TT%%CC%09401" RefId="%AID%_UP-%TT%%CC%094" />  <!-- FFG7B - Fenstergriffsensor Auswahl EEP-Profil -->
+              <!-- Teach-In -->
+              <ParameterRef Id="%AID%_P-%TT%%CC%095_R-%TT%%CC%09501" RefId="%AID%_P-%TT%%CC%095" />
+              <ParameterRef Id="%AID%_P-%TT%%CC%096_R-%TT%%CC%09601" RefId="%AID%_P-%TT%%CC%096" />
+              <ParameterRef Id="%AID%_P-%TT%%CC%097_R-%TT%%CC%09701" RefId="%AID%_P-%TT%%CC%097" />
+              <!-- EnOcean-ID nur lesbar (Teach-In: wird per Button aus dem Gateway übernommen) -->
+              <ParameterRef Id="%AID%_UP-%TT%%CC%055_R-%TT%%CC%05502" RefId="%AID%_UP-%TT%%CC%055" Access="Read" />
+              <ParameterRef Id="%AID%_UP-%TT%%CC%056_R-%TT%%CC%05602" RefId="%AID%_UP-%TT%%CC%056" Access="Read" />
+              <ParameterRef Id="%AID%_UP-%TT%%CC%057_R-%TT%%CC%05702" RefId="%AID%_UP-%TT%%CC%057" Access="Read" />
+              <ParameterRef Id="%AID%_UP-%TT%%CC%058_R-%TT%%CC%05802" RefId="%AID%_UP-%TT%%CC%058" Access="Read" />
+              <ParameterRef Id="%AID%_UP-%TT%%CC%059_R-%TT%%CC%05902" RefId="%AID%_UP-%TT%%CC%059" Access="Read" />
+              <ParameterRef Id="%AID%_UP-%TT%%CC%060_R-%TT%%CC%06002" RefId="%AID%_UP-%TT%%CC%060" Access="Read" />
+              <ParameterRef Id="%AID%_UP-%TT%%CC%061_R-%TT%%CC%06102" RefId="%AID%_UP-%TT%%CC%061" Access="Read" />
+              <ParameterRef Id="%AID%_UP-%TT%%CC%062_R-%TT%%CC%06202" RefId="%AID%_UP-%TT%%CC%062" Access="Read" />
             </ParameterRefs>
             <ComObjectTable>
               <!-- ComOject Kanal 1 -->
@@ -407,52 +427,134 @@
           <Dynamic>
             <!-- The following block is always there -->
             <ChannelIndependentBlock>
+              <!-- Zeile je Kanal in der Teach-In-Übersicht (Allgemein), eingebunden in EnoceanModule.share.xml -->
+              <ParameterBlock Id="%AID%_PB-nnn" Name="TeachOverview">
+                <choose ParamRefId="%AID%_UP-%TT%00011_R-%TT%0001101">
+                  <when test="&gt;=%C%">
+                    <ParameterBlock Id="%AID%_PB-nnn" Inline="true" Layout="Grid">
+                      <Rows>
+                        <Row Id="%AID%_PB-nnn_R-1" />
+                      </Rows>
+                      <Columns>
+                        <Column Id="%AID%_PB-nnn_C-1" Width="12%" />
+                        <Column Id="%AID%_PB-nnn_C-2" Width="38%" />
+                        <Column Id="%AID%_PB-nnn_C-3" Width="50%" />
+                      </Columns>
+                      <ParameterSeparator Id="%AID%_PS-nnn" Cell="1,1" Text="Kanal %C%" />
+                      <ParameterRefRef RefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" Cell="1,2" />
+                      <ParameterRefRef RefId="%AID%_P-%TT%%CC%096_R-%TT%%CC%09601" Cell="1,3" />
+                    </ParameterBlock>
+                  </when>
+                </choose>
+              </ParameterBlock>
+              <!-- Kanalseiten, eingebunden in EnoceanModule.share.xml -->
+              <ParameterBlock Id="%AID%_PB-nnn" Name="ChannelDefinition">
               <choose ParamRefId="%AID%_UP-%TT%00011_R-%TT%0001101">
                 <when test="&gt;=%C%">
                   <ParameterBlock Id="%AID%_PB-nnn" Name="EnoceanKanal" Text="Kanal %C% {{0:---}}" TextParameterRefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" Icon="baseball-diamond-outline" ShowInComObjectTree="true">
                     <ParameterSeparator Id="%AID%_PS-1" Text="Kanaldefinition" UIHint="Headline" />
                     <ParameterRefRef RefId="%AID%_P-%TT%%CC%053_R-%TT%%CC%05301" IndentLevel="1"  />
                     <ParameterSeparator Id="%AID%_PS-1" Text="" UIHint="HorizontalRuler" />
-                    <!-- Profil Selection -->
-                    <choose ParamRefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401">
-                      <!-- Anzeige Enocean ID -->
-                      <when test="!=0">
-                        <ParameterSeparator Id="%AID%_PS-1" Text="Device-Id" UIHint="Headline" />
-                        <ParameterSeparator Id="%AID%_PS-6" Text="Hier die ID des Enocean Device eingeben:" />
-                        <ParameterBlock Id="%AID%_PB-2" Name="Id1" Text="Id" Inline="true" Layout="Grid">
-                          <Rows>
-                            <Row Id="%AID%_PB-2_R-1" Name="Row1" />
-                          </Rows>
-                          <Columns>
-                            <Column Id="%AID%_PB-2_C-1" Name="Col1" Width="25%" />
-                            <Column Id="%AID%_PB-2_C-2" Name="Col2" Width="9%" />
-                            <Column Id="%AID%_PB-2_C-3" Name="Col3" Width="9%" />
-                            <Column Id="%AID%_PB-2_C-4" Name="Col4" Width="2%" />
-                            <Column Id="%AID%_PB-2_C-5" Name="Col5" Width="9%" />
-                            <Column Id="%AID%_PB-2_C-6" Name="Col6" Width="9%" />
-                            <Column Id="%AID%_PB-2_C-7" Name="Col7" Width="2%" />
-                            <Column Id="%AID%_PB-2_C-8" Name="Col8" Width="9%" />
-                            <Column Id="%AID%_PB-2_C-9" Name="Col9" Width="9%" />
-                            <Column Id="%AID%_PB-2_C-10" Name="Col10" Width="2%" />
-                            <Column Id="%AID%_PB-2_C-11" Name="Col11" Width="9%" />
-                            <Column Id="%AID%_PB-2_C-12" Name="Col12" Width="9%" />
-                          </Columns>
-                          <ParameterSeparator Id="%AID%_PS-2" Text="  Enocean-ID" Cell="1,1" />
-                          <!-- <ParameterSeparator Id="%AID%_PS-nnn" Text="." Cell="1,3"/> -->
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%055_R-%TT%%CC%05501" Cell="1,2" />
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%056_R-%TT%%CC%05601" Cell="1,3" />
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%057_R-%TT%%CC%05701" Cell="1,5" />
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%058_R-%TT%%CC%05801" Cell="1,6" />
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%059_R-%TT%%CC%05901" Cell="1,8" />
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%060_R-%TT%%CC%06001" Cell="1,9" />
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%061_R-%TT%%CC%06101" Cell="1,11" />
-                          <ParameterRefRef RefId="%AID%_UP-%TT%%CC%062_R-%TT%%CC%06201" Cell="1,12" />
-                        </ParameterBlock>
-                        <ParameterSeparator Id="%AID%_PS-4" Text="" UIHint="HorizontalRuler" />
-                      </when>
-                    </choose>
                     <ParameterSeparator Id="%AID%_PS-1" Text="Profildefinition" UIHint="Headline" />
                     <ParameterRefRef RefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401" IndentLevel="1"  />
+                    <!-- Einrichtung des Geräts: EnOcean-ID per Teach-In oder von Hand -->
+                    <choose ParamRefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401">
+                      <when test="!=0">
+                        <ParameterSeparator Id="%AID%_PS-1" Text="Einrichtung des Geräts" UIHint="Headline" />
+                        <ParameterRefRef RefId="%AID%_P-%TT%%CC%095_R-%TT%%CC%09501" IndentLevel="1" />
+                        <ParameterSeparator Id="%AID%_PS-1" Text="Beide Wege sind möglich: Teach-In (Button im Unterkapitel &quot;Teach-In&quot;, dann Lerntaste am Gerät drücken) oder die EnOcean-ID vom Gerät von Hand eintragen (Unterkapitel &quot;ID manuell&quot;)." />
+                        <ParameterSeparator Id="%AID%_PS-4" Text="" UIHint="HorizontalRuler" />
+                        <choose ParamRefId="%AID%_P-%TT%%CC%095_R-%TT%%CC%09501">
+                          <!-- ID manuell -->
+                          <when test="0">
+                            <ParameterBlock Id="%AID%_PB-nnn" Name="f%C%ManualId" Text="ID manuell" Icon="pencil" HelpContext="Empty">
+                              <ParameterSeparator Id="%AID%_PS-1" Text="EnOcean-ID" UIHint="Headline" />
+                              <ParameterSeparator Id="%AID%_PS-6" Text="Die EnOcean-ID des Geräts eintragen (steht auf dem Gerät oder in der Anleitung). Unbekannte IDs meldet das Gateway auf dem KO &quot;IDs unbekannter Geräte&quot;." />
+                              <ParameterBlock Id="%AID%_PB-2" Name="Id1" Text="Id" Inline="true" Layout="Grid">
+                                <Rows>
+                                  <Row Id="%AID%_PB-2_R-1" Name="Row1" />
+                                </Rows>
+                                <Columns>
+                                  <Column Id="%AID%_PB-2_C-1" Name="Col1" Width="25%" />
+                                  <Column Id="%AID%_PB-2_C-2" Name="Col2" Width="9%" />
+                                  <Column Id="%AID%_PB-2_C-3" Name="Col3" Width="9%" />
+                                  <Column Id="%AID%_PB-2_C-4" Name="Col4" Width="2%" />
+                                  <Column Id="%AID%_PB-2_C-5" Name="Col5" Width="9%" />
+                                  <Column Id="%AID%_PB-2_C-6" Name="Col6" Width="9%" />
+                                  <Column Id="%AID%_PB-2_C-7" Name="Col7" Width="2%" />
+                                  <Column Id="%AID%_PB-2_C-8" Name="Col8" Width="9%" />
+                                  <Column Id="%AID%_PB-2_C-9" Name="Col9" Width="9%" />
+                                  <Column Id="%AID%_PB-2_C-10" Name="Col10" Width="2%" />
+                                  <Column Id="%AID%_PB-2_C-11" Name="Col11" Width="9%" />
+                                  <Column Id="%AID%_PB-2_C-12" Name="Col12" Width="9%" />
+                                </Columns>
+                                <ParameterSeparator Id="%AID%_PS-2" Text="  Enocean-ID" Cell="1,1" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%055_R-%TT%%CC%05501" Cell="1,2" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%056_R-%TT%%CC%05601" Cell="1,3" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%057_R-%TT%%CC%05701" Cell="1,5" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%058_R-%TT%%CC%05801" Cell="1,6" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%059_R-%TT%%CC%05901" Cell="1,8" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%060_R-%TT%%CC%06001" Cell="1,9" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%061_R-%TT%%CC%06101" Cell="1,11" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%062_R-%TT%%CC%06201" Cell="1,12" />
+                              </ParameterBlock>
+                            </ParameterBlock>
+                          </when>
+                          <!-- Teach-In -->
+                          <when test="1">
+                            <ParameterBlock Id="%AID%_PB-nnn" Name="f%C%TeachIn" Text="Teach-In" Icon="fingerprint" HelpContext="Empty">
+                              <ParameterSeparator Id="%AID%_PS-1" Text="Teach-In" UIHint="Headline" />
+                              <ParameterSeparator Id="%AID%_PS-6" Text="&quot;Teach-In starten&quot; öffnet den Lernmodus für diesen Kanal (gleiche Kanalnummer im TCM 615). Danach innerhalb des Zeitfensters die Lerntaste am Gerät drücken. Die ETS muss online mit dem Gateway verbunden sein." />
+                              <ParameterSeparator Id="%AID%_PS-6" Text="Mit &quot;Ergebnis übernehmen&quot; werden ID und Status aus dem Gateway gelesen und hier gespeichert. Ein eingelernter Kanal wird nicht überschrieben, dafür zuerst &quot;Einlernung löschen&quot;." />
+                              <ParameterBlock Id="%AID%_PB-nnn" Name="f%C%TeachButtons" Inline="true" Layout="Grid">
+                                <Rows>
+                                  <Row Id="%AID%_PB-nnn_R-1" Name="Row1" />
+                                </Rows>
+                                <Columns>
+                                  <Column Id="%AID%_PB-nnn_C-1" Name="Col1" Width="33%" />
+                                  <Column Id="%AID%_PB-nnn_C-2" Name="Col2" Width="33%" />
+                                  <Column Id="%AID%_PB-nnn_C-3" Name="Col3" Width="33%" />
+                                </Columns>
+                                <Button Id="%AID%_B-%TT%%CC%001" Cell="1,1" Text="Teach-In starten" EventHandlerOnline="ConnectionOriented" EventHandler="ENO_teachStart" EventHandlerParameters="{ &quot;Channel&quot;: %C% }" />
+                                <Button Id="%AID%_B-%TT%%CC%002" Cell="1,2" Text="Ergebnis übernehmen" EventHandlerOnline="ConnectionOriented" EventHandler="ENO_teachRead" EventHandlerParameters="{ &quot;Channel&quot;: %C% }" />
+                                <Button Id="%AID%_B-%TT%%CC%003" Cell="1,3" Text="Einlernung löschen" EventHandlerOnline="ConnectionOriented" EventHandler="ENO_teachDelete" EventHandlerParameters="{ &quot;Channel&quot;: %C% }" />
+                              </ParameterBlock>
+                              <ParameterRefRef RefId="%AID%_P-%TT%%CC%096_R-%TT%%CC%09601" IndentLevel="1" />
+                              <ParameterBlock Id="%AID%_PB-3" Name="Id2" Text="Id" Inline="true" Layout="Grid">
+                                <Rows>
+                                  <Row Id="%AID%_PB-3_R-1" Name="Row1" />
+                                </Rows>
+                                <Columns>
+                                  <Column Id="%AID%_PB-3_C-1" Name="Col1" Width="25%" />
+                                  <Column Id="%AID%_PB-3_C-2" Name="Col2" Width="9%" />
+                                  <Column Id="%AID%_PB-3_C-3" Name="Col3" Width="9%" />
+                                  <Column Id="%AID%_PB-3_C-4" Name="Col4" Width="2%" />
+                                  <Column Id="%AID%_PB-3_C-5" Name="Col5" Width="9%" />
+                                  <Column Id="%AID%_PB-3_C-6" Name="Col6" Width="9%" />
+                                  <Column Id="%AID%_PB-3_C-7" Name="Col7" Width="2%" />
+                                  <Column Id="%AID%_PB-3_C-8" Name="Col8" Width="9%" />
+                                  <Column Id="%AID%_PB-3_C-9" Name="Col9" Width="9%" />
+                                  <Column Id="%AID%_PB-3_C-10" Name="Col10" Width="2%" />
+                                  <Column Id="%AID%_PB-3_C-11" Name="Col11" Width="9%" />
+                                  <Column Id="%AID%_PB-3_C-12" Name="Col12" Width="9%" />
+                                </Columns>
+                                <ParameterSeparator Id="%AID%_PS-2" Text="  Eingelernte ID" Cell="1,1" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%055_R-%TT%%CC%05502" Cell="1,2" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%056_R-%TT%%CC%05602" Cell="1,3" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%057_R-%TT%%CC%05702" Cell="1,5" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%058_R-%TT%%CC%05802" Cell="1,6" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%059_R-%TT%%CC%05902" Cell="1,8" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%060_R-%TT%%CC%06002" Cell="1,9" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%061_R-%TT%%CC%06102" Cell="1,11" />
+                                <ParameterRefRef RefId="%AID%_UP-%TT%%CC%062_R-%TT%%CC%06202" Cell="1,12" />
+                              </ParameterBlock>
+                              <ParameterRefRef RefId="%AID%_P-%TT%%CC%097_R-%TT%%CC%09701" IndentLevel="1" />
+                              <ParameterSeparator Id="%AID%_PS-6" Text="ID und Profil werden mit dem nächsten Download ins Projekt übernommen. Bis dahin arbeitet der Kanal mit der im Gateway eingelernten ID." />
+                            </ParameterBlock>
+                          </when>
+                        </choose>
+                      </when>
+                    </choose>
                     <choose ParamRefId="%AID%_UP-%TT%%CC%084_R-%TT%%CC%08401">
                       <when test="1">  <!-- AUSWAHL EEP-Profile -->
                         <ParameterRefRef RefId="%AID%_P-%TT%%CC%004_R-%TT%%CC%00401" IndentLevel="1"  />
@@ -1393,6 +1495,7 @@
                   </ParameterBlock>
                 </when>
               </choose>
+              </ParameterBlock>
             </ChannelIndependentBlock>
           </Dynamic>
         </ApplicationProgram>

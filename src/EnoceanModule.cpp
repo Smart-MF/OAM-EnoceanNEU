@@ -112,6 +112,12 @@ void EnoceanModule::loop(bool configured) {
 
   task();
 
+  // Teach-In-Fenster abgelaufen (falls der TCM kein CO_LRN_MODE_DISABLED gesendet hat)
+  if (_teachChannel && delayCheck(_teachStart, teachWindowMs())) {
+    logInfoP("Teach-in channel %u: time window expired", _teachChannel);
+    stopTeachIn();
+  }
+
   if (!configured || ParamENO_VisibleChannels == 0)
     return;
 
@@ -199,6 +205,9 @@ void EnoceanModule::begin() {
     setRepeaterFunc(ParamENO_RepeaterFunc, ParamENO_RepeaterLevel);
   // prüft ob Änderungen umgesetzt wurden
   readRepeaterFunc();
+
+  // Transceiver-Info für Konsole und ETS (EURID, Versionen)
+  readVersion();
 
   if (!knx.configured())
     logInfoP("Not configured: test mode (receive + log only, use console command 'eno')");
@@ -318,8 +327,8 @@ void EnoceanModule::setBaseId(const uint8_t *fui8_BaseID_p)
 }
 
 // Aktiviert/deaktiviert den Lernmodus des Transceivers für den angegebenen Kanal (CO_WR_LEARNMODE, ESP3-Spec
-// Kap. 2.5.25) und wartet auf die Antwort. Liefert true bei RET_OK.
-bool EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable) {
+// Kap. 2.5.25) und wartet auf die Antwort. timeoutMs: Dauer des Lernmodus (0 = Default 60 s). Liefert true bei RET_OK.
+bool EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable, uint32_t timeoutMs) {
   PACKET_SERIAL_TYPE_ lLearnModePkt_st;
 
   // Data: COMMAND Code (1) + Enable (1) + Timeout (4, big-endian) = 6 Bytes
@@ -327,10 +336,10 @@ bool EnoceanModule::activateLearnMode(uint8_t channel, uint8_t enable) {
   uint8_t lu8SndBuf[7];
   lu8SndBuf[0] = u8CO_WR_LEARNMODE;
   lu8SndBuf[1] = enable; // Start Learn mode = 1, End Learn mode = 0
-  lu8SndBuf[2] = 0; // Timeout: 0 = Default-Periode (60 000 ms)
-  lu8SndBuf[3] = 0;
-  lu8SndBuf[4] = 0;
-  lu8SndBuf[5] = 0;
+  lu8SndBuf[2] = (uint8_t)(timeoutMs >> 24);
+  lu8SndBuf[3] = (uint8_t)(timeoutMs >> 16);
+  lu8SndBuf[4] = (uint8_t)(timeoutMs >> 8);
+  lu8SndBuf[5] = (uint8_t)timeoutMs;
   lu8SndBuf[6] = channel; // 0..0xFD = Kanal absolut, 0xFE = vorheriger, 0xFF = nächster Kanal (relativ)
 
   lLearnModePkt_st.u16DataLength = 6;
@@ -390,16 +399,284 @@ bool EnoceanModule::readLearnMode(uint8_t *fu8_Enable_p, uint8_t *fu8_Channel_p)
 }
 
 // Verarbeitet einen Einlern-Befehl (KO SetTeachChannel oder Konsole "eno teach"):
-// 1..30 = Lernmodus für diesen Kanal starten, 255 = Lernmodus beenden, 100 = aktiven Kanal melden.
+// 1..30 = Teach-In für diesen Kanal starten, 255 = Teach-In beenden, 100 = aktiven Kanal melden.
 void EnoceanModule::handleTeachCommand(uint8_t value) {
-  if (value > 0 && value <= 30) {
-    // Lernmodus läuft 60 s (Default) und endet per Event CO_LRN_MODE_DISABLED, siehe handleEvent()
-    if (activateLearnMode(value, true))
-      setIsTeachChannel(value);
+  if (value > 0 && value <= ENO_ChannelCount) {
+    uint8_t result = startTeachIn(value);
+    if (result == ENO_FP_ERR_ALREADY_LEARNED)
+      logInfoP("Channel %u already learned, delete it first ('eno teach del %u')", value, value);
+    else if (result == ENO_FP_ERR_BUSY)
+      logInfoP("Teach-in for channel %u is running, stop it first", _teachChannel);
   } else if (value == 255) {
-    disableLearnMode();
+    if (_teachChannel)
+      stopTeachIn();
+    else
+      disableLearnMode();
   } else if (value == 100) {
     reportTeachChannel();
+  }
+}
+
+// Dauer des Teach-In-Fensters laut ETS (Allgemein, Sekunden), ohne Konfiguration 60 s.
+uint32_t EnoceanModule::teachWindowMs() {
+  uint8_t seconds = ParamENO_TeachWindow;
+  return (seconds ? seconds : 60) * 1000UL;
+}
+
+// Startet das Teach-In für einen Kanal (1..30): Lernmodus im TCM 615 für denselben Kanal öffnen (nötig für
+// verschlüsselte Geräte) und das Teach-In-Fenster im Gateway starten. Ein bereits eingelernter Kanal wird nicht
+// überschrieben. Liefert einen ENO_FP_*-Code.
+uint8_t EnoceanModule::startTeachIn(uint8_t channel) {
+  if (channel < 1 || channel > ENO_ChannelCount)
+    return ENO_FP_ERR_CHANNEL;
+  if (_teach[channel - 1].valid)
+    return ENO_FP_ERR_ALREADY_LEARNED;
+  if (_teachChannel && _teachChannel != channel)
+    return ENO_FP_ERR_BUSY;
+
+  _teachErrorChannel = 0;
+  _teachErrorCause = 0;
+  _teachChannel = channel;
+  _teachStart = millis();
+  if (!activateLearnMode(channel, true, teachWindowMs()))
+    logErrorP("Transceiver did not confirm learn mode, only unencrypted devices can be learned");
+
+  logInfoP("Teach-in channel %u started (%lu s)", channel, teachWindowMs() / 1000);
+  setIsTeachChannel(channel);
+  return ENO_FP_OK;
+}
+
+// Beendet ein laufendes Teach-In (Lernmodus im TCM aus, IsTeachChannel = 0).
+void EnoceanModule::stopTeachIn() {
+  if (_teachChannel == 0)
+    return;
+  activateLearnMode(_teachChannel, false);
+  _teachChannel = 0;
+  setIsTeachChannel(0);
+}
+
+// true, wenn die ID bereits einem Kanal zugeordnet ist (ETS-Parameter oder eingelernt).
+bool EnoceanModule::isIdAssigned(const uint8_t id[4]) {
+  for (uint8_t i = 0; i < ENO_ChannelCount; i++) {
+    if (_teach[i].valid && memcmp(_teach[i].id, id, 4) == 0)
+      return true;
+    if (_channelsReady && i < ParamENO_VisibleChannels && _channels[i]->matchesDeviceId(id))
+      return true;
+  }
+  return false;
+}
+
+// Prüft während eines Teach-In-Fensters, ob ein Funktelegramm ein Lerntelegramm eines noch unbekannten Senders ist,
+// und ordnet es dann dem Kanal zu: 4BS und 1BS mit LRN-Bit = 0, UTE-Anfrage (VLD-Geräte) sowie bei unverschlüsselten
+// Tastern (RPS) das erste Tastentelegramm. Liefert true, wenn das Telegramm eingelernt wurde.
+bool EnoceanModule::tryTeachIn(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
+  uint8_t id[4];
+  if (!extractSenderId(f_Pkt_st, id) || isIdAssigned(id))
+    return false;
+
+  uint8_t *d = f_Pkt_st->u8DataBuffer;
+  switch (d[0]) {
+  case u8RORG_4BS:
+    // DB0 = d[4]: Bit 3 LRN (0 = Lerntelegramm), Bit 7 LRN-Typ (1 = mit EEP, "Variante 3")
+    if (d[4] & 0x08)
+      return false;
+    if (d[4] & 0x80)
+      storeTeachIn(id, u8RORG_4BS, d[1] >> 2, ((d[1] & 0x03) << 5) | (d[2] >> 3), 0);
+    else
+      storeTeachIn(id, u8RORG_4BS, 0, 0, 0);
+    return true;
+  case u8RORG_1BS:
+    // DB0 Bit 3 LRN (0 = Lerntelegramm), Profil D5-00-01
+    if (d[1] & 0x08)
+      return false;
+    storeTeachIn(id, u8RORG_1BS, 0x00, 0x01, 0);
+    return true;
+  case u8RORG_UTE:
+    // DB6 = d[1] Bit 3-0: Kommando (0 = Teach-In-Anfrage); EEP: DB0 = d[7] R-ORG, DB1 = d[6] FUNC, DB2 = d[5] TYPE
+    if ((d[1] & 0x0F) != 0 || f_Pkt_st->u16DataLength < 13)
+      return false;
+    storeTeachIn(id, d[7], d[6], d[5], 0);
+    return true;
+  case u8RORG_RPS:
+    // Taster ohne Lerntelegramm: erstes Telegramm eines unbekannten Senders (EEP unbekannt)
+    storeTeachIn(id, u8RORG_RPS, 0, 0, 0);
+    return true;
+  default:
+    return false;
+  }
+}
+
+// Speichert die eingelernte ID für den Kanal des laufenden Teach-In, sichert den Flash und beendet das Teach-In.
+void EnoceanModule::storeTeachIn(const uint8_t id[4], uint8_t rorg, uint8_t func, uint8_t type, uint8_t flags) {
+  if (_teachChannel == 0)
+    return;
+  EnoceanTeachEntry &entry = _teach[_teachChannel - 1];
+  entry.valid = 1;
+  entry.flags = flags;
+  memcpy(entry.id, id, 4);
+  entry.eep[0] = rorg;
+  entry.eep[1] = func;
+  entry.eep[2] = type;
+  logInfoP("Channel %u learned: ID %02X%02X%02X%02X, EEP %02X-%02X-%02X%s", _teachChannel, id[0], id[1], id[2], id[3], rorg,
+           func, type, (flags & ENO_TEACH_FLAG_SECURE) ? " (secure)" : "");
+  openknx.flash.save(true);
+  stopTeachIn();
+}
+
+// Löscht die eingelernte ID eines Kanals (1..30); verschlüsselte Geräte werden auch aus der Secure-Link-Tabelle des
+// TCM entfernt.
+void EnoceanModule::deleteTeachIn(uint8_t channel) {
+  if (channel < 1 || channel > ENO_ChannelCount)
+    return;
+  EnoceanTeachEntry &entry = _teach[channel - 1];
+  if (entry.valid && (entry.flags & ENO_TEACH_FLAG_SECURE))
+    deleteSecureDevice(entry.id);
+  memset(&entry, 0, sizeof(entry));
+  if (_teachErrorChannel == channel)
+    _teachErrorChannel = 0;
+  openknx.flash.save(true);
+  logInfoP("Channel %u: teach-in deleted", channel);
+}
+
+// Entfernt ein Gerät aus der Secure-Link-Tabelle des TCM (CO_WR_SECUREDEVICE_DEL, ESP3-Spec Kap. 2.5.28).
+void EnoceanModule::deleteSecureDevice(const uint8_t id[4]) {
+  PACKET_SERIAL_TYPE_ lPkt_st;
+  uint8_t lu8SndBuf[6] = {u8CO_WR_SECUREDEVICE_DEL, id[0], id[1], id[2], id[3], 0x00}; // Optional: Inbound-Tabelle
+
+  lPkt_st.u16DataLength = 5;
+  lPkt_st.u8OptionLength = 1;
+  lPkt_st.u8Type = u8RORG_COMMON_COMMAND;
+  lPkt_st.u8DataBuffer = lu8SndBuf;
+
+  if (uart_sendPacket(&lPkt_st) != ENOCEAN_OK || waitForResponse(ENOCEAN_RESPONSE_TIMEOUT) != ENOCEAN_OK)
+    logErrorP("Secure device %02X%02X%02X%02X could not be deleted", id[0], id[1], id[2], id[3]);
+  else
+    logInfoP("Secure device %02X%02X%02X%02X deleted, return code %u", id[0], id[1], id[2], id[3], m_Pkt_st.u8DataBuffer[0]);
+}
+
+// Liefert die eingelernte ID eines Kanals (Index 0..29), wenn vorhanden.
+bool EnoceanModule::learnedId(uint8_t channelIndex, uint8_t out8Id[4]) {
+  if (channelIndex >= ENO_ChannelCount || !_teach[channelIndex].valid)
+    return false;
+  memcpy(out8Id, _teach[channelIndex].id, 4);
+  return true;
+}
+
+// Flash: Versionsbyte + eingelernte IDs aller Kanäle
+uint16_t EnoceanModule::flashSize() { return 1 + ENO_ChannelCount * sizeof(EnoceanTeachEntry); }
+
+void EnoceanModule::writeFlash() {
+  openknx.flash.writeByte(ENO_FLASH_VERSION);
+  for (uint8_t i = 0; i < ENO_ChannelCount; i++)
+    openknx.flash.write((uint8_t *)&_teach[i], sizeof(EnoceanTeachEntry));
+}
+
+void EnoceanModule::readFlash(const uint8_t *data, const uint16_t size) {
+  if (size < flashSize() || data[0] != ENO_FLASH_VERSION) {
+    logInfoP("No teach-in data in flash");
+    return;
+  }
+  memcpy(_teach, data + 1, ENO_ChannelCount * sizeof(EnoceanTeachEntry));
+  for (uint8_t i = 0; i < ENO_ChannelCount; i++)
+    if (_teach[i].valid)
+      logInfoP("Channel %u learned: ID %02X%02X%02X%02X", i + 1, _teach[i].id[0], _teach[i].id[1], _teach[i].id[2], _teach[i].id[3]);
+}
+
+// ETS-Buttons (Script EnoceanModule.script.js) über FunctionProperty 160/7. Antworten haben max. 10 Byte.
+bool EnoceanModule::processFunctionProperty(uint8_t objectIndex, uint8_t propertyId, uint8_t length, uint8_t *data, uint8_t *resultData, uint8_t &resultLength) {
+  if (objectIndex != ENO_FP_OBJECT || propertyId != ENO_FP_PROPERTY)
+    return false;
+
+  resultLength = 1;
+  if (!knx.configured()) {
+    resultData[0] = ENO_FP_ERR_NOT_CONFIGURED;
+    return true;
+  }
+  if (length < 1) {
+    resultData[0] = ENO_FP_ERR_COMMAND;
+    return true;
+  }
+
+  uint8_t channel = length >= 2 ? data[1] : 0;
+  bool channelValid = channel >= 1 && channel <= ENO_ChannelCount;
+  logDebugP("ETS function property: command %u, channel %u", data[0], channel);
+
+  switch (data[0]) {
+  case ENO_FP_CMD_STATUS: {
+    // [0] Ergebnis, [1] Status, [2..5] ID, [6..8] EEP, [9] Status RUNNING: Restzeit s / LEARNED: Flags / ERROR: Ursache
+    if (!channelValid) {
+      resultData[0] = ENO_FP_ERR_CHANNEL;
+      return true;
+    }
+    EnoceanTeachEntry &entry = _teach[channel - 1];
+    memset(resultData, 0, 10);
+    resultLength = 10;
+    if (entry.valid) {
+      resultData[1] = ENO_TEACH_LEARNED;
+      memcpy(&resultData[2], entry.id, 4);
+      memcpy(&resultData[6], entry.eep, 3);
+      resultData[9] = entry.flags;
+    } else if (_teachChannel == channel) {
+      resultData[1] = ENO_TEACH_RUNNING;
+      uint32_t elapsed = millis() - _teachStart;
+      resultData[9] = elapsed < teachWindowMs() ? (teachWindowMs() - elapsed) / 1000 : 0;
+    } else if (_teachErrorChannel == channel) {
+      resultData[1] = ENO_TEACH_ERROR;
+      resultData[9] = _teachErrorCause;
+    } else {
+      resultData[1] = ENO_TEACH_FREE;
+    }
+    return true;
+  }
+  case ENO_FP_CMD_START: {
+    // [0] Ergebnis, bei ENO_FP_ERR_ALREADY_LEARNED [1..4] eingelernte ID, bei ENO_FP_ERR_BUSY [1] laufender Kanal
+    uint8_t result = startTeachIn(channel);
+    resultData[0] = result;
+    if (result == ENO_FP_ERR_ALREADY_LEARNED) {
+      memcpy(&resultData[1], _teach[channel - 1].id, 4);
+      resultLength = 5;
+    } else if (result == ENO_FP_ERR_BUSY) {
+      resultData[1] = _teachChannel;
+      resultLength = 2;
+    }
+    return true;
+  }
+  case ENO_FP_CMD_DELETE:
+    if (!channelValid) {
+      resultData[0] = ENO_FP_ERR_CHANNEL;
+      return true;
+    }
+    if (_teachChannel == channel)
+      stopTeachIn();
+    deleteTeachIn(channel);
+    resultData[0] = ENO_FP_OK;
+    return true;
+  case ENO_FP_CMD_BASEID:
+    // [0] Ergebnis, [1..4] Base-ID, [5] verbleibende Schreibzyklen (0xFF = unbegrenzt), [6..9] EURID
+    if (!readBaseId(lui8_BaseID_p)) {
+      resultData[0] = ENO_FP_ERR_TRANSCEIVER;
+      return true;
+    }
+    resultData[0] = ENO_FP_OK;
+    memcpy(&resultData[1], lui8_BaseID_p, 4);
+    resultData[5] = _baseIdRemainingWrites;
+    memcpy(&resultData[6], _eurid, 4);
+    resultLength = 10;
+    return true;
+  case ENO_FP_CMD_VERSION:
+    // [0] Ergebnis, [1..4] App-Version, [5..8] API-Version
+    if (!_versionValid) {
+      resultData[0] = ENO_FP_ERR_TRANSCEIVER;
+      return true;
+    }
+    resultData[0] = ENO_FP_OK;
+    memcpy(&resultData[1], _appVersion, 4);
+    memcpy(&resultData[5], _apiVersion, 4);
+    resultLength = 9;
+    return true;
+  default:
+    resultData[0] = ENO_FP_ERR_COMMAND;
+    return true;
   }
 }
 
@@ -460,8 +737,28 @@ void EnoceanModule::handleEvent(PACKET_SERIAL_TYPE_ *f_Pkt_st) {
   case u8CO_LRN_MODE_DISABLED:
     // Lernmodus-Timeout abgelaufen -> kein Kanal mehr bereit zum Einlernen
     logInfoP("Learn mode disabled (timeout)");
+    _teachChannel = 0;
     setIsTeachChannel((uint8_t)0);
     break;
+  case u8CO_EVENT_SECUREDEVICES: {
+    // Data[1] = Ursache, Data[2..5] = Geräte-ID (ESP3-Spec Kap. 2.4.7)
+    if (f_Pkt_st->u16DataLength < 6)
+      break;
+    uint8_t cause = f_Pkt_st->u8DataBuffer[1];
+    uint8_t *id = &f_Pkt_st->u8DataBuffer[2];
+    logInfoP("Secure device event %u, ID %02X%02X%02X%02X", cause, id[0], id[1], id[2], id[3]);
+    if (cause == 0x09 && _teachChannel) {
+      // Teach-In erfolgreich, Gerät in der Secure-Link-Tabelle des TCM
+      storeTeachIn(id, 0, 0, 0, ENO_TEACH_FLAG_SECURE); // Profil im Secure-Teach-In nicht enthalten
+    } else if (_teachChannel && (cause == 0x00 || cause == 0x04 || cause == 0x05 || cause == 0x06)) {
+      // Tabelle voll, fehlerhaftes Teach-In-Telegramm oder PSK erforderlich
+      _teachErrorChannel = _teachChannel;
+      _teachErrorCause = cause;
+      logErrorP("Secure teach-in failed for channel %u, cause %u", _teachChannel, cause);
+      stopTeachIn();
+    }
+    break;
+  }
   default:
     logDebugP("Event %u ignored", f_Pkt_st->u8DataBuffer[0]);
     break;
@@ -983,6 +1280,8 @@ bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
     openknx.console.printHelpLine("eno teach N", "Start learn mode for channel N (1..30)");
     openknx.console.printHelpLine("eno teach off", "Stop learn mode");
     openknx.console.printHelpLine("eno teach ?", "Show channel in learn mode");
+    openknx.console.printHelpLine("eno teach list", "List learned channels");
+    openknx.console.printHelpLine("eno teach del N", "Delete learned device of channel N");
     openknx.console.printHelpLine("eno baseid", "Read Base-ID and remaining write cycles");
     openknx.console.printHelpLine("eno baseid FFxxxxxx", "Write Base-ID (FF800000..FFFFFF80)");
     openknx.console.printHelpLine("eno repeater", "Read repeater mode/level");
@@ -997,7 +1296,21 @@ bool EnoceanModule::processCommand(const std::string cmd, bool diagnoseKo) {
       handleTeachCommand(255);
     else if (arg == "?")
       handleTeachCommand(100);
-    else {
+    else if (arg == "list") {
+      for (uint8_t i = 0; i < ENO_ChannelCount; i++)
+        if (_teach[i].valid)
+          logInfoP("Channel %u: ID %02X%02X%02X%02X, EEP %02X-%02X-%02X%s", i + 1, _teach[i].id[0], _teach[i].id[1], _teach[i].id[2],
+                   _teach[i].id[3], _teach[i].eep[0], _teach[i].eep[1], _teach[i].eep[2], (_teach[i].flags & ENO_TEACH_FLAG_SECURE) ? " (secure)" : "");
+      if (_teachChannel)
+        logInfoP("Teach-in running for channel %u", _teachChannel);
+    } else if (arg.substr(0, 4) == "del ") {
+      uint8_t channel = (uint8_t)strtoul(arg.substr(4).c_str(), nullptr, 10);
+      if (channel < 1 || channel > ENO_ChannelCount) {
+        logInfoP("Channel must be 1..%u", ENO_ChannelCount);
+        return true;
+      }
+      deleteTeachIn(channel);
+    } else {
       uint8_t channel = (uint8_t)strtoul(arg.c_str(), nullptr, 10);
       if (channel < 1 || channel > 30) {
         logInfoP("Channel must be 1..30");
@@ -1339,6 +1652,10 @@ void EnoceanModule::getEnOceanMSG(uint8_t u8RetVal, PACKET_SERIAL_TYPE_ *f_Pkt_s
       if (!knx.configured())
         logReceivedTelegram(f_Pkt_st);
 
+      // Teach-In aktiv: Lerntelegramm eines unbekannten Senders dem Kanal zuordnen
+      if (_teachChannel && tryTeachIn(f_Pkt_st))
+        return;
+
       // Senden Unknown ID
       if(packetWasHandled == false && ParamENO_NewID_OnOff == true)
       {
@@ -1378,7 +1695,8 @@ bool EnoceanModule::extractSenderId(const PACKET_SERIAL_TYPE_ *f_Pkt_st, uint8_t
     return true;
 
   case u8RORG_VLD:
-    // RORG (1) + Data (1..14) + Sender-ID (4) + Status (1)
+  case u8RORG_UTE:
+    // RORG (1) + Data (1..14, UTE: 7) + Sender-ID (4) + Status (1)
     if (f_Pkt_st->u16DataLength < 7)
       return false;
     out8SenderId[0] = f_Pkt_st->u8DataBuffer[f_Pkt_st->u16DataLength - 5];
@@ -1465,6 +1783,11 @@ void EnoceanModule::readVersion() {
   char description[17];
   memcpy(description, &d[17], 16);
   description[16] = '\0';
+
+  memcpy(_appVersion, &d[1], 4);
+  memcpy(_apiVersion, &d[5], 4);
+  memcpy(_eurid, &d[9], 4);
+  _versionValid = true;
 
   logInfoP("App version: %u.%u.%u.%u", d[1], d[2], d[3], d[4]);
   logInfoP("API version: %u.%u.%u.%u", d[5], d[6], d[7], d[8]);
